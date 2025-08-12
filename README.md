@@ -1,16 +1,58 @@
-# goalify
+# 📱 Goalify
 
-A social habit tracker where friends create groups, set a deadline, complete tasks for points, and compete on a live scoreboard
+**Goalify** is a social habit tracking app where friends can create groups, set deadlines, complete tasks for points, and compete on a live leaderboard.  
+Perfect for productivity, challenges, and achieving goals together.
 
-## Getting Started
+---
 
-This project is a starting point for a Flutter application.
+## 🚀 Features
 
-A few resources to get you started if this is your first Flutter project:
+- **Group Management**
+  - Create, edit, and view groups
+  - Deadlines with automatic remaining time display
+  - Placeholder image for groups without a custom image
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+- **Overview & Navigation**
+  - Group overview with quick access to details
+  - Progress screen with KPI cards
+  - Live leaderboard with points
+  - Bottom navigation bar (Groups, Progress, Leaderboard)
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- **Productivity Statistics**
+  - KPI cards (current progress, points per day)
+  - **(In Progress)** Line chart with time filter (Day / Week / Month / Year), similar to stock apps
+
+- **User Experience**
+  - Cross-platform: Android, iOS, Web, Windows, macOS, Linux
+  - Modern Material Design UI
+  - Firebase authentication & Cloud Firestore database
+  - State management with Riverpod
+
+---
+
+## 📸 Screenshots
+
+| Group Overview | Progress Screen | Leaderboard |
+|----------------|-----------------|-------------|
+| ![Groups](assets/screenshots/groups.png) | ![Progress](assets/screenshots/progress.png) | ![Leaderboard](assets/screenshots/leaderboard.png) |
+
+*(Placeholder – screenshots coming soon)*
+
+---
+
+## 🛠️ Tech Stack
+
+- **Frontend:** Flutter (Dart)
+- **State Management:** Riverpod
+- **Backend:** Firebase (Auth, Firestore)
+- **Charts:** Syncfusion Flutter Charts
+- **UI Icons:** Cupertino Icons / Material Icons
+
+---
+
+## 📦 Installation
+
+### 1. Clone the repository
+```bash
+git clone https://github.com/Richard-Kruschinski/goalify.git
+cd goalify
