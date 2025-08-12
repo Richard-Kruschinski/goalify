@@ -16,7 +16,7 @@ Perfect for productivity, challenges, and achieving goals together.
   - Group overview with quick access to details
   - Progress screen with KPI cards
   - Live leaderboard with points
-  - Bottom navigation bar (Groups, Progress, Leaderboard)
+  - Bottom navigation bar (Groups, Daily, Progress, Gym, Leaderboard)
 
 - **Productivity Statistics**
   - KPI cards (current progress, points per day)
