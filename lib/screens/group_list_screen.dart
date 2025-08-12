@@ -48,7 +48,7 @@ class _GroupListScreenState extends State<GroupListScreen> {
             ),
             title: Text(g.name, style: const TextStyle(fontWeight: FontWeight.w600)),
             subtitle: Text(
-              'Deadline: ${g.deadline.toLocal()}  •  ${remaining.isNegative ? "abgelaufen" : "${remaining.inDays} Tage"}',
+              'Deadline: ${g.deadline.toLocal()}  •  ${remaining.isNegative ? "abgelaufen" : "${remaining.inDays} days"}',
             ),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => Navigator.push(

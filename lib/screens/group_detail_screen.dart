@@ -143,7 +143,7 @@ class _TaskCard extends StatelessWidget {
         subtitle: Text('Punkte: ${t.pointValue}  •  ${t.isActive ? "aktiv" : "inaktiv"}'),
         trailing: FilledButton(
           onPressed: (isLocked || !t.isActive) ? null : onComplete,
-          child: const Text('Erledigt'),
+          child: const Text('Done'),
         ),
         onLongPress: onToggleActive,
       ),

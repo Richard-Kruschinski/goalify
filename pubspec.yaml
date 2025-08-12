@@ -10,9 +10,6 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8
-
-  # Liniendiagramm
-
   # State management
   flutter_riverpod: ^2.5.1
 
@@ -40,4 +37,8 @@ dev_dependencies:
 flutter:
   assets:
     - assets/images/placeholder.jpg
+    - assets/images/default_group.jpg
   uses-material-design: true
+
+Error detected in pubspec.yaml:
+No file or variants found for asset: assets/images/default_group.jpg.
