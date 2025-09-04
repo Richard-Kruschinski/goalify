@@ -14,25 +14,35 @@ dependencies:
   flutter_riverpod: ^2.5.1
 
   # Firebase Core
-  firebase_core: ^3.5.0
+  firebase_core: ^3.15.2
 
   # Authentication
-  firebase_auth: ^5.2.0
+  firebase_auth: ^5.7.0
   google_sign_in: ^6.2.1
 
   # Firestore database
-  cloud_firestore: ^5.4.4
+  cloud_firestore: ^5.6.12
 
   google_fonts: ^6.1.0
 
   # Push notifications
   firebase_messaging: ^15.1.2
   syncfusion_flutter_charts: ^30.2.4
+  shared_preferences: ^2.5.3
+  provider: ^6.1.5+1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter_launcher_icons:
+    android: true
+    ios: true
+    image_path: assets/app_icon.png
+    # Für iOS dürfen Icons keine Transparenz haben:
+    remove_alpha_ios: true
 
 flutter:
   assets:

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "37113657608",
+    "project_id": "goalify-4626a",
+    "storage_bucket": "goalify-4626a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:37113657608:android:f827f8a148ac7d116b54bd",
+        "android_client_info": {
+          "package_name": "com.example.goalify"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA7ukkDJMFSYL9WE-xm2f6DygaKuZi2Ar4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

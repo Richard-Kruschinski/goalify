@@ -19,3 +19,12 @@ subprojects {
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }
+
+plugins {
+    id("com.android.application") apply false
+    id("org.jetbrains.kotlin.android") apply false
+    id("dev.flutter.flutter-gradle-plugin") apply false
+    // com.android.library NUR, wenn du wirklich ein Library-Modul hast – sonst weglassen
+    // id("com.android.library") apply false
+    // id("com.google.gms.google-services") apply false
+}

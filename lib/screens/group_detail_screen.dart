@@ -10,23 +10,31 @@ import '../widgets/create_dialogs.dart';
 
 class GroupDetailScreen extends StatefulWidget {
   final String groupId;
-  const GroupDetailScreen({super.key, required this.groupId});
+  const GroupDetailScreen({super.key, required this.groupId}); //-- KEy ist eine eindeutige ID des Objekts
 
   @override
-  State<GroupDetailScreen> createState() => _GroupDetailScreenState();
+  State<GroupDetailScreen> createState() => _GroupDetailScreenState(); //-- "=>" ist wie ein return (nur kürzer)  Wir aber nur für getter und so benutzt
 }
 
 class _GroupDetailScreenState extends State<GroupDetailScreen> {
-  final store = AppStore();
+  final store = AppStore(); //-- neue Instanz von AppStore
 
-  gm.Group get g => store.getGroup(widget.groupId)!;
+  gm.Group get g => store.getGroup(widget.groupId)!; //-- das ist das gleiche wie das:
+  //gm.Group get g {
+//  return store.getGroup(widget.groupId)!;
+  //}
 
   @override
-  Widget build(BuildContext context) {
-    final isLocked = DateTime.now().isAfter(g.deadline);
+  Widget build(BuildContext context) { //-- build rendert die UI
+    bool isLocked;
+    if (DateTime.now().isAfter(g.deadline)) {
+      isLocked = true;
+    } else {
+      isLocked = false;
+    }
     return Scaffold(
       appBar: AppBar(title: Text(g.name)),
-      body: Column(
+      body: Column( //-- Der haupt teil soll im style von Zeilen (also Vertikales Layout und Widget werden untereinander angeordnet)
         children: [
           DeadlineBanner(deadline: g.deadline),
           Expanded(
@@ -108,15 +116,16 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
   }
 }
 
-class _SectionHeader extends StatelessWidget {
+class _SectionHeader extends StatelessWidget { //-- neues Widget namens "_SectionHeader"
   final String title;
   const _SectionHeader(this.title);
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(12.0),
-      child: Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+    return Padding( //-- "Padding" sagt wie viel Abstand von dem Widget an welche Seite es geben soll
+      padding: const EdgeInsets.all(12.0), //-- An allen Seiten sollen 12 Pixel abstand gehalten werden
+      child: Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)), //-- Text des Widget was im Konstruktor war
+      //-- "frontsize" sagt wie groß die Schrift sein soll (hier 18 Pixel hoch), "FontWeight.w600" sagt wie fett ein bustabe ist. w600 ist normal also halbfett
     );
   }
 }
@@ -137,7 +146,7 @@ class _TaskCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), //-- Abstand links/rechts = 12, oben/unten = 6 Pixel.
       child: ListTile(
         title: Text(t.title),
         subtitle: Text('Punkte: ${t.pointValue}  •  ${t.isActive ? "aktiv" : "inaktiv"}'),
