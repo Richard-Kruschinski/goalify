@@ -44,7 +44,6 @@ class Workout {
     id: m['id'] as String,
     name: m['name'] as String,
     description: m['description'] as String,
-    // ✅ richtig: Helper heißt _iconFromString
     icon: _iconFromString(m['icon'] as String),
     muscles: (m['muscles'] as List<dynamic>? ?? const [])
         .map((e) => e.toString())
@@ -57,12 +56,14 @@ class WorkoutLog {
   final double weightKg;
   final int sets;
   final String day;
+  final bool isDropset; // NEW
 
   const WorkoutLog({
     required this.dateTime,
     required this.weightKg,
     required this.sets,
     required this.day,
+    this.isDropset = false, // default for backward compatibility
   });
 
   Map<String, dynamic> toMap() => {
@@ -70,6 +71,7 @@ class WorkoutLog {
     'weightKg': weightKg,
     'sets': sets,
     'day': day,
+    'isDropset': isDropset, // persist
   };
 
   factory WorkoutLog.fromMap(Map<String, dynamic> m) => WorkoutLog(
@@ -77,6 +79,7 @@ class WorkoutLog {
     weightKg: (m['weightKg'] as num).toDouble(),
     sets: (m['sets'] as num).toInt(),
     day: m['day'] as String,
+    isDropset: (m['isDropset'] as bool?) ?? false, // default if missing
   );
 }
 
@@ -84,8 +87,13 @@ class LogInputResult {
   final double weightKg;
   final int sets;
   final String day;
-  const LogInputResult(
-      {required this.weightKg, required this.sets, required this.day});
+  final bool isDropset; // NEW
+  const LogInputResult({
+    required this.weightKg,
+    required this.sets,
+    required this.day,
+    this.isDropset = false,
+  });
 }
 
 /// ===============================================================
@@ -106,7 +114,7 @@ class _GymScreenState extends State<GymScreen> {
 
   ViewMode _mode = ViewMode.byExercise;
 
-  // Workouts kommen jetzt aus JSON
+  // Workouts from JSON
   final List<Workout> _workouts = <Workout>[];
 
   // Logs & Order
@@ -136,16 +144,15 @@ class _GymScreenState extends State<GymScreen> {
       _workouts
         ..clear()
         ..addAll(list);
-    } catch (e) {
-      // Fallback: keine Workouts geladen -> Liste leer
+    } catch (_) {
+      // ignore; empty list fallback
     }
   }
 
   // ----------------------------- Persistenter State -----------------------------
   Future<void> _loadState() async {
     // View mode
-    final vm =
-    await LocalStorage.loadJson(_kGymViewKey, fallback: 'byExercise');
+    final vm = await LocalStorage.loadJson(_kGymViewKey, fallback: 'byExercise');
     _mode = (vm == 'byDay') ? ViewMode.byDay : ViewMode.byExercise;
 
     // Logs
@@ -216,6 +223,7 @@ class _GymScreenState extends State<GymScreen> {
         weightKg: result.weightKg,
         sets: result.sets,
         day: result.day,
+        isDropset: result.isDropset, // NEW
       ));
     });
     _saveLogs();
@@ -249,9 +257,8 @@ class _GymScreenState extends State<GymScreen> {
     }
     if (changed) _saveOrderActive();
 
-    active.sort((a, b) => _orderActive
-        .indexOf(a.id)
-        .compareTo(_orderActive.indexOf(b.id)));
+    active.sort((a, b) =>
+        _orderActive.indexOf(a.id).compareTo(_orderActive.indexOf(b.id)));
     return active;
   }
 
@@ -294,8 +301,8 @@ class _GymScreenState extends State<GymScreen> {
       _saveOrderByDay();
     }
 
-    filtered.sort((a, b) =>
-        order.indexOf(a.id).compareTo(order.indexOf(b.id)));
+    filtered.sort(
+            (a, b) => order.indexOf(a.id).compareTo(order.indexOf(b.id)));
     return filtered;
   }
 
@@ -491,6 +498,8 @@ class _GymScreenState extends State<GymScreen> {
     if (list.isEmpty) {
       return const AlertDialog(content: Text('No entries available'));
     }
+    final cs = Theme.of(context).colorScheme;
+
     return AlertDialog(
       title: Text('Historie – ${w.name}'),
       content: SizedBox(
@@ -505,6 +514,20 @@ class _GymScreenState extends State<GymScreen> {
               leading: const Icon(Icons.history),
               title: Text('${log.weightKg} kg  •  ${log.sets} Sets'),
               subtitle: Text('${log.day}  •  ${_formatDate(log.dateTime)}'),
+              trailing: log.isDropset
+                  ? Container(
+                padding:
+                const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: cs.primaryContainer,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  'Dropset',
+                  style: TextStyle(color: cs.onPrimaryContainer, fontSize: 12),
+                ),
+              )
+                  : null,
             );
           },
         ),
@@ -765,8 +788,7 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
             title: Text(workout.name),
             subtitle: latest == null
                 ? const Text('No progress yet')
-                : Text(
-                '${latest.weightKg} kg • ${latest.sets} Sets'),
+                : Text('${latest.weightKg} kg • ${latest.sets} Sets'),
             avatar: Icon(workout.icon),
             onHistory: () => widget.onShowHistory(workout),
             onTap: () => widget.onEdit(workout, latest),
@@ -830,7 +852,7 @@ class _ReorderTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      key: key, // wichtig für Reorderable
+      key: key, // important for Reorderable
       child: Container(
         decoration: const BoxDecoration(
           border:
@@ -838,20 +860,18 @@ class _ReorderTile extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // Streifen = Drag-Handle (Long-Press)
+            // Stripe = drag handle (long-press)
             ReorderableDelayedDragStartListener(
               index: index,
-              // Hinweis: Bei manchen Flutter-Versionen gibt es kein 'delay'.
-              // Long-press starten, nicht nur tippen.
               child: Container(
                 width: 10,
-                height: 54, // ~ ListTile-Höhe
+                height: 54, // ~ ListTile height
                 color: leadingStripColor,
               ),
             ),
             const SizedBox(width: 8),
 
-            // Inhalt
+            // Content
             Expanded(
               child: ListTile(
                 leading: CircleAvatar(child: avatar),
@@ -862,7 +882,7 @@ class _ReorderTile extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     IconButton(
-                      tooltip: 'Historie',
+                      tooltip: 'History',
                       onPressed: onHistory,
                       icon: const Icon(Icons.history),
                     ),
@@ -885,7 +905,7 @@ class _ReorderTile extends StatelessWidget {
 }
 
 /// ===============================================================
-/// Dialog: Eingabe Day (pflicht), Gewicht & Sets
+/// Dialog: Eingabe Day (pflicht), Gewicht & Sets + Dropset Toggle
 /// ===============================================================
 class LogInputDialog extends StatefulWidget {
   const LogInputDialog({
@@ -907,6 +927,7 @@ class _LogInputDialogState extends State<LogInputDialog> {
   late final TextEditingController _dayController;
 
   String? _chipDay;
+  bool _isDropset = false; // NEW
 
   @override
   void initState() {
@@ -919,6 +940,7 @@ class _LogInputDialogState extends State<LogInputDialog> {
       _kgController.text = widget.latest!.weightKg.toStringAsFixed(1);
       _setsController.text = widget.latest!.sets.toString();
       _dayController.text = widget.latest!.day;
+      _isDropset = widget.latest!.isDropset; // prefill from latest
     }
   }
 
@@ -985,7 +1007,12 @@ class _LogInputDialogState extends State<LogInputDialog> {
 
     Navigator.pop<LogInputResult>(
       context,
-      LogInputResult(weightKg: kg, sets: sets, day: day),
+      LogInputResult(
+        weightKg: kg,
+        sets: sets,
+        day: day,
+        isDropset: _isDropset, // NEW
+      ),
     );
   }
 
@@ -1022,6 +1049,7 @@ class _LogInputDialogState extends State<LogInputDialog> {
   }
 
   Widget _buildNumberFields() {
+    final cs = Theme.of(context).colorScheme;
     return Column(
       children: <Widget>[
         TextField(
@@ -1041,6 +1069,17 @@ class _LogInputDialogState extends State<LogInputDialog> {
             labelText: 'Sets',
             hintText: 'e.g. 3',
           ),
+        ),
+        const SizedBox(height: 12),
+        // NEW: Dropset toggle (uses app theme color)
+        CheckboxListTile(
+          value: _isDropset,
+          onChanged: (v) => setState(() => _isDropset = v ?? false),
+          controlAffinity: ListTileControlAffinity.leading,
+          activeColor: cs.primary,
+          title: const Text('Dropset'),
+          secondary: Icon(Icons.bolt, color: cs.primary),
+          contentPadding: EdgeInsets.zero,
         ),
       ],
     );
