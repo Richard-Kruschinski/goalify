@@ -1,0 +1,240 @@
+[
+  {
+    "id": "bench_press",
+    "name": "Bench Press",
+    "description": "Classic barbell chest exercise. Focus on chest, triceps, and front shoulders.",
+    "icon": "fitness_center",
+    "muscles": ["Chest", "Triceps", "Shoulders"]
+  },
+  {
+    "id": "incline_bench_press",
+    "name": "Incline Bench Press",
+    "description": "Performed on an incline bench. Emphasizes upper chest and shoulders.",
+    "icon": "fitness_center",
+    "muscles": ["Upper Chest", "Shoulders", "Triceps"]
+  },
+  {
+    "id": "incline_bench_press_dumbbell",
+    "name": "Incline Bench Press (Dumbbell)",
+    "description": "Variation with dumbbells for greater range of motion and stabilization.",
+    "icon": "fitness_center",
+    "muscles": ["Upper Chest", "Shoulders", "Triceps"]
+  },
+  {
+    "id": "bench_press_dumbbell",
+    "name": "Bench Press (Dumbbell)",
+    "description": "Bench press using dumbbells. Promotes balanced chest activation and stability.",
+    "icon": "fitness_center",
+    "muscles": ["Chest", "Triceps", "Shoulders"]
+  },
+  {
+    "id": "overhead_press",
+    "name": "Overhead Press",
+    "description": "Press barbell overhead. Focus on shoulder strength and core stability.",
+    "icon": "upload",
+    "muscles": ["Shoulders", "Triceps", "Core"]
+  },
+  {
+    "id": "shoulder_press_machine",
+    "name": "Shoulder Press (Machine)",
+    "description": "Machine-guided pressing movement for front and side delts.",
+    "icon": "fitness_center",
+    "muscles": ["Shoulders", "Triceps"]
+  },
+  {
+    "id": "lateral_raise_machine",
+    "name": "Lateral Raise (Machine)",
+    "description": "Isolation exercise for side delts using a machine.",
+    "icon": "accessibility",
+    "muscles": ["Shoulders (Lateral)"]
+  },
+  {
+    "id": "lateral_raise_dumbbell",
+    "name": "Lateral Raise (Dumbbell)",
+    "description": "Classic shoulder exercise with dumbbells for lateral delts.",
+    "icon": "accessibility",
+    "muscles": ["Shoulders (Lateral)"]
+  },
+  {
+    "id": "squat",
+    "name": "Squat",
+    "description": "Fundamental leg and glute exercise. Keep depth and neutral spine.",
+    "icon": "accessibility_new",
+    "muscles": ["Quads", "Glutes", "Hamstrings", "Core"]
+  },
+  {
+    "id": "hex_squat",
+    "name": "Hex Squat",
+    "description": "Machine-guided squat variation. Focuses on quadriceps activation.",
+    "icon": "accessibility_new",
+    "muscles": ["Quads", "Glutes"]
+  },
+  {
+    "id": "deadlift",
+    "name": "Deadlift",
+    "description": "Fundamental back and leg exercise. Keep bar close and spine neutral.",
+    "icon": "align_vertical_bottom",
+    "muscles": ["Hamstrings", "Glutes", "Back", "Core"]
+  },
+  {
+    "id": "tbar_row",
+    "name": "T-Bar Row",
+    "description": "Row variation with T-bar. Targets upper back and rear delts.",
+    "icon": "fitness_center",
+    "muscles": ["Back", "Rear Delts"]
+  },
+  {
+    "id": "lat_pulldown",
+    "name": "Lat Pulldown",
+    "description": "Pull-down movement targeting the lats. Grip variations shift muscle focus.",
+    "icon": "fitness_center",
+    "muscles": ["Back", "Lats", "Biceps"]
+  },
+  {
+    "id": "reverse_fly",
+    "name": "Reverse Fly",
+    "description": "Reverse fly motion. Focus on rear delts and upper back.",
+    "icon": "fitness_center",
+    "muscles": ["Rear Delts", "Upper Back"]
+  },
+  {
+    "id": "cable_cross",
+    "name": "Cable Cross",
+    "description": "Cable exercise for chest definition. Adjustable angles for variation.",
+    "icon": "fitness_center",
+    "muscles": ["Chest"]
+  },
+  {
+    "id": "hammer_curls",
+    "name": "Hammer Curls",
+    "description": "Biceps exercise with neutral grip. Targets the brachialis.",
+    "icon": "fitness_center",
+    "muscles": ["Biceps", "Forearms"]
+  },
+  {
+    "id": "concentration_curls",
+    "name": "Concentration Curls",
+    "description": "One-arm biceps curl. Focuses on peak contraction and isolation.",
+    "icon": "fitness_center",
+    "muscles": ["Biceps"]
+  },
+  {
+    "id": "triceps_pushdown",
+    "name": "Triceps Pushdown",
+    "description": "Triceps exercise at the cable machine. Can use bar or rope.",
+    "icon": "fitness_center",
+    "muscles": ["Triceps"]
+  },
+  {
+    "id": "calf_raise_seated",
+    "name": "Calf Raises (Seated)",
+    "description": "Seated calf raise. Focus on the soleus muscle.",
+    "icon": "fitness_center",
+    "muscles": ["Calves (Soleus)"]
+  },
+  {
+    "id": "calf_raise_machine",
+    "name": "Calf Raises (Standing Machine)",
+    "description": "Standing calf raises at the machine. Focus on the gastrocnemius.",
+    "icon": "fitness_center",
+    "muscles": ["Calves (Gastrocnemius)"]
+  },
+  {
+    "id": "leg_curl",
+    "name": "Leg Curls",
+    "description": "Machine hamstring curl. Isolates the hamstrings.",
+    "icon": "fitness_center",
+    "muscles": ["Hamstrings"]
+  },
+  {
+    "id": "leg_extension",
+    "name": "Leg Extension",
+    "description": "Machine quad extension. Isolates the quadriceps.",
+    "icon": "fitness_center",
+    "muscles": ["Quads"]
+  },
+
+  { "id": "adduction_machine",
+    "name": "Adduction Machine",
+    "description": "Hip adduction machine focusing on inner thigh (adductors).",
+    "icon": "fitness_center",
+    "muscles": ["Adductors"]
+  },
+  {
+    "id": "shrugs_dumbbell",
+    "name": "Shrugs (Dumbbell)",
+    "description": "Dumbbell shrugs targeting the upper trapezius.",
+    "icon": "fitness_center",
+    "muscles": ["Traps"]
+  },
+  {
+    "id": "shrugs_machine",
+    "name": "Shrugs (Machine)",
+    "description": "Machine-assisted shrugs for upper traps.",
+    "icon": "fitness_center",
+    "muscles": ["Traps"]
+  },
+  {
+    "id": "biceps_curl_dumbbell",
+    "name": "Biceps Curl (Dumbbell)",
+    "description": "Classic dumbbell curl for biceps development.",
+    "icon": "fitness_center",
+    "muscles": ["Biceps"]
+  },
+  {
+    "id": "lateral_raises_cables",
+    "name": "Lateral Raises (Cables)",
+    "description": "Cable lateral raises for constant tension on lateral delts.",
+    "icon": "fitness_center",
+    "muscles": ["Shoulders (Lateral)"]
+  },
+  {
+    "id": "butterfly_machine",
+    "name": "Butterfly (Machine)",
+    "description": "Pec deck machine fly for chest isolation.",
+    "icon": "fitness_center",
+    "muscles": ["Chest"]
+  },
+  {
+    "id": "butterfly_cables",
+    "name": "Butterfly (Cables)",
+    "description": "Cable fly (standing or lying) for chest isolation.",
+    "icon": "fitness_center",
+    "muscles": ["Chest"]
+  },
+  {
+    "id": "dips",
+    "name": "Dips",
+    "description": "Bodyweight or assisted dips for chest and triceps.",
+    "icon": "fitness_center",
+    "muscles": ["Triceps", "Chest", "Shoulders"]
+  },
+  {
+    "id": "pull_ups_machine",
+    "name": "Pull-Ups (Machine)",
+    "description": "Assisted pull-ups targeting back and biceps.",
+    "icon": "fitness_center",
+    "muscles": ["Back", "Lats", "Biceps"]
+  },
+  {
+    "id": "pull_ups",
+    "name": "Pull-Ups",
+    "description": "Bodyweight pull-ups targeting lats and biceps.",
+    "icon": "fitness_center",
+    "muscles": ["Back", "Lats", "Biceps"]
+  },
+  {
+    "id": "crunches_cable",
+    "name": "Crunches (Cable)",
+    "description": "Kneeling cable crunch for weighted ab work.",
+    "icon": "fitness_center",
+    "muscles": ["Abs"]
+  },
+  {
+    "id": "crunches_machine",
+    "name": "Crunches (Machine)",
+    "description": "Abdominal crunch machine for controlled core training.",
+    "icon": "fitness_center",
+    "muscles": ["Abs"]
+  }
+]
