@@ -40,7 +40,7 @@ dev_dependencies:
 flutter_launcher_icons:
     android: true
     ios: true
-    image_path: assets/app_icon.png
+    image_path: assets/images/app_icon.png
     # Für iOS dürfen Icons keine Transparenz haben:
     remove_alpha_ios: true
 

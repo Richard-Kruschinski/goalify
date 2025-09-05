@@ -45,8 +45,9 @@ class Workout {
     name: m['name'] as String,
     description: m['description'] as String,
     icon: _iconFromString(m['icon'] as String),
-    muscles:
-    (m['muscles'] as List<dynamic>? ?? const []).map((e) => e.toString()).toList(),
+    muscles: (m['muscles'] as List<dynamic>? ?? const [])
+        .map((e) => e.toString())
+        .toList(),
   );
 }
 
@@ -82,17 +83,13 @@ class WorkoutLog {
   );
 }
 
-class LogInputResult {
-  final double weightKg;
-  final int sets;
-  final String day;
-  final bool isDropset;
-  const LogInputResult({
-    required this.weightKg,
-    required this.sets,
-    required this.day,
-    this.isDropset = false,
-  });
+/// Rückgabewert des Dialogs:
+/// - log != null  -> es soll getrackt werden
+/// - assignDay != null -> nur Zuweisung zur Gruppe (ohne History)
+class LogOutcome {
+  final WorkoutLog? log;
+  final String? assignDay;
+  const LogOutcome({this.log, this.assignDay});
 }
 
 /// ===============================================================
@@ -110,6 +107,7 @@ class _GymScreenState extends State<GymScreen> {
   static const _kGymViewKey = 'gym_view_mode_v1';
   static const _kOrderActiveKey = 'gym_order_by_exercise_v1';
   static const _kOrderByDayKey = 'gym_order_by_day_v1';
+  static const _kAssignmentsKey = 'gym_assignments_by_day_v1'; // NEW
 
   ViewMode _mode = ViewMode.byExercise;
 
@@ -121,6 +119,9 @@ class _GymScreenState extends State<GymScreen> {
   List<String> _orderActive = <String>[];
   Map<String, List<String>> _orderByDay = <String, List<String>>{};
 
+  // NEW: Zuweisungen „Übung gehört zu Day“, auch ohne History
+  final Map<String, List<String>> _assignmentsByDay = <String, List<String>>{};
+
   @override
   void initState() {
     super.initState();
@@ -129,7 +130,7 @@ class _GymScreenState extends State<GymScreen> {
 
   Future<void> _bootstrap() async {
     await _loadWorkoutsFromAsset();
-    await _loadState(); // view-mode, logs, orders
+    await _loadState(); // view-mode, logs, orders, assignments
     if (mounted) setState(() {});
   }
 
@@ -187,6 +188,19 @@ class _GymScreenState extends State<GymScreen> {
         }
       });
     }
+
+    // Assignments
+    final assignmentsRaw =
+    await LocalStorage.loadJson(_kAssignmentsKey, fallback: {});
+    _assignmentsByDay.clear();
+    if (assignmentsRaw is Map) {
+      assignmentsRaw.forEach((k, v) {
+        if (v is List) {
+          _assignmentsByDay[k.toString()] =
+              v.map((e) => e.toString()).toList(growable: true);
+        }
+      });
+    }
   }
 
   Future<void> _saveLogs() async {
@@ -204,6 +218,51 @@ class _GymScreenState extends State<GymScreen> {
   Future<void> _saveOrderByDay() async =>
       LocalStorage.saveJson(_kOrderByDayKey, _orderByDay);
 
+  Future<void> _saveAssignments() async =>
+      LocalStorage.saveJson(_kAssignmentsKey, _assignmentsByDay);
+
+  // ----------------------------- Helpers: Assignments -----------------------------
+  void _ensureAssigned(String day, String workoutId) {
+    final list = _assignmentsByDay.putIfAbsent(day, () => <String>[]);
+    if (!list.contains(workoutId)) {
+      list.add(workoutId);
+      _saveAssignments();
+    }
+    // für Reorder-Liste pro Day ebenfalls sicherstellen
+    final order = _orderByDay.putIfAbsent(day, () => <String>[]);
+    if (!order.contains(workoutId)) {
+      order.add(workoutId);
+      _saveOrderByDay();
+    }
+  }
+
+  void _removeAssignmentForDay(String day, String workoutId) {
+    final list = _assignmentsByDay[day];
+    if (list == null) return;
+    list.remove(workoutId);
+    if (list.isEmpty) _assignmentsByDay.remove(day);
+    _saveAssignments();
+
+    // Auch aus der Day-Reihenfolge entfernen
+    final order = _orderByDay[day];
+    if (order != null) {
+      order.remove(workoutId);
+      if (order.isEmpty) {
+        _orderByDay.remove(day);
+      }
+      _saveOrderByDay();
+    }
+    setState(() {});
+  }
+
+  Set<String> _assignedDaysForWorkout(String workoutId) {
+    final out = <String>{};
+    _assignmentsByDay.forEach((day, ids) {
+      if (ids.contains(workoutId)) out.add(day);
+    });
+    return out;
+  }
+
   // ----------------------------- Logik -----------------------------
   WorkoutLog? _getLatestLogFor(String workoutId) {
     final list = _logs[workoutId];
@@ -212,20 +271,22 @@ class _GymScreenState extends State<GymScreen> {
   }
 
   Set<String> _daysForWorkout(String workoutId) {
+    // aus Logs + Assignments
     final out = <String>{};
     final list = _logs[workoutId];
     if (list != null) {
-      for (final l in list) {
-        out.add(l.day);
-      }
+      for (final l in list) out.add(l.day);
     }
+    _assignmentsByDay.forEach((day, ids) {
+      if (ids.contains(workoutId)) out.add(day);
+    });
     return out;
   }
 
   String _formatDate(DateTime dt) =>
       '${dt.day.toString().padLeft(2, '0')}.${dt.month.toString().padLeft(2, '0')}.${dt.year}';
 
-  void _addLog(String workoutId, LogInputResult result) {
+  void _addLog(String workoutId, WorkoutLog result) {
     setState(() {
       final list = _logs.putIfAbsent(workoutId, () => <WorkoutLog>[]);
       list.add(WorkoutLog(
@@ -235,6 +296,8 @@ class _GymScreenState extends State<GymScreen> {
         day: result.day,
         isDropset: result.isDropset,
       ));
+      // sicherstellen, dass auch zugeordnet ist
+      _ensureAssigned(result.day, workoutId);
     });
     _saveLogs();
   }
@@ -255,9 +318,16 @@ class _GymScreenState extends State<GymScreen> {
 
   // ---------- Reihenfolge: Übungs-Ansicht ----------
   List<Workout> _getActiveWorkouts() {
+    // alle mit Logs oder mit Assignment
+    final idsWithLogs = _logs.keys.toSet();
+    final idsWithAssign = <String>{
+      for (final entry in _assignmentsByDay.entries) ...entry.value
+    };
+    final activeIds = {...idsWithLogs, ...idsWithAssign}.toList();
+
     final active =
-    _workouts.where((w) => _getLatestLogFor(w.id) != null).toList();
-    final activeIds = active.map((w) => w.id).toList();
+    _workouts.where((w) => activeIds.contains(w.id)).toList(growable: false);
+
     bool changed = false;
     for (final id in activeIds) {
       if (!_orderActive.contains(id)) {
@@ -291,13 +361,16 @@ class _GymScreenState extends State<GymScreen> {
 
   // ---------- Reihenfolge: pro Day ----------
   List<Workout> _getWorkoutsForDayOrdered(String day) {
-    final filtered = _workouts.where((w) {
-      final l = _logs[w.id];
-      if (l == null) return false;
-      return l.any((log) => log.day == day);
-    }).toList();
+    // Union aus Logs (die an diesem Day vorkommen) + Assignments
+    final idsFromLogs = <String>{};
+    _logs.forEach((wid, list) {
+      if (list.any((l) => l.day == day)) idsFromLogs.add(wid);
+    });
+    final idsFromAssign = _assignmentsByDay[day]?.toSet() ?? <String>{};
 
-    final ids = filtered.map((w) => w.id).toList();
+    final ids = {...idsFromLogs, ...idsFromAssign}.toList();
+
+    // Ordnung pflegen/erweitern
     final order = List<String>.from(_orderByDay[day] ?? const []);
     bool changed = false;
     for (final id in ids) {
@@ -311,6 +384,8 @@ class _GymScreenState extends State<GymScreen> {
       _saveOrderByDay();
     }
 
+    final filtered =
+    _workouts.where((w) => ids.contains(w.id)).toList(growable: false);
     filtered.sort(
             (a, b) => order.indexOf(a.id).compareTo(order.indexOf(b.id)));
     return filtered;
@@ -326,6 +401,89 @@ class _GymScreenState extends State<GymScreen> {
   void _deleteWorkoutLogsAll(String workoutId) {
     setState(() => _logs.remove(workoutId));
     _saveLogs();
+    // Zuweisungen bleiben bestehen (damit „ohne Progress“ weiter gelistet bleibt)
+  }
+
+  // PERMANENTER LÖSCHEN: History, Assignments & Orders entfernen
+  void _deleteExerciseEverywhere(String workoutId) {
+    // Logs
+    _logs.remove(workoutId);
+
+    // Assignments
+    _assignmentsByDay.forEach((day, list) => list.remove(workoutId));
+    _assignmentsByDay.removeWhere((_, list) => list.isEmpty);
+
+    // Orders
+    _orderActive.remove(workoutId);
+    _orderByDay.forEach((day, list) => list.remove(workoutId));
+    _orderByDay.removeWhere((_, list) => list.isEmpty);
+
+    // Persist
+    _saveLogs();
+    _saveAssignments();
+    _saveOrderActive();
+    _saveOrderByDay();
+
+    setState(() {});
+  }
+
+  void _confirmDeleteExercise(Workout w) {
+    showDialog<void>(
+      context: context,
+      builder: (_) {
+        String typed = '';
+        return StatefulBuilder(
+          builder: (ctx, setS) {
+            final canDelete = typed.trim() == w.name.trim();
+            return AlertDialog(
+              title: Text('Delete "${w.name}"?'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'This action cannot be undone.\n'
+                        'Type the exercise name to enable “Delete everywhere”.',
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    autofocus: true,
+                    onChanged: (v) => setS(() => typed = v),
+                    decoration: const InputDecoration(
+                      labelText: 'Confirm by typing the exact name',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                // Nur Historie leeren – sicher gegen versehentliches Komplettlöschen
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    _deleteWorkoutLogsAll(w.id);
+                  },
+                  child: const Text('Clear history only'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: canDelete
+                      ? () {
+                    Navigator.pop(ctx);
+                    _deleteExerciseEverywhere(w.id);
+                  }
+                      : null,
+                  child: const Text('Delete everywhere'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   void _deleteWorkoutLogsForDay(String workoutId, String day) {
@@ -336,37 +494,16 @@ class _GymScreenState extends State<GymScreen> {
       if (list.isEmpty) _logs.remove(workoutId);
     });
     _saveLogs();
-  }
-
-  void _confirmDeleteExercise(Workout w) {
-    showDialog<void>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text('Remove "${w.name}"?'),
-        content: const Text('This will delete all logs for this exercise.'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel')),
-          FilledButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _deleteWorkoutLogsAll(w.id);
-            },
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
+    // Assignment bleibt bewusst erhalten
   }
 
   void _confirmDeleteForDay(Workout w, String day) {
     showDialog<void>(
       context: context,
       builder: (_) => AlertDialog(
-        title: Text('Remove "${w.name}" from $day?'),
+        title: Text('Clear history for "${w.name}" on $day?'),
         content:
-        Text('Only this exercise’s logs for "$day" will be deleted.'),
+        const Text('Only this exercise’s logs for this day will be deleted.'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context),
@@ -379,6 +516,90 @@ class _GymScreenState extends State<GymScreen> {
             child: const Text('Delete'),
           ),
         ],
+      ),
+    );
+  }
+
+  // ---- Remove-from-plan Dialog (By Exercise) ----
+  Future<void> _openUnassignDialog(Workout w) async {
+    final assignedDays = _assignedDaysForWorkout(w.id).toList()..sort();
+    if (assignedDays.isEmpty) {
+      showDialog<void>(
+        context: context,
+        builder: (_) => const AlertDialog(
+          content: Text('This exercise is not part of any workout plan yet.'),
+        ),
+      );
+      return;
+    }
+
+    final selected = <String>{};
+    await showDialog<void>(
+      context: context,
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, setS) => AlertDialog(
+          title: Text('Remove "${w.name}" from plan'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text('Choose days to remove (history stays):'),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                children: assignedDays.map((d) {
+                  final isSel = selected.contains(d);
+                  return FilterChip(
+                    label: Text(d),
+                    selected: isSel,
+                    onSelected: (v) => setS(() {
+                      if (v) {
+                        selected.add(d);
+                      } else {
+                        selected.remove(d);
+                      }
+                    }),
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: selected.isEmpty
+                  ? null
+                  : () {
+                for (final d in selected) {
+                  _removeAssignmentForDay(d, w.id);
+                }
+                Navigator.pop(ctx);
+              },
+              child: const Text('Remove'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: _buildAppBar(),
+      body: _mode == ViewMode.byExercise
+          ? _buildWorkoutListBody()
+          : _buildDayListBody(),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _onAddPressed,
+        icon: const Icon(Icons.add),
+        label: const Text('Add'),
       ),
     );
   }
@@ -417,7 +638,7 @@ class _GymScreenState extends State<GymScreen> {
   Widget _buildEmptyBody() =>
       const Center(child: Text('No workouts added yet'));
 
-  // Übungs-Ansicht mit Reorder
+  // Übungs-Ansicht mit Reorder (zeigt auch zugewiesene Übungen ohne Logs)
   Widget _buildWorkoutListBody() {
     final active = _getActiveWorkouts();
     if (active.isEmpty) return _buildEmptyBody();
@@ -430,26 +651,57 @@ class _GymScreenState extends State<GymScreen> {
       buildDefaultDragHandles: false,
       itemBuilder: (_, i) {
         final w = active[i];
-        final latest = _getLatestLogFor(w.id)!;
+        final latest = _getLatestLogFor(w.id);
         return _ReorderTile(
           key: ValueKey('ex_${w.id}'),
           index: i,
           leadingStripColor: stripe,
           title: Text(w.name),
-          subtitle:
-          Text('${latest.day} • ${latest.weightKg} kg • ${latest.sets} Sets'),
+          subtitle: latest == null
+              ? const Text('No progress yet')
+              : Text('${latest.day} • ${latest.weightKg} kg • ${latest.sets} Sets'),
           avatar: Icon(w.icon),
           onHistory: () => _openHistoryDialog(w),
           onDelete: () => _confirmDeleteExercise(w),
+          // 3-Punkte-Menü in der Exercise-Übersicht
+          trailingMore: PopupMenuButton<String>(
+            tooltip: 'more',
+            onSelected: (value) async {
+              if (value == 'remove_plan') {
+                await _openUnassignDialog(w);
+              } else if (value == 'clear_history') {
+                _deleteWorkoutLogsAll(w.id);
+              } else if (value == 'delete_everywhere') {
+                _confirmDeleteExercise(w);
+              }
+            },
+            itemBuilder: (_) => const [
+              PopupMenuItem(
+                value: 'remove_plan',
+                child: Text('Remove from plan…'),
+              ),
+              PopupMenuItem(
+                value: 'clear_history',
+                child: Text('Clear all history'),
+              ),
+              PopupMenuItem(
+                value: 'delete_everywhere',
+                child: Text('Delete exercise…'),
+              ),
+            ],
+            icon: const Icon(Icons.more_vert),
+          ),
           onTap: () async {
             final days = _daysForWorkout(w.id).toList()..sort();
-            final res = await _openLogInputDialog(
+            final outcome = await _openLogDialog(
               w,
-              latest,
-              contextDay: null,                 // By Exercise -> keine feste Gruppe
-              availableDays: days,              // Days als Chips wählbar
+              latest: latest,
+              contextDay: null,                // By Exercise -> kein fester Day
+              availableDays: days,             // Days als Chips wählbar
+              creationMode: false,
             );
-            if (res != null) _addLog(w.id, res);
+            if (outcome == null) return;
+            if (outcome.log != null) _addLog(w.id, outcome.log!);
           },
         );
       },
@@ -459,11 +711,15 @@ class _GymScreenState extends State<GymScreen> {
   // Day-Auswahl
   Widget _buildDayListBody() {
     final allDays = <String>{};
+    // aus Logs
     for (final list in _logs.values) {
       for (final log in list) {
         allDays.add(log.day);
       }
     }
+    // plus aus Assignments
+    allDays.addAll(_assignmentsByDay.keys);
+
     if (allDays.isEmpty) {
       return const Center(child: Text('No workout days available yet'));
     }
@@ -492,18 +748,20 @@ class _GymScreenState extends State<GymScreen> {
           orderedWorkouts: ordered,
           latestForDay: _latestForDay,
           onEdit: (w, latest) async {
-            // In einer Gruppe: Day ist fest -> Feld wird im Dialog ausgeblendet
-            final res = await _openLogInputDialog(
+            final outcome = await _openLogDialog(
               w,
-              latest,
+              latest: latest,
               contextDay: day,
               availableDays: const [],
+              creationMode: false,
             );
-            if (res != null) _addLog(w.id, res);
+            if (outcome == null) return;
+            if (outcome.log != null) _addLog(w.id, outcome.log!);
           },
           onShowHistory: _openHistoryDialog,
           onDeleteForDay: (w) => _confirmDeleteForDay(w, day),
           onDeleteAll: _confirmDeleteExercise,
+          onUnassignFromDay: (w) => _removeAssignmentForDay(day, w.id),
           onReorder: (ids) => _reorderDay(day, ids),
           stripeColor: stripe,
         ),
@@ -557,8 +815,7 @@ class _GymScreenState extends State<GymScreen> {
       ),
       actions: [
         TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'))
+            onPressed: () => Navigator.pop(context), child: const Text('OK'))
       ],
     );
   }
@@ -572,48 +829,44 @@ class _GymScreenState extends State<GymScreen> {
         workouts: _workouts,
         latestFor: _getLatestLogFor,
         onAddOrUpdate: (w) async {
-          // Beim Hinzufügen wollen wir weiterhin die freie Wahl (kein fester Day)
+          // Add flow -> optional inputs erlaubt.
           final days = _daysForWorkout(w.id).toList()..sort();
-          final res = await _openLogInputDialog(
+          final outcome = await _openLogDialog(
             w,
-            _getLatestLogFor(w.id),
+            latest: _getLatestLogFor(w.id),
             contextDay: null,
             availableDays: days,
+            creationMode: true,
           );
-          if (res != null) _addLog(w.id, res);
+          if (outcome == null) return;
+
+          if (outcome.log != null) {
+            _addLog(w.id, outcome.log!);
+          } else if (outcome.assignDay != null) {
+            // nur Zuweisung ohne Progress
+            _ensureAssigned(outcome.assignDay!, w.id);
+            setState(() {}); // UI refresh
+          }
         },
       ),
     );
   }
 
-  Future<LogInputResult?> _openLogInputDialog(
-      Workout w,
-      WorkoutLog? latest, {
-        String? contextDay,             // != null -> in Gruppe: Day fix & Feld versteckt
-        List<String> availableDays = const [], // By Exercise: Days als Chips
+  Future<LogOutcome?> _openLogDialog(
+      Workout w, {
+        WorkoutLog? latest,
+        String? contextDay,
+        List<String> availableDays = const [],
+        bool creationMode = false,
       }) {
-    return showDialog<LogInputResult>(
+    return showDialog<LogOutcome>(
       context: context,
       builder: (_) => LogInputDialog(
         workout: w,
         latest: latest,
         contextDay: contextDay,
         availableDays: availableDays,
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: _buildAppBar(),
-      body: _mode == ViewMode.byExercise
-          ? _buildWorkoutListBody()
-          : _buildDayListBody(),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _onAddPressed,
-        icon: const Icon(Icons.add),
-        label: const Text('Add'),
+        creationMode: creationMode,
       ),
     );
   }
@@ -769,6 +1022,7 @@ class DayDetailScreen extends StatefulWidget {
   final void Function(Workout workout) onShowHistory;
   final void Function(Workout workout) onDeleteForDay;
   final void Function(Workout workout) onDeleteAll;
+  final void Function(Workout workout) onUnassignFromDay; // NEW
   final void Function(List<String> newOrder) onReorder;
   final Color stripeColor;
 
@@ -781,6 +1035,7 @@ class DayDetailScreen extends StatefulWidget {
     required this.onShowHistory,
     required this.onDeleteForDay,
     required this.onDeleteAll,
+    required this.onUnassignFromDay,
     required this.onReorder,
     required this.stripeColor,
   });
@@ -837,6 +1092,9 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
                 if (value == 'delete_day') {
                   widget.onDeleteForDay(workout);
                 }
+                if (value == 'remove_plan') {
+                  widget.onUnassignFromDay(workout);
+                }
                 if (value == 'delete_all') {
                   widget.onDeleteAll(workout);
                 }
@@ -845,6 +1103,10 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
                 PopupMenuItem(
                   value: 'delete_day',
                   child: Text('Delete today’s logs only'),
+                ),
+                PopupMenuItem(
+                  value: 'remove_plan',
+                  child: Text('Remove from this plan (keep history)'),
                 ),
                 PopupMenuItem(
                   value: 'delete_all',
@@ -861,7 +1123,7 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
 }
 
 // ===============================================================
-// Gemeinsames Tile mit Streifen in Theme-Farbe (Drag-Handle)
+// Gemeinsames Tile mit Streifen (Drag-Handle) – NICHT ganz am Rand
 // ===============================================================
 class _ReorderTile extends StatelessWidget {
   final int index;
@@ -898,15 +1160,19 @@ class _ReorderTile extends StatelessWidget {
         ),
         child: Row(
           children: [
+            // Abstand zum Rand, damit der Handle besser tappbar ist
+            const SizedBox(width: 12),
+            // Drag-Handle
             ReorderableDelayedDragStartListener(
               index: index,
               child: Container(
-                width: 10,
-                height: 54,
+                width: 16, // etwas breiter für bessere Usability
+                height: 54, // ~ ListTile Höhe
                 color: leadingStripColor,
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 12),
+            // Inhalt
             Expanded(
               child: ListTile(
                 leading: CircleAvatar(child: avatar),
@@ -940,21 +1206,23 @@ class _ReorderTile extends StatelessWidget {
 }
 
 /// ===============================================================
-/// Dialog: Day-Auswahl je nach Kontext + Gewicht/Sets + Dropset
+/// Dialog: Day selection (kontextsensitiv) + optional/required Felder
 /// ===============================================================
 class LogInputDialog extends StatefulWidget {
   const LogInputDialog({
     required this.workout,
     this.latest,
-    this.contextDay,              // != null -> in Gruppe: Day fix, Feld versteckt
-    this.availableDays = const [],// By Exercise: Days als Chips
+    this.contextDay,
+    this.availableDays = const [],
+    this.creationMode = false, // Add = optional; Update = required
     super.key,
   });
 
   final Workout workout;
   final WorkoutLog? latest;
-  final String? contextDay;
+  final String? contextDay; // != null -> Day fix & Feld versteckt
   final List<String> availableDays;
+  final bool creationMode;
 
   @override
   State<LogInputDialog> createState() => _LogInputDialogState();
@@ -985,7 +1253,7 @@ class _LogInputDialogState extends State<LogInputDialog> {
     }
 
     if (_dayLocked) {
-      _chipDay = widget.contextDay; // wird unsichtbar, aber gesetzt
+      _chipDay = widget.contextDay; // invisible but used
     }
   }
 
@@ -1006,67 +1274,75 @@ class _LogInputDialogState extends State<LogInputDialog> {
 
   String _resolveChosenDay() {
     if (_dayLocked) return widget.contextDay!;
-    final String typed = _dayController.text.trim();
+    final typed = _dayController.text.trim();
     if (typed.isNotEmpty) return typed;
     if (_chipDay != null) return _chipDay!.trim();
     return '';
   }
 
-  bool _validateInputs() {
-    final double? kg = double.tryParse(_kgController.text.replaceAll(',', '.'));
-    final int? sets = int.tryParse(_setsController.text);
-    final String day = _resolveChosenDay();
+  bool _anyNumberFilled() =>
+      _kgController.text.trim().isNotEmpty ||
+          _setsController.text.trim().isNotEmpty;
 
-    if (kg == null) {
-      _showSnackBar('Please enter a valid weight');
+  bool _validateForTracking() {
+    final kg = double.tryParse(_kgController.text.replaceAll(',', '.'));
+    final sets = int.tryParse(_setsController.text);
+    final day = _resolveChosenDay();
+
+    if (kg == null || kg <= 0) {
+      _showSnackBar('Please enter a valid weight (> 0).');
       return false;
     }
-    if (kg <= 0) {
-      _showSnackBar('Weight must be greater than 0');
-      return false;
-    }
-    if (sets == null) {
-      _showSnackBar('Please enter a valid number of sets');
-      return false;
-    }
-    if (sets <= 0) {
-      _showSnackBar('Sets must be greater than 0');
+    if (sets == null || sets <= 0) {
+      _showSnackBar('Please enter a valid number of sets (> 0).');
       return false;
     }
     if (!_dayLocked && day.isEmpty) {
-      _showSnackBar('Please select or enter a workout day');
+      _showSnackBar('Please select or enter a workout day.');
       return false;
     }
     return true;
   }
 
-  void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  void _showSnackBar(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
   void _submit() {
-    if (!_validateInputs()) return;
+    // CREATE MODE: kein Gewicht/Sets -> Day auswählen -> nur Zuweisung
+    if (widget.creationMode && !_anyNumberFilled()) {
+      final day = _resolveChosenDay();
+      if (day.isEmpty && !_dayLocked) {
+        _showSnackBar('Pick a workout day to add this exercise to a group.');
+        return;
+      }
+      Navigator.pop<LogOutcome>(context, LogOutcome(assignDay: day));
+      return;
+    }
 
-    final double kg = double.parse(_kgController.text.replaceAll(',', '.'));
-    final int sets = int.parse(_setsController.text);
-    final String day = _resolveChosenDay();
+    // Ansonsten wird getrackt (volle Validierung)
+    if (!_validateForTracking()) return;
 
-    Navigator.pop<LogInputResult>(
+    final kg = double.parse(_kgController.text.replaceAll(',', '.'));
+    final sets = int.parse(_setsController.text);
+    final day = _resolveChosenDay();
+
+    Navigator.pop<LogOutcome>(
       context,
-      LogInputResult(
-        weightKg: kg,
-        sets: sets,
-        day: day,
-        isDropset: _isDropset,
+      LogOutcome(
+        log: WorkoutLog(
+          dateTime: DateTime.now(),
+          weightKg: kg,
+          sets: sets,
+          day: day,
+          isDropset: _isDropset,
+        ),
       ),
     );
   }
 
   Widget _buildDayInput(BuildContext context) {
-    if (_dayLocked) {
-      // In Gruppen-Ansicht nicht anzeigen (komplett weg)
-      return const SizedBox.shrink();
-    }
+    if (_dayLocked) return const SizedBox.shrink();
 
     final hasKnownDays = widget.availableDays.isNotEmpty;
 
@@ -1082,7 +1358,8 @@ class _LogInputDialogState extends State<LogInputDialog> {
             children: widget.availableDays
                 .map((d) => ChoiceChip(
               label: Text(d),
-              selected: _chipDay == d && _dayController.text.trim().isEmpty,
+              selected:
+              _chipDay == d && _dayController.text.trim().isEmpty,
               onSelected: (_) => _onChipSelected(d),
             ))
                 .toList(),
@@ -1092,7 +1369,11 @@ class _LogInputDialogState extends State<LogInputDialog> {
         TextField(
           controller: _dayController,
           decoration: InputDecoration(
-            labelText: hasKnownDays ? 'Other (type manually)' : 'Workout-Day (required)',
+            labelText: hasKnownDays
+                ? 'Other (type manually)'
+                : (widget.creationMode
+                ? 'Workout Day (optional)'
+                : 'Workout Day (required)'),
             hintText: hasKnownDays ? 'e.g. Push3' : 'e.g. Push / Pull / Leg …',
           ),
         ),
@@ -1102,8 +1383,8 @@ class _LogInputDialogState extends State<LogInputDialog> {
           child: Wrap(
             spacing: 8,
             runSpacing: 4,
-            children: kSuggestedWorkdays.map((String d) {
-              final bool selected =
+            children: kSuggestedWorkdays.map((d) {
+              final selected =
                   _chipDay == d && _dayController.text.trim().isEmpty;
               return ChoiceChip(
                 label: Text(d),
@@ -1123,10 +1404,10 @@ class _LogInputDialogState extends State<LogInputDialog> {
       children: <Widget>[
         TextField(
           controller: _kgController,
-          keyboardType:
-          const TextInputType.numberWithOptions(decimal: true),
-          decoration: const InputDecoration(
-            labelText: 'Weight (kg)',
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: InputDecoration(
+            labelText:
+            widget.creationMode ? 'Weight (kg) – optional' : 'Weight (kg)',
             hintText: 'e.g. 80',
           ),
         ),
@@ -1134,8 +1415,8 @@ class _LogInputDialogState extends State<LogInputDialog> {
         TextField(
           controller: _setsController,
           keyboardType: TextInputType.number,
-          decoration: const InputDecoration(
-            labelText: 'Sets',
+          decoration: InputDecoration(
+            labelText: widget.creationMode ? 'Sets – optional' : 'Sets',
             hintText: 'e.g. 3',
           ),
         ),
@@ -1161,7 +1442,7 @@ class _LogInputDialogState extends State<LogInputDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            _buildDayInput(context),     // je nach Kontext sichtbar/unsichtbar
+            _buildDayInput(context),
             const SizedBox(height: 12),
             _buildNumberFields(),
           ],
@@ -1174,7 +1455,7 @@ class _LogInputDialogState extends State<LogInputDialog> {
         ),
         FilledButton(
           onPressed: _submit,
-          child: const Text('Save'),
+          child: Text(widget.creationMode ? 'Save' : 'Update'),
         ),
       ],
     );

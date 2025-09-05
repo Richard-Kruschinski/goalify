@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-
 import 'screens/group_list_screen.dart';
 import 'screens/progress_screen.dart';
 import 'screens/daily_tasks_screen.dart';
 import 'screens/gym_screen.dart';
 import 'screens/login_screen.dart';
-import 'screens/profile_screen.dart'; // <— neu
+import 'screens/profile_screen.dart';
 
 void main() {
   runApp(const GoalifyApp());
@@ -59,7 +58,7 @@ class _MainNavState extends State<MainNav> {
           BottomNavigationBarItem(icon: Icon(Icons.check_circle),   label: 'Daily'),
           BottomNavigationBarItem(icon: Icon(Icons.show_chart),     label: 'Progress'),
           BottomNavigationBarItem(icon: Icon(Icons.fitness_center), label: 'Gym'),
-          BottomNavigationBarItem(icon: Icon(Icons.person),         label: 'Profile'), // <— neu
+          BottomNavigationBarItem(icon: Icon(Icons.person),         label: 'Profile'),
         ],
       ),
     );
