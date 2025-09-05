@@ -70,6 +70,20 @@
     "muscles": ["Calves (Gastrocnemius)"]
   },
   {
+    "id": "preacher_curls_machine",
+    "name": "Preacher Curls (Machine)",
+    "description": "Machine-supported preacher curl emphasizing controlled biceps isolation.",
+    "icon": "fitness_center",
+    "muscles": ["Biceps"]
+  },
+  {
+    "id": "concentration_curls",
+    "name": "Concentration Curls",
+    "description": "One-arm biceps curl. Focuses on peak contraction and isolation.",
+    "icon": "fitness_center",
+    "muscles": ["Biceps"]
+  },
+  {
     "id": "concentration_curls",
     "name": "Concentration Curls",
     "description": "One-arm biceps curl. Focuses on peak contraction and isolation.",

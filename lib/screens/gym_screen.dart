@@ -359,9 +359,8 @@ class _GymScreenState extends State<GymScreen> {
     setState(() {});
   }
 
-  // ---------- Reihenfolge: pro Day ----------
+  // ---------- Reihenfolge: pro Day (alle, inkl. nur-Logs) ----------
   List<Workout> _getWorkoutsForDayOrdered(String day) {
-    // Union aus Logs (die an diesem Day vorkommen) + Assignments
     final idsFromLogs = <String>{};
     _logs.forEach((wid, list) {
       if (list.any((l) => l.day == day)) idsFromLogs.add(wid);
@@ -370,7 +369,30 @@ class _GymScreenState extends State<GymScreen> {
 
     final ids = {...idsFromLogs, ...idsFromAssign}.toList();
 
-    // Ordnung pflegen/erweitern
+    final order = List<String>.from(_orderByDay[day] ?? const []);
+    bool changed = false;
+    for (final id in ids) {
+      if (!order.contains(id)) {
+        order.add(id);
+        changed = true;
+      }
+    }
+    if (changed) {
+      _orderByDay[day] = order;
+      _saveOrderByDay();
+    }
+
+    final filtered =
+    _workouts.where((w) => ids.contains(w.id)).toList(growable: false);
+    filtered.sort(
+            (a, b) => order.indexOf(a.id).compareTo(order.indexOf(b.id)));
+    return filtered;
+  }
+
+  // ---------- Nur zugewiesene Übungen für Day ----------
+  List<Workout> _getAssignedWorkoutsForDayOrdered(String day) {
+    final ids = _assignmentsByDay[day]?.toList() ?? <String>[];
+
     final order = List<String>.from(_orderByDay[day] ?? const []);
     bool changed = false;
     for (final id in ids) {
@@ -404,21 +426,15 @@ class _GymScreenState extends State<GymScreen> {
     // Zuweisungen bleiben bestehen (damit „ohne Progress“ weiter gelistet bleibt)
   }
 
-  // PERMANENTER LÖSCHEN: History, Assignments & Orders entfernen
+  // PERMANENT: History, Assignments & Orders entfernen
   void _deleteExerciseEverywhere(String workoutId) {
-    // Logs
     _logs.remove(workoutId);
-
-    // Assignments
     _assignmentsByDay.forEach((day, list) => list.remove(workoutId));
     _assignmentsByDay.removeWhere((_, list) => list.isEmpty);
-
-    // Orders
     _orderActive.remove(workoutId);
     _orderByDay.forEach((day, list) => list.remove(workoutId));
     _orderByDay.removeWhere((_, list) => list.isEmpty);
 
-    // Persist
     _saveLogs();
     _saveAssignments();
     _saveOrderActive();
@@ -427,62 +443,51 @@ class _GymScreenState extends State<GymScreen> {
     setState(() {});
   }
 
+  // Schlichte Bestätigung: komplette History löschen (alle Tage)
+  void _confirmClearHistoryAll(Workout w) {
+    showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text('Delete all logs for "${w.name}"?'),
+        content: const Text(
+          'This will remove the complete history for this exercise. '
+              'Assignments in your workout plan remain.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _deleteWorkoutLogsAll(w.id);
+            },
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Schlichte Bestätigung: Übung überall entfernen (inkl. Zuweisungen)
   void _confirmDeleteExercise(Workout w) {
     showDialog<void>(
       context: context,
-      builder: (_) {
-        String typed = '';
-        return StatefulBuilder(
-          builder: (ctx, setS) {
-            final canDelete = typed.trim() == w.name.trim();
-            return AlertDialog(
-              title: Text('Delete "${w.name}"?'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'This action cannot be undone.\n'
-                        'Type the exercise name to enable “Delete everywhere”.',
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    autofocus: true,
-                    onChanged: (v) => setS(() => typed = v),
-                    decoration: const InputDecoration(
-                      labelText: 'Confirm by typing the exact name',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                ],
-              ),
-              actions: [
-                // Nur Historie leeren – sicher gegen versehentliches Komplettlöschen
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(ctx);
-                    _deleteWorkoutLogsAll(w.id);
-                  },
-                  child: const Text('Clear history only'),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: const Text('Cancel'),
-                ),
-                FilledButton(
-                  onPressed: canDelete
-                      ? () {
-                    Navigator.pop(ctx);
-                    _deleteExerciseEverywhere(w.id);
-                  }
-                      : null,
-                  child: const Text('Delete everywhere'),
-                ),
-              ],
-            );
-          },
-        );
-      },
+      builder: (_) => AlertDialog(
+        title: Text('Remove "${w.name}" everywhere?'),
+        content: const Text(
+          'This will delete all logs and remove the exercise from every workout plan. '
+              'This cannot be undone.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _deleteExerciseEverywhere(w.id);
+            },
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -502,12 +507,9 @@ class _GymScreenState extends State<GymScreen> {
       context: context,
       builder: (_) => AlertDialog(
         title: Text('Clear history for "${w.name}" on $day?'),
-        content:
-        const Text('Only this exercise’s logs for this day will be deleted.'),
+        content: const Text('Only this exercise’s logs for this day will be deleted.'),
         actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
           FilledButton(
             onPressed: () {
               Navigator.pop(context);
@@ -589,6 +591,7 @@ class _GymScreenState extends State<GymScreen> {
     );
   }
 
+  // ----------------------------- UI -----------------------------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -604,7 +607,6 @@ class _GymScreenState extends State<GymScreen> {
     );
   }
 
-  // ----------------------------- UI -----------------------------
   PreferredSizeWidget _buildAppBar() => AppBar(
     title: const Text('Gym'),
     actions: [_buildViewModeMenu()],
@@ -622,8 +624,7 @@ class _GymScreenState extends State<GymScreen> {
     ],
   );
 
-  PopupMenuItem<ViewMode> _buildViewModeMenuItem(
-      ViewMode m, String label) =>
+  PopupMenuItem<ViewMode> _buildViewModeMenuItem(ViewMode m, String label) =>
       PopupMenuItem<ViewMode>(
         value: m,
         child: Row(children: [
@@ -670,9 +671,9 @@ class _GymScreenState extends State<GymScreen> {
               if (value == 'remove_plan') {
                 await _openUnassignDialog(w);
               } else if (value == 'clear_history') {
-                _deleteWorkoutLogsAll(w.id);
+                _confirmClearHistoryAll(w); // schlichte Bestätigung
               } else if (value == 'delete_everywhere') {
-                _confirmDeleteExercise(w);
+                _confirmDeleteExercise(w); // schlichte Bestätigung
               }
             },
             itemBuilder: (_) => const [
@@ -696,8 +697,8 @@ class _GymScreenState extends State<GymScreen> {
             final outcome = await _openLogDialog(
               w,
               latest: latest,
-              contextDay: null,                // By Exercise -> kein fester Day
-              availableDays: days,             // Days als Chips wählbar
+              contextDay: null, // By Exercise -> kein fester Day
+              availableDays: days, // Days als Chips wählbar
               creationMode: false,
             );
             if (outcome == null) return;
@@ -710,21 +711,13 @@ class _GymScreenState extends State<GymScreen> {
 
   // Day-Auswahl
   Widget _buildDayListBody() {
-    final allDays = <String>{};
-    // aus Logs
-    for (final list in _logs.values) {
-      for (final log in list) {
-        allDays.add(log.day);
-      }
-    }
-    // plus aus Assignments
-    allDays.addAll(_assignmentsByDay.keys);
+    // Nur noch die Schlüssel aus _assignmentsByDay
+    final days = _assignmentsByDay.keys.toList()..sort();
 
-    if (allDays.isEmpty) {
+    if (days.isEmpty) {
       return const Center(child: Text('No workout days available yet'));
     }
 
-    final days = allDays.toList()..sort();
     return ListView.separated(
       itemCount: days.length,
       separatorBuilder: (_, __) => const Divider(height: 0),
@@ -737,7 +730,8 @@ class _GymScreenState extends State<GymScreen> {
   }
 
   void _openDayDetail(String day) {
-    final ordered = _getWorkoutsForDayOrdered(day);
+    // Nur zugewiesene Übungen anzeigen
+    final ordered = _getAssignedWorkoutsForDayOrdered(day);
     final stripe = Theme.of(context).colorScheme.primary;
 
     Navigator.push(
@@ -760,7 +754,7 @@ class _GymScreenState extends State<GymScreen> {
           },
           onShowHistory: _openHistoryDialog,
           onDeleteForDay: (w) => _confirmDeleteForDay(w, day),
-          onDeleteAll: _confirmDeleteExercise,
+          onDeleteAll: _confirmClearHistoryAll, // schlichte Bestätigung
           onUnassignFromDay: (w) => _removeAssignmentForDay(day, w.id),
           onReorder: (ids) => _reorderDay(day, ids),
           stripeColor: stripe,
@@ -796,16 +790,14 @@ class _GymScreenState extends State<GymScreen> {
               subtitle: Text('${log.day}  •  ${_formatDate(log.dateTime)}'),
               trailing: log.isDropset
                   ? Container(
-                padding:
-                const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: cs.primaryContainer,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   'Dropset',
-                  style: TextStyle(
-                      color: cs.onPrimaryContainer, fontSize: 12),
+                  style: TextStyle(color: cs.onPrimaryContainer, fontSize: 12),
                 ),
               )
                   : null,
@@ -814,8 +806,7 @@ class _GymScreenState extends State<GymScreen> {
         ),
       ),
       actions: [
-        TextButton(
-            onPressed: () => Navigator.pop(context), child: const Text('OK'))
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK'))
       ],
     );
   }
@@ -1094,6 +1085,9 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
                 }
                 if (value == 'remove_plan') {
                   widget.onUnassignFromDay(workout);
+                  setState(() {
+                    _list.removeWhere((w) => w.id == workout.id);
+                  });
                 }
                 if (value == 'delete_all') {
                   widget.onDeleteAll(workout);
@@ -1160,19 +1154,16 @@ class _ReorderTile extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // Abstand zum Rand, damit der Handle besser tappbar ist
             const SizedBox(width: 12),
-            // Drag-Handle
             ReorderableDelayedDragStartListener(
               index: index,
               child: Container(
-                width: 16, // etwas breiter für bessere Usability
-                height: 54, // ~ ListTile Höhe
+                width: 16,
+                height: 54,
                 color: leadingStripColor,
               ),
             ),
             const SizedBox(width: 12),
-            // Inhalt
             Expanded(
               child: ListTile(
                 leading: CircleAvatar(child: avatar),
