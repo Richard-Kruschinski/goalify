@@ -45,9 +45,8 @@ class Workout {
     name: m['name'] as String,
     description: m['description'] as String,
     icon: _iconFromString(m['icon'] as String),
-    muscles: (m['muscles'] as List<dynamic>? ?? const [])
-        .map((e) => e.toString())
-        .toList(),
+    muscles:
+    (m['muscles'] as List<dynamic>? ?? const []).map((e) => e.toString()).toList(),
   );
 }
 
@@ -56,14 +55,14 @@ class WorkoutLog {
   final double weightKg;
   final int sets;
   final String day;
-  final bool isDropset; // NEW
+  final bool isDropset;
 
   const WorkoutLog({
     required this.dateTime,
     required this.weightKg,
     required this.sets,
     required this.day,
-    this.isDropset = false, // default for backward compatibility
+    this.isDropset = false,
   });
 
   Map<String, dynamic> toMap() => {
@@ -71,7 +70,7 @@ class WorkoutLog {
     'weightKg': weightKg,
     'sets': sets,
     'day': day,
-    'isDropset': isDropset, // persist
+    'isDropset': isDropset,
   };
 
   factory WorkoutLog.fromMap(Map<String, dynamic> m) => WorkoutLog(
@@ -79,7 +78,7 @@ class WorkoutLog {
     weightKg: (m['weightKg'] as num).toDouble(),
     sets: (m['sets'] as num).toInt(),
     day: m['day'] as String,
-    isDropset: (m['isDropset'] as bool?) ?? false, // default if missing
+    isDropset: (m['isDropset'] as bool?) ?? false,
   );
 }
 
@@ -87,7 +86,7 @@ class LogInputResult {
   final double weightKg;
   final int sets;
   final String day;
-  final bool isDropset; // NEW
+  final bool isDropset;
   const LogInputResult({
     required this.weightKg,
     required this.sets,
@@ -212,6 +211,17 @@ class _GymScreenState extends State<GymScreen> {
     return list.last;
   }
 
+  Set<String> _daysForWorkout(String workoutId) {
+    final out = <String>{};
+    final list = _logs[workoutId];
+    if (list != null) {
+      for (final l in list) {
+        out.add(l.day);
+      }
+    }
+    return out;
+  }
+
   String _formatDate(DateTime dt) =>
       '${dt.day.toString().padLeft(2, '0')}.${dt.month.toString().padLeft(2, '0')}.${dt.year}';
 
@@ -223,7 +233,7 @@ class _GymScreenState extends State<GymScreen> {
         weightKg: result.weightKg,
         sets: result.sets,
         day: result.day,
-        isDropset: result.isDropset, // NEW
+        isDropset: result.isDropset,
       ));
     });
     _saveLogs();
@@ -432,7 +442,13 @@ class _GymScreenState extends State<GymScreen> {
           onHistory: () => _openHistoryDialog(w),
           onDelete: () => _confirmDeleteExercise(w),
           onTap: () async {
-            final res = await _openLogInputDialog(w, latest);
+            final days = _daysForWorkout(w.id).toList()..sort();
+            final res = await _openLogInputDialog(
+              w,
+              latest,
+              contextDay: null,                 // By Exercise -> keine feste Gruppe
+              availableDays: days,              // Days als Chips wählbar
+            );
             if (res != null) _addLog(w.id, res);
           },
         );
@@ -476,7 +492,13 @@ class _GymScreenState extends State<GymScreen> {
           orderedWorkouts: ordered,
           latestForDay: _latestForDay,
           onEdit: (w, latest) async {
-            final res = await _openLogInputDialog(w, latest);
+            // In einer Gruppe: Day ist fest -> Feld wird im Dialog ausgeblendet
+            final res = await _openLogInputDialog(
+              w,
+              latest,
+              contextDay: day,
+              availableDays: const [],
+            );
             if (res != null) _addLog(w.id, res);
           },
           onShowHistory: _openHistoryDialog,
@@ -501,7 +523,7 @@ class _GymScreenState extends State<GymScreen> {
     final cs = Theme.of(context).colorScheme;
 
     return AlertDialog(
-      title: Text('Historie – ${w.name}'),
+      title: Text('History – ${w.name}'),
       content: SizedBox(
         width: double.maxFinite,
         child: ListView.separated(
@@ -524,7 +546,8 @@ class _GymScreenState extends State<GymScreen> {
                 ),
                 child: Text(
                   'Dropset',
-                  style: TextStyle(color: cs.onPrimaryContainer, fontSize: 12),
+                  style: TextStyle(
+                      color: cs.onPrimaryContainer, fontSize: 12),
                 ),
               )
                   : null,
@@ -549,7 +572,14 @@ class _GymScreenState extends State<GymScreen> {
         workouts: _workouts,
         latestFor: _getLatestLogFor,
         onAddOrUpdate: (w) async {
-          final res = await _openLogInputDialog(w, _getLatestLogFor(w.id));
+          // Beim Hinzufügen wollen wir weiterhin die freie Wahl (kein fester Day)
+          final days = _daysForWorkout(w.id).toList()..sort();
+          final res = await _openLogInputDialog(
+            w,
+            _getLatestLogFor(w.id),
+            contextDay: null,
+            availableDays: days,
+          );
           if (res != null) _addLog(w.id, res);
         },
       ),
@@ -557,10 +587,19 @@ class _GymScreenState extends State<GymScreen> {
   }
 
   Future<LogInputResult?> _openLogInputDialog(
-      Workout w, WorkoutLog? latest) {
+      Workout w,
+      WorkoutLog? latest, {
+        String? contextDay,             // != null -> in Gruppe: Day fix & Feld versteckt
+        List<String> availableDays = const [], // By Exercise: Days als Chips
+      }) {
     return showDialog<LogInputResult>(
       context: context,
-      builder: (_) => LogInputDialog(workout: w, latest: latest),
+      builder: (_) => LogInputDialog(
+        workout: w,
+        latest: latest,
+        contextDay: contextDay,
+        availableDays: availableDays,
+      ),
     );
   }
 
@@ -792,7 +831,6 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
             avatar: Icon(workout.icon),
             onHistory: () => widget.onShowHistory(workout),
             onTap: () => widget.onEdit(workout, latest),
-            // Menü für Delete-Aktionen
             trailingMore: PopupMenuButton<String>(
               tooltip: 'more',
               onSelected: (value) {
@@ -852,7 +890,7 @@ class _ReorderTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      key: key, // important for Reorderable
+      key: key,
       child: Container(
         decoration: const BoxDecoration(
           border:
@@ -860,18 +898,15 @@ class _ReorderTile extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // Stripe = drag handle (long-press)
             ReorderableDelayedDragStartListener(
               index: index,
               child: Container(
                 width: 10,
-                height: 54, // ~ ListTile height
+                height: 54,
                 color: leadingStripColor,
               ),
             ),
             const SizedBox(width: 8),
-
-            // Content
             Expanded(
               child: ListTile(
                 leading: CircleAvatar(child: avatar),
@@ -905,17 +940,21 @@ class _ReorderTile extends StatelessWidget {
 }
 
 /// ===============================================================
-/// Dialog: Eingabe Day (pflicht), Gewicht & Sets + Dropset Toggle
+/// Dialog: Day-Auswahl je nach Kontext + Gewicht/Sets + Dropset
 /// ===============================================================
 class LogInputDialog extends StatefulWidget {
   const LogInputDialog({
     required this.workout,
     this.latest,
+    this.contextDay,              // != null -> in Gruppe: Day fix, Feld versteckt
+    this.availableDays = const [],// By Exercise: Days als Chips
     super.key,
   });
 
   final Workout workout;
   final WorkoutLog? latest;
+  final String? contextDay;
+  final List<String> availableDays;
 
   @override
   State<LogInputDialog> createState() => _LogInputDialogState();
@@ -927,7 +966,9 @@ class _LogInputDialogState extends State<LogInputDialog> {
   late final TextEditingController _dayController;
 
   String? _chipDay;
-  bool _isDropset = false; // NEW
+  bool _isDropset = false;
+
+  bool get _dayLocked => widget.contextDay != null;
 
   @override
   void initState() {
@@ -939,8 +980,12 @@ class _LogInputDialogState extends State<LogInputDialog> {
     if (widget.latest != null) {
       _kgController.text = widget.latest!.weightKg.toStringAsFixed(1);
       _setsController.text = widget.latest!.sets.toString();
-      _dayController.text = widget.latest!.day;
-      _isDropset = widget.latest!.isDropset; // prefill from latest
+      _isDropset = widget.latest!.isDropset;
+      if (!_dayLocked) _dayController.text = widget.latest!.day;
+    }
+
+    if (_dayLocked) {
+      _chipDay = widget.contextDay; // wird unsichtbar, aber gesetzt
     }
   }
 
@@ -960,6 +1005,7 @@ class _LogInputDialogState extends State<LogInputDialog> {
   }
 
   String _resolveChosenDay() {
+    if (_dayLocked) return widget.contextDay!;
     final String typed = _dayController.text.trim();
     if (typed.isNotEmpty) return typed;
     if (_chipDay != null) return _chipDay!.trim();
@@ -987,7 +1033,7 @@ class _LogInputDialogState extends State<LogInputDialog> {
       _showSnackBar('Sets must be greater than 0');
       return false;
     }
-    if (day.isEmpty) {
+    if (!_dayLocked && day.isEmpty) {
       _showSnackBar('Please select or enter a workout day');
       return false;
     }
@@ -1011,20 +1057,43 @@ class _LogInputDialogState extends State<LogInputDialog> {
         weightKg: kg,
         sets: sets,
         day: day,
-        isDropset: _isDropset, // NEW
+        isDropset: _isDropset,
       ),
     );
   }
 
-  Widget _buildDayInput() {
+  Widget _buildDayInput(BuildContext context) {
+    if (_dayLocked) {
+      // In Gruppen-Ansicht nicht anzeigen (komplett weg)
+      return const SizedBox.shrink();
+    }
+
+    final hasKnownDays = widget.availableDays.isNotEmpty;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
+        if (hasKnownDays) ...[
+          Text('Workout Day', style: Theme.of(context).textTheme.titleSmall),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            children: widget.availableDays
+                .map((d) => ChoiceChip(
+              label: Text(d),
+              selected: _chipDay == d && _dayController.text.trim().isEmpty,
+              onSelected: (_) => _onChipSelected(d),
+            ))
+                .toList(),
+          ),
+          const SizedBox(height: 10),
+        ],
         TextField(
           controller: _dayController,
-          decoration: const InputDecoration(
-            labelText: 'Workout-Day (required)',
-            hintText: 'e.g. Push / Pull / Leg …',
+          decoration: InputDecoration(
+            labelText: hasKnownDays ? 'Other (type manually)' : 'Workout-Day (required)',
+            hintText: hasKnownDays ? 'e.g. Push3' : 'e.g. Push / Pull / Leg …',
           ),
         ),
         const SizedBox(height: 8),
@@ -1071,7 +1140,6 @@ class _LogInputDialogState extends State<LogInputDialog> {
           ),
         ),
         const SizedBox(height: 12),
-        // NEW: Dropset toggle (uses app theme color)
         CheckboxListTile(
           value: _isDropset,
           onChanged: (v) => setState(() => _isDropset = v ?? false),
@@ -1093,7 +1161,7 @@ class _LogInputDialogState extends State<LogInputDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            _buildDayInput(),
+            _buildDayInput(context),     // je nach Kontext sichtbar/unsichtbar
             const SizedBox(height: 12),
             _buildNumberFields(),
           ],
