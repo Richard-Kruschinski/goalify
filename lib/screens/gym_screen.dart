@@ -107,7 +107,8 @@ class _GymScreenState extends State<GymScreen> {
   static const _kGymViewKey = 'gym_view_mode_v1';
   static const _kOrderActiveKey = 'gym_order_by_exercise_v1';
   static const _kOrderByDayKey = 'gym_order_by_day_v1';
-  static const _kAssignmentsKey = 'gym_assignments_by_day_v1'; // NEW
+  static const _kAssignmentsKey = 'gym_assignments_by_day_v1';
+  static const _kOrderDaysKey = 'gym_order_days_v1'; // NEW: Reihenfolge der Days
 
   ViewMode _mode = ViewMode.byExercise;
 
@@ -122,6 +123,9 @@ class _GymScreenState extends State<GymScreen> {
   // NEW: Zuweisungen „Übung gehört zu Day“, auch ohne History
   final Map<String, List<String>> _assignmentsByDay = <String, List<String>>{};
 
+  // NEW: Reihenfolge der Workout-Days
+  List<String> _orderDays = <String>[];
+
   @override
   void initState() {
     super.initState();
@@ -130,7 +134,7 @@ class _GymScreenState extends State<GymScreen> {
 
   Future<void> _bootstrap() async {
     await _loadWorkoutsFromAsset();
-    await _loadState(); // view-mode, logs, orders, assignments
+    await _loadState(); // view-mode, logs, orders, assignments, day-order
     if (mounted) setState(() {});
   }
 
@@ -176,7 +180,7 @@ class _GymScreenState extends State<GymScreen> {
         ? orderActiveRaw.map((e) => e.toString()).toList()
         : <String>[];
 
-    // Order per day
+    // Order per day (Workouts innerhalb eines Days)
     final orderByDayRaw =
     await LocalStorage.loadJson(_kOrderByDayKey, fallback: {});
     _orderByDay.clear();
@@ -201,6 +205,16 @@ class _GymScreenState extends State<GymScreen> {
         }
       });
     }
+
+    // NEW: Order der Days
+    final orderDaysRaw =
+    await LocalStorage.loadJson(_kOrderDaysKey, fallback: []);
+    _orderDays = (orderDaysRaw is List)
+        ? orderDaysRaw.map((e) => e.toString()).toList()
+        : <String>[];
+
+    // Beim Laden direkt aufräumen/anreichern
+    _syncOrderDaysWithAssignments();
   }
 
   Future<void> _saveLogs() async {
@@ -221,11 +235,16 @@ class _GymScreenState extends State<GymScreen> {
   Future<void> _saveAssignments() async =>
       LocalStorage.saveJson(_kAssignmentsKey, _assignmentsByDay);
 
+  Future<void> _saveOrderDays() async =>
+      LocalStorage.saveJson(_kOrderDaysKey, _orderDays);
+
   // ----------------------------- Helpers: Assignments -----------------------------
   void _ensureAssigned(String day, String workoutId) {
     final list = _assignmentsByDay.putIfAbsent(day, () => <String>[]);
+    bool changed = false;
     if (!list.contains(workoutId)) {
       list.add(workoutId);
+      changed = true;
       _saveAssignments();
     }
     // für Reorder-Liste pro Day ebenfalls sicherstellen
@@ -234,16 +253,28 @@ class _GymScreenState extends State<GymScreen> {
       order.add(workoutId);
       _saveOrderByDay();
     }
+
+    // NEW: Day in Order aufnehmen, falls neu
+    if (!_orderDays.contains(day)) {
+      _orderDays.add(day);
+      _saveOrderDays();
+    }
+    if (changed) setState(() {});
   }
 
   void _removeAssignmentForDay(String day, String workoutId) {
     final list = _assignmentsByDay[day];
     if (list == null) return;
     list.remove(workoutId);
-    if (list.isEmpty) _assignmentsByDay.remove(day);
+    if (list.isEmpty) {
+      _assignmentsByDay.remove(day);
+      // Auch aus der Day-Order entfernen, wenn der Day leer ist
+      _orderDays.remove(day);
+      _saveOrderDays();
+    }
     _saveAssignments();
 
-    // Auch aus der Day-Reihenfolge entfernen
+    // Auch aus der Day-Reihenfolge (Workouts) entfernen
     final order = _orderByDay[day];
     if (order != null) {
       order.remove(workoutId);
@@ -419,6 +450,51 @@ class _GymScreenState extends State<GymScreen> {
     setState(() {});
   }
 
+  // ---------- Day-Order (Gruppen-Reihenfolge) ----------
+  void _syncOrderDaysWithAssignments() {
+    final activeDays = _assignmentsByDay.keys.toList();
+
+    bool changed = false;
+
+    // fehlende aktive Days hinten anhängen
+    for (final d in activeDays) {
+      if (!_orderDays.contains(d)) {
+        _orderDays.add(d);
+        changed = true;
+      }
+    }
+    // Days entfernen, die nicht mehr aktiv sind
+    final activeSet = activeDays.toSet();
+    final beforeLen = _orderDays.length;
+    _orderDays.removeWhere((d) => !activeSet.contains(d));
+    if (_orderDays.length != beforeLen) changed = true;
+
+    if (changed) _saveOrderDays();
+  }
+
+  List<String> _getOrderedDays() {
+    _syncOrderDaysWithAssignments();
+    // jetzt nur aktive Days in ihrer gespeicherten Reihenfolge
+    return List<String>.from(_orderDays);
+  }
+
+  void _reorderDays(int oldIndex, int newIndex) {
+    if (newIndex > oldIndex) newIndex -= 1;
+    final days = _getOrderedDays();
+    if (days.isEmpty) return;
+
+    final moved = days.removeAt(oldIndex);
+    days.insert(newIndex, moved);
+
+    // _orderDays so aktualisieren, dass die aktive Reihenfolge vorne steht
+    final setDays = days.toSet();
+    _orderDays.removeWhere(setDays.contains);
+    _orderDays.insertAll(0, days);
+
+    _saveOrderDays();
+    setState(() {});
+  }
+
   // ----------------------------- Delete + Dialoge -----------------------------
   void _deleteWorkoutLogsAll(String workoutId) {
     setState(() => _logs.remove(workoutId));
@@ -429,16 +505,25 @@ class _GymScreenState extends State<GymScreen> {
   // PERMANENT: History, Assignments & Orders entfernen
   void _deleteExerciseEverywhere(String workoutId) {
     _logs.remove(workoutId);
+
+    // Assignments
     _assignmentsByDay.forEach((day, list) => list.remove(workoutId));
     _assignmentsByDay.removeWhere((_, list) => list.isEmpty);
+
+    // Orders
     _orderActive.remove(workoutId);
     _orderByDay.forEach((day, list) => list.remove(workoutId));
     _orderByDay.removeWhere((_, list) => list.isEmpty);
 
+    // NEW: leere Days aus der Day-Order entfernen
+    _orderDays.removeWhere((d) => !_assignmentsByDay.containsKey(d));
+
+    // Persist
     _saveLogs();
     _saveAssignments();
     _saveOrderActive();
     _saveOrderByDay();
+    _saveOrderDays();
 
     setState(() {});
   }
@@ -709,23 +794,33 @@ class _GymScreenState extends State<GymScreen> {
     );
   }
 
-  // Day-Auswahl
+  // Day-Auswahl (nur zugewiesene Days) – jetzt mit Reorder
   Widget _buildDayListBody() {
-    // Nur noch die Schlüssel aus _assignmentsByDay
-    final days = _assignmentsByDay.keys.toList()..sort();
+    final days = _getOrderedDays();
 
     if (days.isEmpty) {
       return const Center(child: Text('No workout days available yet'));
     }
 
-    return ListView.separated(
+    final stripe = Theme.of(context).colorScheme.primary;
+
+    return ReorderableListView.builder(
+      padding: const EdgeInsets.only(bottom: 24, top: 8),
       itemCount: days.length,
-      separatorBuilder: (_, __) => const Divider(height: 0),
-      itemBuilder: (_, i) => ListTile(
-        leading: const Icon(Icons.fitness_center),
-        title: Text(days[i]),
-        onTap: () => _openDayDetail(days[i]),
-      ),
+      onReorder: _reorderDays,
+      buildDefaultDragHandles: false,
+      itemBuilder: (_, i) {
+        final day = days[i];
+        final count = _assignmentsByDay[day]?.length ?? 0;
+        return _ReorderDayTile(
+          key: ValueKey('day_$day'),
+          index: i,
+          leadingStripColor: stripe,
+          title: Text(day),
+          subtitle: Text('$count exercise${count == 1 ? '' : 's'}'),
+          onTap: () => _openDayDetail(day),
+        );
+      },
     );
   }
 
@@ -1154,16 +1249,19 @@ class _ReorderTile extends StatelessWidget {
         ),
         child: Row(
           children: [
+            // Abstand zum Rand, damit der Handle besser tappbar ist
             const SizedBox(width: 12),
+            // Drag-Handle
             ReorderableDelayedDragStartListener(
               index: index,
               child: Container(
-                width: 16,
-                height: 54,
+                width: 16, // etwas breiter für bessere Usability
+                height: 54, // ~ ListTile Höhe
                 color: leadingStripColor,
               ),
             ),
             const SizedBox(width: 12),
+            // Inhalt
             Expanded(
               child: ListTile(
                 leading: CircleAvatar(child: avatar),
@@ -1187,6 +1285,62 @@ class _ReorderTile extends StatelessWidget {
                       ),
                   ],
                 ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ===============================================================
+// Day-Tile mit Streifen (nur Titel + optional Subtitle)
+// ===============================================================
+class _ReorderDayTile extends StatelessWidget {
+  final int index;
+  final Color leadingStripColor;
+  final Widget title;
+  final Widget? subtitle;
+  final VoidCallback onTap;
+
+  const _ReorderDayTile({
+    super.key,
+    required this.index,
+    required this.leadingStripColor,
+    required this.title,
+    this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      key: key,
+      child: Container(
+        decoration: const BoxDecoration(
+          border:
+          Border(bottom: BorderSide(width: 0.5, color: Color(0x1F000000))),
+        ),
+        child: Row(
+          children: [
+            const SizedBox(width: 12),
+            ReorderableDelayedDragStartListener(
+              index: index,
+              child: Container(
+                width: 16,
+                height: 54,
+                color: leadingStripColor,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: ListTile(
+                leading: const Icon(Icons.fitness_center),
+                title: title,
+                subtitle: subtitle,
+                trailing: const Icon(Icons.chevron_right),
+                onTap: onTap,
               ),
             ),
           ],

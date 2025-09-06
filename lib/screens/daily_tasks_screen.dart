@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../storage/local_storage.dart'; // Pfad ggf. anpassen
+import '../storage/local_storage.dart';
 
-/// --- Model ---
+/// ===============================================================
+/// Model
+/// ===============================================================
 class DailyTask {
   final String id;
   final String title;
@@ -10,7 +12,13 @@ class DailyTask {
   final String? category; // z. B. Gym, Work, Leisure
   final int points;
   final bool keep; // true = bleibt über Tage, false = nur heute
-  bool done;
+
+  // --- Streaks ---
+  int streak;                // aktuelle Streak-Länge (Tage)
+  int bestStreak;            // Bestleistung
+  String? lastDoneKey;       // Datumsschlüssel des letzten erledigten Tages (yyyy-mm-dd)
+
+  bool done;                 // "heute" abgehakt (wird beim Tageswechsel zurückgesetzt)
 
   DailyTask({
     required this.id,
@@ -18,7 +26,10 @@ class DailyTask {
     this.description,
     this.category,
     this.points = 1,
-    this.keep = false, // Standard: nur für heute
+    this.keep = false,
+    this.streak = 0,
+    this.bestStreak = 0,
+    this.lastDoneKey,
     this.done = false,
   });
 
@@ -30,6 +41,9 @@ class DailyTask {
     'points': points,
     'keep': keep,
     'done': done,
+    'streak': streak,
+    'bestStreak': bestStreak,
+    'lastDoneKey': lastDoneKey,
   };
 
   factory DailyTask.fromMap(Map<String, dynamic> m) => DailyTask(
@@ -40,10 +54,15 @@ class DailyTask {
     points: (m['points'] ?? 1) as int,
     keep: (m['keep'] ?? false) as bool,
     done: (m['done'] ?? false) as bool,
+    streak: (m['streak'] ?? 0) as int,
+    bestStreak: (m['bestStreak'] ?? 0) as int,
+    lastDoneKey: m['lastDoneKey'] as String?,
   );
 }
 
-/// --- Screen ---
+/// ===============================================================
+/// Screen
+/// ===============================================================
 class DailyTasksScreen extends StatefulWidget {
   const DailyTasksScreen({super.key});
   @override
@@ -52,11 +71,25 @@ class DailyTasksScreen extends StatefulWidget {
 
 class _DailyTasksScreenState extends State<DailyTasksScreen>
     with WidgetsBindingObserver {
+  // Storage Keys
   static const _kDailyTasksKey = 'daily_tasks_v1';
   static const _kDailyRolloverKey = 'daily_last_rollover_v1';
 
+  // Reihenfolge, Freeze-Tokens & -Nutzung (aus deiner letzten Version)
+  static const _kDailyOrderKey = 'daily_tasks_order_v1';
+  static const _kFreezeTokensKey = 'daily_freeze_tokens_v1';
+  static const _kFreezeDaysCounterKey = 'daily_freeze_days_counter_v1';
+  static const _kFreezeUsageKey = 'daily_freeze_usage_v1'; // Map<dateKey, List<taskId>>
+
   final List<DailyTask> _tasks = [];
+  List<String> _order = [];
+
   int _todayPoints = 0;
+
+  // Freeze-State
+  int _freezeTokens = 0;
+  int _freezeDaysCounter = 0;
+  final Map<String, List<String>> _freezeUsageByDate = {};
 
   @override
   void initState() {
@@ -78,13 +111,15 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     }
   }
 
-  String _todayKey() {
-    final now = DateTime.now();
-    final y = now.year.toString().padLeft(4, '0');
-    final m = now.month.toString().padLeft(2, '0');
-    final d = now.day.toString().padLeft(2, '0');
+  String _dateKey(DateTime dt) {
+    final y = dt.year.toString().padLeft(4, '0');
+    final m = dt.month.toString().padLeft(2, '0');
+    final d = dt.day.toString().padLeft(2, '0');
     return '$y-$m-$d';
   }
+
+  String _todayKey() => _dateKey(DateTime.now());
+  String _yesterdayKey() => _dateKey(DateTime.now().subtract(const Duration(days: 1)));
 
   // ---- Progress: Heutige Punkte persistieren ----
   Future<void> _saveProgressToday() async {
@@ -95,8 +130,11 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     await LocalStorage.saveJson('progress_history_v1', hist);
   }
 
-  // 🔽 Laden & Speichern
+  // ===============================================================
+  // Laden & Speichern
+  // ===============================================================
   Future<void> _load() async {
+    // Tasks
     final raw = await LocalStorage.loadJson(_kDailyTasksKey, fallback: []);
     if (raw is List) {
       _tasks
@@ -104,22 +142,88 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
         ..addAll(
           raw.map((e) => DailyTask.fromMap(Map<String, dynamic>.from(e))),
         );
-      await _dailyRolloverIfNeeded(); // Tageswechsel anwenden (löschen/entchecken)
-      _recalcTodayPoints();
-      await _saveProgressToday(); // sicherstellen, dass der heutige Stand gespeichert ist
-      if (mounted) setState(() {});
     }
+
+    // Reihenfolge
+    final orderRaw = await LocalStorage.loadJson(_kDailyOrderKey, fallback: []);
+    _order = (orderRaw is List) ? orderRaw.map((e) => e.toString()).toList() : <String>[];
+    _syncOrderWithTasks(); // ergänzt/aufräumt
+
+    // Freeze-State (von deiner Version)
+    _freezeTokens = (await LocalStorage.loadJson(_kFreezeTokensKey, fallback: null)) as int? ?? 2;
+    _freezeDaysCounter =
+        (await LocalStorage.loadJson(_kFreezeDaysCounterKey, fallback: 0)) as int? ?? 0;
+
+    final fuRaw = await LocalStorage.loadJson(_kFreezeUsageKey, fallback: {});
+    _freezeUsageByDate.clear();
+    if (fuRaw is Map) {
+      fuRaw.forEach((k, v) {
+        if (v is List) {
+          _freezeUsageByDate[k.toString()] = v.map((e) => e.toString()).toList();
+        }
+      });
+    }
+
+    await _dailyRolloverIfNeeded(); // Tageswechsel anwenden
+    _recalcTodayPoints();
+    await _saveProgressToday();
+    if (mounted) setState(() {});
   }
 
-  Future<void> _save() async {
+  Future<void> _saveTasks() async {
     await LocalStorage.saveJson(
       _kDailyTasksKey,
       _tasks.map((t) => t.toMap()).toList(),
     );
   }
 
+  Future<void> _saveOrder() async => LocalStorage.saveJson(_kDailyOrderKey, _order);
+  Future<void> _saveFreezeState() async {
+    await LocalStorage.saveJson(_kFreezeTokensKey, _freezeTokens);
+    await LocalStorage.saveJson(_kFreezeDaysCounterKey, _freezeDaysCounter);
+    await LocalStorage.saveJson(_kFreezeUsageKey, _freezeUsageByDate);
+  }
+
+  void _syncOrderWithTasks() {
+    final ids = _tasks.map((t) => t.id).toList();
+    bool changed = false;
+
+    // fehlende anhängen
+    for (final id in ids) {
+      if (!_order.contains(id)) {
+        _order.add(id);
+        changed = true;
+      }
+    }
+    // nicht mehr vorhandene entfernen
+    final setIds = ids.toSet();
+    final before = _order.length;
+    _order.removeWhere((id) => !setIds.contains(id));
+    if (before != _order.length) changed = true;
+
+    if (changed) _saveOrder();
+  }
+
+  List<DailyTask> _orderedTasks() {
+    _syncOrderWithTasks();
+    final map = {for (final t in _tasks) t.id: t};
+    return _order.map((id) => map[id]).whereType<DailyTask>().toList(growable: false);
+  }
+
+  // ===============================================================
+  // Daily Rollover + Streak/Freeze-Logik
+  // ===============================================================
   Future<void> _markRolloverDoneForToday() async {
     await LocalStorage.saveJson(_kDailyRolloverKey, _todayKey());
+  }
+
+  bool _wasFrozenOn(String dateKey, String taskId) {
+    final list = _freezeUsageByDate[dateKey];
+    return list != null && list.contains(taskId);
+  }
+
+  void _clearFreezeForDate(String dateKey) {
+    _freezeUsageByDate.remove(dateKey);
   }
 
   Future<void> _dailyRolloverIfNeeded() async {
@@ -127,12 +231,42 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     final today = _todayKey();
     if (last == today) return; // schon erledigt
 
+    final yesterday = _yesterdayKey();
+
+    // --- Streak aktualisieren (gestern auswerten) ---
+    for (final t in _tasks) {
+      if (!t.keep) continue; // "nur heute" Aufgaben sind gleich weg
+      if (t.done) {
+        // erledigt am gestrigen Tag
+        if (t.lastDoneKey == yesterday) {
+          t.streak += 1;
+        } else {
+          t.streak = 1;
+        }
+        t.lastDoneKey = yesterday;
+        if (t.streak > t.bestStreak) {
+          t.bestStreak = t.streak;
+        }
+      } else {
+        // nicht erledigt -> Streak schützen, wenn gefreezed; sonst reset
+        if (!_wasFrozenOn(yesterday, t.id)) {
+          t.streak = 0;
+        }
+      }
+    }
+    // Freeze-Verbrauch für gestern aufräumen
+    _clearFreezeForDate(yesterday);
+
+    // --- Tageswechsel: Aufgaben anpassen wie bisher ---
     bool changed = false;
 
     // 1) "Nur heute" -> löschen
     _tasks.removeWhere((t) {
       final remove = !t.keep;
-      if (remove) changed = true;
+      if (remove) {
+        _order.remove(t.id);
+        changed = true;
+      }
       return remove;
     });
 
@@ -144,21 +278,35 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
       }
     }
 
+    // --- Freeze-Tokens: alle 7 Tage +1 ---
+    _freezeDaysCounter += 1;
+    if (_freezeDaysCounter % 7 == 0) {
+      _freezeTokens += 1;
+    }
+
     _recalcTodayPoints();
     await _markRolloverDoneForToday();
-    await _saveProgressToday(); // neuen Tagesstand (i. d. R. 0) in die History schreiben
+    await _saveProgressToday();
+    await _saveFreezeState();
+
     if (changed) {
-      await _save();
+      await _saveTasks();
+      await _saveOrder();
       if (mounted) setState(() {});
     }
   }
 
+  // ===============================================================
+  // Punkte
+  // ===============================================================
   void _recalcTodayPoints() {
     _todayPoints =
         _tasks.where((t) => t.done).fold<int>(0, (sum, t) => sum + t.points);
   }
 
-  // -- Add
+  // ===============================================================
+  // Create / Toggle / Delete / Freeze / Reorder / Actions
+  // ===============================================================
   Future<void> _openCreateTaskSheet() async {
     final created = await showModalBottomSheet<DailyTask>(
       context: context,
@@ -170,53 +318,204 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     if (!mounted) return;
     if (created != null) {
       setState(() {
-        _tasks.add(created); // neu ist standardmäßig done=false
+        _tasks.add(created);
+        _order.add(created.id);
         _recalcTodayPoints();
       });
-      await _save();
-      await _saveProgressToday(); // History bleibt synchron (ändert sich hier i. d. R. nicht)
+      await _saveTasks();
+      await _saveOrder();
+      await _saveProgressToday();
     }
   }
 
-  // -- Toggle
   Future<void> _toggleDone(DailyTask t) async {
     setState(() {
       t.done = !t.done;
       _recalcTodayPoints();
     });
-    await _save();
-    await _saveProgressToday(); // Punkte nach Toggle sichern
+    await _saveTasks();
+    await _saveProgressToday();
   }
 
-  // -- Delete
-  Future<void> _deleteAt(int i) async {
+  Future<void> _deleteAt(int indexInOrdered) async {
+    final list = _orderedTasks();
+    if (indexInOrdered < 0 || indexInOrdered >= list.length) return;
+    final t = list[indexInOrdered];
+
     setState(() {
-      _tasks.removeAt(i);
+      _tasks.removeWhere((x) => x.id == t.id);
+      _order.remove(t.id);
       _recalcTodayPoints();
     });
-    await _save();
-    await _saveProgressToday(); // Punkte nach Löschen sichern
+    await _saveTasks();
+    await _saveOrder();
+    await _saveProgressToday();
   }
 
-  // -- Reset all (nur Haken weg, nichts löschen)
-  Future<void> _resetAll() async {
-    if (_tasks.isEmpty) return;
+  Future<void> _freezeToday(DailyTask t) async {
+    final today = _todayKey();
+    if (_freezeTokens <= 0) return;
+    if (_wasFrozenOn(today, t.id)) return;
+
     setState(() {
-      for (final t in _tasks) {
-        t.done = false;
-      }
-      _recalcTodayPoints();
+      _freezeTokens -= 1;
+      final list = _freezeUsageByDate.putIfAbsent(today, () => <String>[]);
+      list.add(t.id);
     });
-    await _save();
-    await _saveProgressToday(); // Tagespunkte -> 0 sichern
+    await _saveFreezeState();
   }
 
+  void _onReorder(int oldIndex, int newIndex) {
+    final ordered = _orderedTasks();
+    if (newIndex > oldIndex) newIndex -= 1;
+
+    // Arbeite auf IDs
+    final ids = ordered.map((e) => e.id).toList();
+    final moved = ids.removeAt(oldIndex);
+    ids.insert(newIndex, moved);
+
+    // Neue aktive Reihenfolge vorne einsortieren
+    final set = ids.toSet();
+    _order.removeWhere(set.contains);
+    _order.insertAll(0, ids);
+
+    _saveOrder();
+    setState(() {});
+  }
+
+  Future<void> _openTaskActions(DailyTask t, int indexInOrdered) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.edit),
+              title: const Text('Edit'),
+              onTap: () async {
+                final data = await showModalBottomSheet<_TaskFormData>(
+                  context: context,
+                  isScrollControlled: true,
+                  useSafeArea: true,
+                  builder: (_) => _EditDailyTaskSheet(task: t),
+                );
+                if (data != null) {
+                  final idx = _tasks.indexWhere((x) => x.id == t.id);
+                  if (idx >= 0) {
+                    final updated = DailyTask(
+                      id: t.id,
+                      title: data.title,
+                      description: data.description,
+                      category: data.category,
+                      points: data.points,
+                      keep: data.keep,
+                      streak: _tasks[idx].streak,
+                      bestStreak: _tasks[idx].bestStreak,
+                      lastDoneKey: _tasks[idx].lastDoneKey,
+                      done: _tasks[idx].done,
+                    );
+                    setState(() => _tasks[idx] = updated);
+                    await _saveTasks();
+                  }
+                }
+                if (mounted) Navigator.pop(ctx);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.copy_all),
+              title: const Text('Duplicate'),
+              onTap: () async {
+                final copy = DailyTask(
+                  id: DateTime.now().microsecondsSinceEpoch.toString(),
+                  title: t.title,
+                  description: t.description,
+                  category: t.category,
+                  points: t.points,
+                  keep: t.keep,
+                  streak: 0,
+                  bestStreak: 0,
+                  lastDoneKey: null,
+                  done: false,
+                );
+                setState(() {
+                  _tasks.add(copy);
+                  // hinter dem Original einfügen
+                  _order.insert(indexInOrdered + 1, copy.id);
+                });
+                await _saveTasks();
+                await _saveOrder();
+                if (mounted) Navigator.pop(ctx);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.vertical_align_top),
+              title: const Text('Move to top'),
+              onTap: () async {
+                setState(() {
+                  _order.remove(t.id);
+                  _order.insert(0, t.id);
+                });
+                await _saveOrder();
+                if (mounted) Navigator.pop(ctx);
+              },
+            ),
+            const Divider(height: 0),
+            ListTile(
+              leading: const Icon(Icons.local_fire_department_outlined),
+              title: const Text('Reset current streak'),
+              onTap: () async {
+                setState(() => t.streak = 0);
+                await _saveTasks();
+                if (mounted) Navigator.pop(ctx);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.emoji_events_outlined),
+              title: const Text('Reset best streak'),
+              onTap: () async {
+                setState(() => t.bestStreak = 0);
+                await _saveTasks();
+                if (mounted) Navigator.pop(ctx);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete_outline, color: Colors.red),
+              title: const Text('Delete', style: TextStyle(color: Colors.red)),
+              onTap: () async {
+                await _deleteAt(indexInOrdered);
+                if (mounted) Navigator.pop(ctx);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ===============================================================
+  // UI
+  // ===============================================================
   @override
   Widget build(BuildContext context) {
+    final ordered = _orderedTasks();
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Daily Tasks'),
         actions: [
+          // Freeze-Token Anzeige
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: Row(
+              children: [
+                Icon(Icons.ac_unit, size: 18, color: Theme.of(context).colorScheme.primary),
+                const SizedBox(width: 4),
+                Text('$_freezeTokens'),
+                const SizedBox(width: 12),
+              ],
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 12),
             child: Center(
@@ -228,29 +527,30 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
           ),
           IconButton(
             tooltip: 'Reset all (daily)',
-            onPressed: _tasks.isEmpty ? null : _resetAll,
+            onPressed: ordered.isEmpty ? null : _resetAll,
             icon: const Icon(Icons.refresh),
           ),
         ],
       ),
-      body: _tasks.isEmpty
+      body: ordered.isEmpty
           ? const Center(child: Text('No daily tasks yet'))
-          : ListView.separated(
-        itemCount: _tasks.length,
-        separatorBuilder: (_, __) => const Divider(height: 0),
+          : ReorderableListView.builder(
+        padding: const EdgeInsets.only(bottom: 96, top: 8),
+        itemCount: ordered.length,
+        onReorder: _onReorder,
+        buildDefaultDragHandles: false,
         itemBuilder: (_, i) {
-          final t = _tasks[i];
-          return ListTile(
-            leading: Checkbox(
-              value: t.done,
-              onChanged: (_) => _toggleDone(t),
-            ),
+          final t = ordered[i];
+          final frozenToday = _wasFrozenOn(_todayKey(), t.id);
+
+          return _ReorderDailyTile(
+            key: ValueKey('daily_${t.id}'),
+            index: i,
+            leadingStripColor: Theme.of(context).colorScheme.primary,
             title: Text(
               t.title,
               style: t.done
-                  ? const TextStyle(
-                decoration: TextDecoration.lineThrough,
-              )
+                  ? const TextStyle(decoration: TextDecoration.lineThrough)
                   : null,
             ),
             subtitle: Column(
@@ -281,9 +581,35 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                 ),
               ],
             ),
-            trailing: IconButton(
-              icon: const Icon(Icons.delete_outline),
-              onPressed: () => _deleteAt(i),
+            leadingCheckboxValue: t.done,
+            onLeadingCheckboxChanged: (_) => _toggleDone(t),
+            onLongPress: () => _openTaskActions(t, i),
+            // Trailing Actions: Streak 🔥, Best 🏆, Freeze, Delete
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _FlameBadge(streak: t.streak),
+                const SizedBox(width: 4),
+                _BestBadge(best: t.bestStreak),
+                const SizedBox(width: 6),
+                IconButton(
+                  tooltip: frozenToday
+                      ? 'Frozen for today'
+                      : (_freezeTokens > 0
+                      ? 'Freeze today (protect streak)'
+                      : 'No freeze tokens left'),
+                  onPressed:
+                  (frozenToday || _freezeTokens <= 0) ? null : () => _freezeToday(t),
+                  icon: Icon(
+                    frozenToday ? Icons.ac_unit : Icons.ac_unit_outlined,
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Delete',
+                  onPressed: () => _deleteAt(i),
+                  icon: const Icon(Icons.delete_outline),
+                ),
+              ],
             ),
           );
         },
@@ -295,9 +621,142 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
       ),
     );
   }
+
+  // -- Reset all (nur Haken weg, nichts löschen)
+  Future<void> _resetAll() async {
+    if (_tasks.isEmpty) return;
+    setState(() {
+      for (final t in _tasks) {
+        t.done = false;
+      }
+      _recalcTodayPoints();
+    });
+    await _saveTasks();
+    await _saveProgressToday(); // Tagespunkte -> 0 sichern
+  }
 }
 
-/// --- Bottom Sheet Formular ---
+/// ===============================================================
+/// Reorder-Tile (mit Drag-Strip links wie im Gym-Screen)
+/// ===============================================================
+class _ReorderDailyTile extends StatelessWidget {
+  final int index;
+  final Color leadingStripColor;
+  final Widget title;
+  final Widget? subtitle;
+  final bool leadingCheckboxValue;
+  final ValueChanged<bool?> onLeadingCheckboxChanged;
+  final VoidCallback? onLongPress;
+  final Widget trailing;
+
+  const _ReorderDailyTile({
+    super.key,
+    required this.index,
+    required this.leadingStripColor,
+    required this.title,
+    this.subtitle,
+    required this.leadingCheckboxValue,
+    required this.onLeadingCheckboxChanged,
+    this.onLongPress,
+    required this.trailing,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      key: key,
+      child: Container(
+        decoration: const BoxDecoration(
+          border: Border(bottom: BorderSide(width: 0.5, color: Color(0x1F000000))),
+        ),
+        child: Row(
+          children: [
+            const SizedBox(width: 12),
+            ReorderableDelayedDragStartListener(
+              index: index,
+              child: Container(
+                width: 16,
+                height: 54,
+                color: leadingStripColor,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: ListTile(
+                onLongPress: onLongPress,
+                leading: Checkbox(
+                  value: leadingCheckboxValue,
+                  onChanged: onLeadingCheckboxChanged,
+                ),
+                title: title,
+                subtitle: subtitle,
+                trailing: trailing,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// ===============================================================
+/// 🔥-Badge (aktuelle Streak)
+/// ===============================================================
+class _FlameBadge extends StatelessWidget {
+  final int streak;
+  const _FlameBadge({required this.streak});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return SizedBox(
+      width: 26,
+      height: 26,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Icon(Icons.local_fire_department, size: 26, color: cs.error),
+          Text(
+            '$streak',
+            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// ===============================================================
+/// 🏆-Badge (Best Streak)
+/// ===============================================================
+class _BestBadge extends StatelessWidget {
+  final int best;
+  const _BestBadge({required this.best});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return SizedBox(
+      width: 26,
+      height: 26,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Icon(Icons.emoji_events, size: 22, color: cs.secondary),
+          Text(
+            '$best',
+            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// ===============================================================
+/// Bottom Sheet Formular (Create)
+/// ===============================================================
 class _CreateDailyTaskSheet extends StatefulWidget {
   const _CreateDailyTaskSheet();
 
@@ -311,7 +770,7 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
   final _descCtrl = TextEditingController();
   String? _category;
   int _points = 1;
-  bool _keep = false; // standardmäßig "nur heute"
+  bool _keep = false;
 
   static const _suggestedCategories = ['Gym', 'Work', 'Study', 'Leisure', 'Skill'];
 
@@ -353,8 +812,7 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
               Row(
                 children: [
                   const Text('New Daily Task',
-                      style:
-                      TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
                   const Spacer(),
                   IconButton(
                     onPressed: () => Navigator.pop(context),
@@ -370,8 +828,7 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
                   labelText: 'Name',
                   hintText: 'e.g. Drink 2L water',
                 ),
-                validator: (v) =>
-                (v == null || v.trim().isEmpty) ? 'Required' : null,
+                validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
                 textInputAction: TextInputAction.next,
               ),
               const SizedBox(height: 12),
@@ -414,7 +871,7 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Slider(
-                      value: _points.toDouble(),
+                      value: 1.0 * _points,
                       min: 1,
                       max: 10,
                       divisions: 9,
@@ -457,6 +914,200 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
                     child: FilledButton(
                       onPressed: _submit,
                       child: const Text('Create'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// ===============================================================
+/// Bottom Sheet Formular (Edit)
+/// ===============================================================
+class _TaskFormData {
+  final String title;
+  final String? description;
+  final String? category;
+  final int points;
+  final bool keep;
+  const _TaskFormData({
+    required this.title,
+    this.description,
+    this.category,
+    required this.points,
+    required this.keep,
+  });
+}
+
+class _EditDailyTaskSheet extends StatefulWidget {
+  final DailyTask task;
+  const _EditDailyTaskSheet({required this.task});
+
+  @override
+  State<_EditDailyTaskSheet> createState() => _EditDailyTaskSheetState();
+}
+
+class _EditDailyTaskSheetState extends State<_EditDailyTaskSheet> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _titleCtrl;
+  late final TextEditingController _descCtrl;
+  String? _category;
+  int _points = 1;
+  bool _keep = false;
+
+  static const _suggestedCategories = ['Gym', 'Work', 'Study', 'Leisure', 'Skill'];
+
+  @override
+  void initState() {
+    super.initState();
+    _titleCtrl = TextEditingController(text: widget.task.title);
+    _descCtrl = TextEditingController(text: widget.task.description ?? '');
+    _category = widget.task.category;
+    _points = widget.task.points;
+    _keep = widget.task.keep;
+  }
+
+  @override
+  void dispose() {
+    _titleCtrl.dispose();
+    _descCtrl.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    if (!_formKey.currentState!.validate()) return;
+    Navigator.pop(
+      context,
+      _TaskFormData(
+        title: _titleCtrl.text.trim(),
+        description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
+        category: (_category?.trim().isEmpty ?? true) ? null : _category!.trim(),
+        points: _points,
+        keep: _keep,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottom = MediaQuery.of(context).viewInsets.bottom;
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottom),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Text('Edit Task',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                  const Spacer(),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close),
+                  )
+                ],
+              ),
+              const SizedBox(height: 8),
+
+              TextFormField(
+                controller: _titleCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Name',
+                ),
+                validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                textInputAction: TextInputAction.next,
+              ),
+              const SizedBox(height: 12),
+
+              TextFormField(
+                controller: _descCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Description (optional)',
+                ),
+                maxLines: 2,
+              ),
+              const SizedBox(height: 12),
+
+              TextFormField(
+                initialValue: _category,
+                decoration: const InputDecoration(
+                  labelText: 'Category (optional)',
+                ),
+                onChanged: (v) => _category = v,
+              ),
+              const SizedBox(height: 8),
+
+              Wrap(
+                spacing: 8,
+                children: _suggestedCategories.map((c) {
+                  final selected = _category == c;
+                  return ChoiceChip(
+                    label: Text(c),
+                    selected: selected,
+                    onSelected: (_) => setState(() => _category = c),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 16),
+
+              Row(
+                children: [
+                  const Text('Points'),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Slider(
+                      value: 1.0 * _points,
+                      min: 1,
+                      max: 10,
+                      divisions: 9,
+                      label: '$_points',
+                      onChanged: (v) => setState(() => _points = v.round()),
+                    ),
+                  ),
+                  SizedBox(
+                    width: 48,
+                    child: Text(
+                      '$_points',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  )
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              CheckboxListTile(
+                value: _keep,
+                onChanged: (v) => setState(() => _keep = v ?? false),
+                title: const Text('Keep for future days'),
+                controlAffinity: ListTileControlAffinity.leading,
+                contentPadding: EdgeInsets.zero,
+              ),
+              const SizedBox(height: 12),
+
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancel'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: _submit,
+                      child: const Text('Save'),
                     ),
                   ),
                 ],
