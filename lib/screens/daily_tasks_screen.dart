@@ -329,7 +329,8 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   // Punkte
   // ===============================================================
   void _recalcTodayPoints() {
-    _todayPoints = _tasks.where((t) => t.done).fold<int>(0, (sum, t) => sum + t.points);
+    _todayPoints =
+        _tasks.where((t) => t.done).fold<int>(0, (sum, t) => sum + t.points);
   }
 
   // ===============================================================
@@ -520,25 +521,30 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                 if (mounted) Navigator.pop(ctx);
               },
             ),
-            const Divider(height: 0),
-            ListTile(
-              leading: const Icon(Icons.local_fire_department_outlined),
-              title: const Text('Reset current streak'),
-              onTap: () async {
-                setState(() => t.streak = 0);
-                await _saveTasks();
-                if (mounted) Navigator.pop(ctx);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.emoji_events_outlined),
-              title: const Text('Reset best streak'),
-              onTap: () async {
-                setState(() => t.bestStreak = 0);
-                await _saveTasks();
-                if (mounted) Navigator.pop(ctx);
-              },
-            ),
+
+            // Divider + Reset-Optionen NUR für permanente (keep) Tasks
+            if (t.keep) const Divider(height: 0),
+            if (t.keep)
+              ListTile(
+                leading: const Icon(Icons.local_fire_department_outlined),
+                title: const Text('Reset current streak'),
+                onTap: () async {
+                  setState(() => t.streak = 0);
+                  await _saveTasks();
+                  if (mounted) Navigator.pop(ctx);
+                },
+              ),
+            if (t.keep)
+              ListTile(
+                leading: const Icon(Icons.emoji_events_outlined),
+                title: const Text('Reset best streak'),
+                onTap: () async {
+                  setState(() => t.bestStreak = 0);
+                  await _saveTasks();
+                  if (mounted) Navigator.pop(ctx);
+                },
+              ),
+
             ListTile(
               leading: const Icon(Icons.delete_outline, color: Colors.red),
               title: const Text('Delete', style: TextStyle(color: Colors.red)),
@@ -569,7 +575,8 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
             padding: const EdgeInsets.only(right: 8),
             child: Row(
               children: [
-                Icon(Icons.ac_unit, size: 18, color: Theme.of(context).colorScheme.primary),
+                Icon(Icons.ac_unit,
+                    size: 18, color: Theme.of(context).colorScheme.primary),
                 const SizedBox(width: 4),
                 Text('$_freezeTokens'),
                 const SizedBox(width: 12),
@@ -610,7 +617,8 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
             title: Text(
               t.title,
               style: t.done
-                  ? const TextStyle(decoration: TextDecoration.lineThrough)
+                  ? const TextStyle(
+                  decoration: TextDecoration.lineThrough)
                   : null,
             ),
             subtitle: Column(
@@ -626,14 +634,16 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                       Chip(
                         label: Text(t.category!),
                         visualDensity: VisualDensity.compact,
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        materialTapTargetSize:
+                        MaterialTapTargetSize.shrinkWrap,
                       ),
                     Text('${t.points} pts'),
                     if (t.keep)
                       const Chip(
                         label: Text('keeps'),
                         visualDensity: VisualDensity.compact,
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        materialTapTargetSize:
+                        MaterialTapTargetSize.shrinkWrap,
                       ),
                   ],
                 ),
@@ -642,26 +652,32 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
             leadingCheckboxValue: t.done,
             onLeadingCheckboxChanged: (_) => _toggleDone(t),
             onLongPress: () => _openTaskActions(t, i),
-            // Trailing Actions: Streak 🔥, Best 🏆, Freeze, Delete
+
+            // Trailing Actions: nur für permanente (keep) Tasks zeigen
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _FlameBadge(streak: t.streak),
-                const SizedBox(width: 4),
-                _BestBadge(best: t.bestStreak),
-                const SizedBox(width: 6),
-                IconButton(
-                  tooltip: frozenToday
-                      ? 'Frozen for today'
-                      : (_freezeTokens > 0
-                      ? 'Freeze today (protect streak)'
-                      : 'No freeze tokens left'),
-                  onPressed:
-                  (frozenToday || _freezeTokens <= 0) ? null : () => _freezeToday(t),
-                  icon: Icon(
-                    frozenToday ? Icons.ac_unit : Icons.ac_unit_outlined,
+                if (t.keep) ...[
+                  _FlameBadge(streak: t.streak),
+                  const SizedBox(width: 4),
+                  _BestBadge(best: t.bestStreak),
+                  const SizedBox(width: 6),
+                  IconButton(
+                    tooltip: frozenToday
+                        ? 'Frozen for today'
+                        : (_freezeTokens > 0
+                        ? 'Freeze today (protect streak)'
+                        : 'No freeze tokens left'),
+                    onPressed: (frozenToday || _freezeTokens <= 0)
+                        ? null
+                        : () => _freezeToday(t),
+                    icon: Icon(
+                      frozenToday
+                          ? Icons.ac_unit
+                          : Icons.ac_unit_outlined,
+                    ),
                   ),
-                ),
+                ],
                 IconButton(
                   tooltip: 'Delete',
                   onPressed: () => _deleteAt(i),

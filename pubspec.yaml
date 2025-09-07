@@ -1,4 +1,4 @@
-name: goalify
+name: Goalify
 description: "A social habit tracker where friends create groups, set a deadline, complete tasks for points, and compete on a live scoreboard"
 publish_to: 'none'
 version: 1.0.0+1
