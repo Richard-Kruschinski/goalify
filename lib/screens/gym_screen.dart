@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:fl_chart/fl_chart.dart';
+import 'dart:math' as math;
 import '../storage/local_storage.dart'; // saveJson/loadJson
 
 enum ViewMode { byExercise, byDay }
@@ -108,7 +110,7 @@ class _GymScreenState extends State<GymScreen> {
   static const _kOrderActiveKey = 'gym_order_by_exercise_v1';
   static const _kOrderByDayKey = 'gym_order_by_day_v1';
   static const _kAssignmentsKey = 'gym_assignments_by_day_v1';
-  static const _kOrderDaysKey = 'gym_order_days_v1'; // NEW: Reihenfolge der Days
+  static const _kOrderDaysKey = 'gym_order_days_v1'; // Reihenfolge der Days
 
   ViewMode _mode = ViewMode.byExercise;
 
@@ -120,10 +122,10 @@ class _GymScreenState extends State<GymScreen> {
   List<String> _orderActive = <String>[];
   Map<String, List<String>> _orderByDay = <String, List<String>>{};
 
-  // NEW: Zuweisungen „Übung gehört zu Day“, auch ohne History
+  // Zuweisungen „Übung gehört zu Day“, auch ohne History
   final Map<String, List<String>> _assignmentsByDay = <String, List<String>>{};
 
-  // NEW: Reihenfolge der Workout-Days
+  // Reihenfolge der Workout-Days
   List<String> _orderDays = <String>[];
 
   @override
@@ -180,7 +182,7 @@ class _GymScreenState extends State<GymScreen> {
         ? orderActiveRaw.map((e) => e.toString()).toList()
         : <String>[];
 
-    // Order per day (Workouts innerhalb eines Days)
+    // Order per day
     final orderByDayRaw =
     await LocalStorage.loadJson(_kOrderByDayKey, fallback: {});
     _orderByDay.clear();
@@ -206,7 +208,7 @@ class _GymScreenState extends State<GymScreen> {
       });
     }
 
-    // NEW: Order der Days
+    // Order der Days
     final orderDaysRaw =
     await LocalStorage.loadJson(_kOrderDaysKey, fallback: []);
     _orderDays = (orderDaysRaw is List)
@@ -225,16 +227,12 @@ class _GymScreenState extends State<GymScreen> {
 
   Future<void> _saveViewMode() async =>
       LocalStorage.saveJson(_kGymViewKey, _mode.name);
-
   Future<void> _saveOrderActive() async =>
       LocalStorage.saveJson(_kOrderActiveKey, _orderActive);
-
   Future<void> _saveOrderByDay() async =>
       LocalStorage.saveJson(_kOrderByDayKey, _orderByDay);
-
   Future<void> _saveAssignments() async =>
       LocalStorage.saveJson(_kAssignmentsKey, _assignmentsByDay);
-
   Future<void> _saveOrderDays() async =>
       LocalStorage.saveJson(_kOrderDaysKey, _orderDays);
 
@@ -254,7 +252,7 @@ class _GymScreenState extends State<GymScreen> {
       _saveOrderByDay();
     }
 
-    // NEW: Day in Order aufnehmen, falls neu
+    // Day in Order aufnehmen, falls neu
     if (!_orderDays.contains(day)) {
       _orderDays.add(day);
       _saveOrderDays();
@@ -268,19 +266,17 @@ class _GymScreenState extends State<GymScreen> {
     list.remove(workoutId);
     if (list.isEmpty) {
       _assignmentsByDay.remove(day);
-      // Auch aus der Day-Order entfernen, wenn der Day leer ist
+      // auch aus der Day-Order entfernen, wenn der Day leer ist
       _orderDays.remove(day);
       _saveOrderDays();
     }
     _saveAssignments();
 
-    // Auch aus der Day-Reihenfolge (Workouts) entfernen
+    // auch aus der Day-Reihenfolge (Workouts) entfernen
     final order = _orderByDay[day];
     if (order != null) {
       order.remove(workoutId);
-      if (order.isEmpty) {
-        _orderByDay.remove(day);
-      }
+      if (order.isEmpty) _orderByDay.remove(day);
       _saveOrderByDay();
     }
     setState(() {});
@@ -390,7 +386,7 @@ class _GymScreenState extends State<GymScreen> {
     setState(() {});
   }
 
-  // ---------- Reihenfolge: pro Day (alle, inkl. nur-Logs) ----------
+  // ---------- Reihenfolge: pro Day ----------
   List<Workout> _getWorkoutsForDayOrdered(String day) {
     final idsFromLogs = <String>{};
     _logs.forEach((wid, list) {
@@ -474,7 +470,6 @@ class _GymScreenState extends State<GymScreen> {
 
   List<String> _getOrderedDays() {
     _syncOrderDaysWithAssignments();
-    // jetzt nur aktive Days in ihrer gespeicherten Reihenfolge
     return List<String>.from(_orderDays);
   }
 
@@ -486,7 +481,6 @@ class _GymScreenState extends State<GymScreen> {
     final moved = days.removeAt(oldIndex);
     days.insert(newIndex, moved);
 
-    // _orderDays so aktualisieren, dass die aktive Reihenfolge vorne steht
     final setDays = days.toSet();
     _orderDays.removeWhere(setDays.contains);
     _orderDays.insertAll(0, days);
@@ -499,26 +493,21 @@ class _GymScreenState extends State<GymScreen> {
   void _deleteWorkoutLogsAll(String workoutId) {
     setState(() => _logs.remove(workoutId));
     _saveLogs();
-    // Zuweisungen bleiben bestehen (damit „ohne Progress“ weiter gelistet bleibt)
+    // Zuweisungen bleiben bestehen
   }
 
-  // PERMANENT: History, Assignments & Orders entfernen
   void _deleteExerciseEverywhere(String workoutId) {
     _logs.remove(workoutId);
 
-    // Assignments
     _assignmentsByDay.forEach((day, list) => list.remove(workoutId));
     _assignmentsByDay.removeWhere((_, list) => list.isEmpty);
 
-    // Orders
     _orderActive.remove(workoutId);
     _orderByDay.forEach((day, list) => list.remove(workoutId));
     _orderByDay.removeWhere((_, list) => list.isEmpty);
 
-    // NEW: leere Days aus der Day-Order entfernen
     _orderDays.removeWhere((d) => !_assignmentsByDay.containsKey(d));
 
-    // Persist
     _saveLogs();
     _saveAssignments();
     _saveOrderActive();
@@ -528,7 +517,6 @@ class _GymScreenState extends State<GymScreen> {
     setState(() {});
   }
 
-  // Schlichte Bestätigung: komplette History löschen (alle Tage)
   void _confirmClearHistoryAll(Workout w) {
     showDialog<void>(
       context: context,
@@ -539,7 +527,9 @@ class _GymScreenState extends State<GymScreen> {
               'Assignments in your workout plan remain.',
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel')),
           FilledButton(
             onPressed: () {
               Navigator.pop(context);
@@ -552,7 +542,6 @@ class _GymScreenState extends State<GymScreen> {
     );
   }
 
-  // Schlichte Bestätigung: Übung überall entfernen (inkl. Zuweisungen)
   void _confirmDeleteExercise(Workout w) {
     showDialog<void>(
       context: context,
@@ -563,7 +552,9 @@ class _GymScreenState extends State<GymScreen> {
               'This cannot be undone.',
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel')),
           FilledButton(
             onPressed: () {
               Navigator.pop(context);
@@ -584,7 +575,6 @@ class _GymScreenState extends State<GymScreen> {
       if (list.isEmpty) _logs.remove(workoutId);
     });
     _saveLogs();
-    // Assignment bleibt bewusst erhalten
   }
 
   void _confirmDeleteForDay(Workout w, String day) {
@@ -607,7 +597,7 @@ class _GymScreenState extends State<GymScreen> {
     );
   }
 
-  // ---- Remove-from-plan Dialog (By Exercise) ----
+  // Remove-from-plan Dialog (By Exercise)
   Future<void> _openUnassignDialog(Workout w) async {
     final assignedDays = _assignedDaysForWorkout(w.id).toList()..sort();
     if (assignedDays.isEmpty) {
@@ -675,6 +665,248 @@ class _GymScreenState extends State<GymScreen> {
       ),
     );
   }
+
+  // ----------------------------- Charts -----------------------------
+  void _openProgressChartDialog(Workout w) {
+    final cs = Theme.of(context).colorScheme;
+
+    // --- Daten vorbereiten ---
+    final logs = List<WorkoutLog>.from(_logs[w.id] ?? const <WorkoutLog>[]);
+    if (logs.isEmpty) {
+      showDialog<void>(
+        context: context,
+        builder: (_) => const AlertDialog(content: Text('No entries available')),
+      );
+      return;
+    }
+    logs.sort((a, b) => a.dateTime.compareTo(b.dateTime));
+
+    final spots = List<FlSpot>.generate(
+      logs.length,
+          (i) => FlSpot(
+        logs[i].dateTime.millisecondsSinceEpoch.toDouble(),
+        logs[i].weightKg,
+      ),
+    );
+
+    final double minX = spots.first.x;
+    final double maxX = spots.last.x;
+
+    // --- „Nice numbers“ für Y-Achse ---
+    double niceNum(double range, {required bool round}) {
+      if (range <= 0) return 1;
+      final double exp = math.pow(10, (math.log(range) / math.ln10).floor()).toDouble();
+      final double f = range / exp; // 1..10
+      double nf;
+      if (round) {
+        if (f < 1.5) nf = 1;
+        else if (f < 3) nf = 2;
+        else if (f < 7) nf = 5;
+        else nf = 10;
+      } else {
+        if (f <= 1) nf = 1;
+        else if (f <= 2) nf = 2;
+        else if (f <= 5) nf = 5;
+        else nf = 10;
+      }
+      return nf * exp;
+    }
+
+    double rawMinY = logs.map((e) => e.weightKg).reduce(math.min);
+    double rawMaxY = logs.map((e) => e.weightKg).reduce(math.max);
+    if (rawMinY == rawMaxY) {
+      rawMinY -= 1;
+      rawMaxY += 1;
+    }
+
+    const targetLines = 5;
+    final niceRange = niceNum(rawMaxY - rawMinY, round: false);
+    final yInterval = niceNum(niceRange / (targetLines - 1), round: true);
+    final minY = (rawMinY / yInterval).floor() * yInterval;
+    final maxY = (rawMaxY / yInterval).ceil() * yInterval;
+
+    // --- Formatierer ---
+    String fmtDate(DateTime d) =>
+        '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.${d.year}';
+    String fmtTooltip(DateTime d) => fmtDate(d);
+
+    // Layout
+    const double kLeftAxisSpaceToLine = 4;
+    const double kLeftAxisReserved = 38;
+    const double kLeftAxisNamePadding = 12;
+    const double kFirstDateLeftPad = 8;
+    const double kLastDateRightPad = 14;
+    const double kBottomReserved = 30;
+
+    showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text('Progress – ${w.name}'),
+        content: SizedBox(
+          width: 560,
+          height: 300,
+          child: LineChart(
+            LineChartData(
+              minX: minX,
+              maxX: maxX,
+              minY: minY.toDouble(),
+              maxY: maxY.toDouble(),
+              backgroundColor: Colors.transparent,
+
+              gridData: FlGridData(
+                show: true,
+                drawVerticalLine: false,
+                horizontalInterval: yInterval,
+                getDrawingHorizontalLine: (v) => FlLine(
+                  color: cs.onSurface.withOpacity(.15),
+                  strokeWidth: 1,
+                  dashArray: const [6, 6],
+                ),
+              ),
+              borderData: FlBorderData(
+                show: true,
+                border: Border.all(color: cs.outlineVariant),
+              ),
+
+              titlesData: FlTitlesData(
+                leftTitles: AxisTitles(
+                  axisNameWidget: const Padding(
+                    padding: EdgeInsets.only(right: kLeftAxisNamePadding),
+                    child: Text('kg', style: TextStyle(fontWeight: FontWeight.w600)),
+                  ),
+                  axisNameSize: 26,
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: kLeftAxisReserved,
+                    interval: yInterval,
+                    getTitlesWidget: (value, meta) => SideTitleWidget(
+                      axisSide: meta.axisSide,
+                      space: kLeftAxisSpaceToLine,
+                      child: Text(value.toStringAsFixed(0)),
+                    ),
+                  ),
+                ),
+                rightTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+                bottomTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: kBottomReserved,
+                    interval: (maxX - minX) == 0 ? 1 : (maxX - minX),
+                    getTitlesWidget: (value, meta) {
+                      const eps = 0.5;
+                      final bool isFirst = (value - minX).abs() < eps;
+                      final bool isLast  = (value - maxX).abs() < eps;
+
+                      if ((maxX - minX).abs() < eps) {
+                        final dt = DateTime.fromMillisecondsSinceEpoch(value.toInt());
+                        return SideTitleWidget(
+                          axisSide: meta.axisSide,
+                          space: 6,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: Text(fmtDate(dt), style: const TextStyle(fontSize: 11)),
+                          ),
+                        );
+                      }
+                      if (!isFirst && !isLast) return const SizedBox.shrink();
+
+                      final dt = DateTime.fromMillisecondsSinceEpoch(value.toInt());
+                      final EdgeInsets pad = isFirst
+                          ? const EdgeInsets.only(left: kFirstDateLeftPad)
+                          : const EdgeInsets.only(right: kLastDateRightPad);
+
+                      return SideTitleWidget(
+                        axisSide: meta.axisSide,
+                        space: 6,
+                        child: Padding(
+                          padding: pad,
+                          child: Text(
+                            fmtDate(dt),
+                            style: const TextStyle(fontSize: 11),
+                            textAlign: isFirst ? TextAlign.left : TextAlign.right,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                topTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+              ),
+
+              // --- Tooltip: 1. Zeile Datum, 2. Zeile Gewicht (ggf. „• Dropset“) ---
+              lineTouchData: LineTouchData(
+                enabled: true,
+                handleBuiltInTouches: true,
+                touchTooltipData: LineTouchTooltipData(
+                  fitInsideHorizontally: true,
+                  fitInsideVertically: true,
+                  getTooltipColor: (_) => cs.surfaceVariant,
+                  tooltipPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  getTooltipItems: (touchedSpots) => touchedSpots.map((t) {
+                    final idx = t.spotIndex.clamp(0, logs.length - 1);
+                    final dt  = DateTime.fromMillisecondsSinceEpoch(t.x.round());
+                    final isDrop = logs[idx].isDropset;
+
+                    final dateStr   = fmtTooltip(dt);
+                    final weightStr = '${t.y.toStringAsFixed(1)} kg${isDrop ? ' • Dropset' : ''}';
+
+                    return LineTooltipItem(
+                      '$dateStr\n', // Zeile 1
+                      TextStyle(
+                        color: cs.onSurfaceVariant,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      children: [
+                        TextSpan(
+                          text: weightStr, // Zeile 2
+                          style: TextStyle(
+                            color: cs.onSurfaceVariant,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    );
+                  }).toList(),
+                ),
+              ),
+
+              lineBarsData: [
+                LineChartBarData(
+                  spots: spots,
+                  isCurved: false,
+                  barWidth: 3,
+                  color: cs.primary,
+                  dotData: FlDotData(
+                    show: true,
+                    getDotPainter: (spot, percent, bar, index) {
+                      final isDrop = logs[index].isDropset;
+                      return FlDotCirclePainter(
+                        radius: isDrop ? 4.5 : 3.2,
+                        color: isDrop ? cs.error : cs.primary,
+                        strokeWidth: isDrop ? 2 : 1.5,
+                        strokeColor: cs.onPrimaryContainer.withOpacity(.35),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
 
   // ----------------------------- UI -----------------------------
   @override
@@ -745,20 +977,21 @@ class _GymScreenState extends State<GymScreen> {
           title: Text(w.name),
           subtitle: latest == null
               ? const Text('No progress yet')
-              : Text('${latest.day} • ${latest.weightKg} kg • ${latest.sets} Sets'),
+              : Text(
+              '${latest.day} • ${latest.weightKg} kg • ${latest.sets} Sets'),
           avatar: Icon(w.icon),
           onHistory: () => _openHistoryDialog(w),
+          onLongPress: () => _openProgressChartDialog(w),
           onDelete: () => _confirmDeleteExercise(w),
-          // 3-Punkte-Menü in der Exercise-Übersicht
           trailingMore: PopupMenuButton<String>(
             tooltip: 'more',
             onSelected: (value) async {
               if (value == 'remove_plan') {
                 await _openUnassignDialog(w);
               } else if (value == 'clear_history') {
-                _confirmClearHistoryAll(w); // schlichte Bestätigung
+                _confirmClearHistoryAll(w);
               } else if (value == 'delete_everywhere') {
-                _confirmDeleteExercise(w); // schlichte Bestätigung
+                _confirmDeleteExercise(w);
               }
             },
             itemBuilder: (_) => const [
@@ -782,8 +1015,8 @@ class _GymScreenState extends State<GymScreen> {
             final outcome = await _openLogDialog(
               w,
               latest: latest,
-              contextDay: null, // By Exercise -> kein fester Day
-              availableDays: days, // Days als Chips wählbar
+              contextDay: null,
+              availableDays: days,
               creationMode: false,
             );
             if (outcome == null) return;
@@ -794,10 +1027,9 @@ class _GymScreenState extends State<GymScreen> {
     );
   }
 
-  // Day-Auswahl (nur zugewiesene Days) – jetzt mit Reorder
+  // Day-Auswahl (nur zugewiesene Days) – mit Reorder
   Widget _buildDayListBody() {
     final days = _getOrderedDays();
-
     if (days.isEmpty) {
       return const Center(child: Text('No workout days available yet'));
     }
@@ -825,7 +1057,6 @@ class _GymScreenState extends State<GymScreen> {
   }
 
   void _openDayDetail(String day) {
-    // Nur zugewiesene Übungen anzeigen
     final ordered = _getAssignedWorkoutsForDayOrdered(day);
     final stripe = Theme.of(context).colorScheme.primary;
 
@@ -848,8 +1079,9 @@ class _GymScreenState extends State<GymScreen> {
             if (outcome.log != null) _addLog(w.id, outcome.log!);
           },
           onShowHistory: _openHistoryDialog,
+          onShowChart: _openProgressChartDialog, // <— NEU: Chart bei Long-press
           onDeleteForDay: (w) => _confirmDeleteForDay(w, day),
-          onDeleteAll: _confirmClearHistoryAll, // schlichte Bestätigung
+          onDeleteAll: _confirmClearHistoryAll,
           onUnassignFromDay: (w) => _removeAssignmentForDay(day, w.id),
           onReorder: (ids) => _reorderDay(day, ids),
           stripeColor: stripe,
@@ -882,17 +1114,20 @@ class _GymScreenState extends State<GymScreen> {
             return ListTile(
               leading: const Icon(Icons.history),
               title: Text('${log.weightKg} kg  •  ${log.sets} Sets'),
-              subtitle: Text('${log.day}  •  ${_formatDate(log.dateTime)}'),
+              subtitle:
+              Text('${log.day}  •  ${_formatDate(log.dateTime)}'),
               trailing: log.isDropset
                   ? Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: cs.primaryContainer,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   'Dropset',
-                  style: TextStyle(color: cs.onPrimaryContainer, fontSize: 12),
+                  style: TextStyle(
+                      color: cs.onPrimaryContainer, fontSize: 12),
                 ),
               )
                   : null,
@@ -901,7 +1136,9 @@ class _GymScreenState extends State<GymScreen> {
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK'))
+        TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'))
       ],
     );
   }
@@ -915,7 +1152,6 @@ class _GymScreenState extends State<GymScreen> {
         workouts: _workouts,
         latestFor: _getLatestLogFor,
         onAddOrUpdate: (w) async {
-          // Add flow -> optional inputs erlaubt.
           final days = _daysForWorkout(w.id).toList()..sort();
           final outcome = await _openLogDialog(
             w,
@@ -929,7 +1165,6 @@ class _GymScreenState extends State<GymScreen> {
           if (outcome.log != null) {
             _addLog(w.id, outcome.log!);
           } else if (outcome.assignDay != null) {
-            // nur Zuweisung ohne Progress
             _ensureAssigned(outcome.assignDay!, w.id);
             setState(() {}); // UI refresh
           }
@@ -1106,9 +1341,10 @@ class DayDetailScreen extends StatefulWidget {
   final Future<void> Function(Workout workout, WorkoutLog? latestForThisDay)
   onEdit;
   final void Function(Workout workout) onShowHistory;
+  final void Function(Workout workout) onShowChart; // <— NEU
   final void Function(Workout workout) onDeleteForDay;
   final void Function(Workout workout) onDeleteAll;
-  final void Function(Workout workout) onUnassignFromDay; // NEW
+  final void Function(Workout workout) onUnassignFromDay;
   final void Function(List<String> newOrder) onReorder;
   final Color stripeColor;
 
@@ -1119,6 +1355,7 @@ class DayDetailScreen extends StatefulWidget {
     required this.latestForDay,
     required this.onEdit,
     required this.onShowHistory,
+    required this.onShowChart,
     required this.onDeleteForDay,
     required this.onDeleteAll,
     required this.onUnassignFromDay,
@@ -1168,9 +1405,11 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
             title: Text(workout.name),
             subtitle: latest == null
                 ? const Text('No progress yet')
-                : Text('${latest.weightKg} kg • ${latest.sets} Sets'),
+                : Text(
+                '${latest.weightKg} kg • ${latest.sets} Sets'),
             avatar: Icon(workout.icon),
             onHistory: () => widget.onShowHistory(workout),
+            onLongPress: () => widget.onShowChart(workout),
             onTap: () => widget.onEdit(workout, latest),
             trailingMore: PopupMenuButton<String>(
               tooltip: 'more',
@@ -1224,6 +1463,7 @@ class _ReorderTile extends StatelessWidget {
   final VoidCallback onHistory;
   final VoidCallback? onDelete; // optional: nur in Übungs-Ansicht
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress; // <— NEU
 
   const _ReorderTile({
     super.key,
@@ -1235,6 +1475,7 @@ class _ReorderTile extends StatelessWidget {
     required this.onHistory,
     this.onDelete,
     this.onTap,
+    this.onLongPress,
     this.trailingMore,
   });
 
@@ -1249,14 +1490,13 @@ class _ReorderTile extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // Abstand zum Rand, damit der Handle besser tappbar ist
             const SizedBox(width: 12),
             // Drag-Handle
             ReorderableDelayedDragStartListener(
               index: index,
               child: Container(
-                width: 16, // etwas breiter für bessere Usability
-                height: 54, // ~ ListTile Höhe
+                width: 16,
+                height: 54,
                 color: leadingStripColor,
               ),
             ),
@@ -1268,6 +1508,7 @@ class _ReorderTile extends StatelessWidget {
                 title: title,
                 subtitle: subtitle,
                 onTap: onTap,
+                onLongPress: onLongPress,
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -1549,7 +1790,8 @@ class _LogInputDialogState extends State<LogInputDialog> {
       children: <Widget>[
         TextField(
           controller: _kgController,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          keyboardType:
+          const TextInputType.numberWithOptions(decimal: true),
           decoration: InputDecoration(
             labelText:
             widget.creationMode ? 'Weight (kg) – optional' : 'Weight (kg)',
