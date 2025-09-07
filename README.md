@@ -1,58 +1,82 @@
 # 📱 Goalify
 
-**Goalify** is a social habit tracking app where friends can create groups, set deadlines, complete tasks for points, and compete on a live leaderboard.  
-Perfect for productivity, challenges, and achieving goals together.
+**Goalify** is a habit and gym tracking app that helps you stay productive and motivated. You can manage your daily to-do list, visualize your overall progress, and log your training weights at the gym. Weight progression can also be tracked and visualized per workout exercise, giving you a clear picture of when it’s time to increase the load.
+
+---
+
+## 💡 Motivation
+
+I started building Goalify because I realized I was losing track of my weight progression in the gym. At the same time, I had been keeping a daily to-do list on a simple whiteboard. To make my everyday life easier and bring both worlds together — productivity and fitness — I decided to create this project and turn it into an app.
 
 ---
 
 ## 🚀 Features
 
-- **Group Management**
-  - Create, edit, and view groups
-  - Deadlines with automatic remaining time display
-  - Placeholder image for groups without a custom image
+### Daily Tasks
+- Reorder tasks via drag & drop
+- Check off tasks and earn points
+- **Streaks** with **Best Streak** tracking
+- **Freeze tokens**: start with 2; earn +1 every 7 days; protect a streak on off days
+- Midnight rollover:
+  - “Keep” tasks are unchecked daily
+  - “Today-only” tasks are removed
+- Long-press actions: **Edit**, **Duplicate**, **Move to top**, **Reset streak(s)**, **Delete**
+- Persistent custom order  
+  (done items sink to bottom; unchecking restores original position)
 
-- **Overview & Navigation**
-  - Group overview with quick access to details
-  - Progress screen with KPI cards
-  - Live leaderboard with points
-  - Bottom navigation bar (Groups, Daily, Progress, Gym, Leaderboard)
+### Gym Tracking
+- Two views: **By Exercise** and **By Workout Day**
+- Assign exercises to workout days (Push/Pull/Leg/…)
+- Reorder exercises globally and within each day
+- Log **weight**, **sets**, and **dropset** flag
+- Full **history** dialog per exercise
+- Interactive **progress chart** (date ↔ weight):
+  - Tooltips with **date** (line 1) and **weight + kg** (line 2)
+  - First & latest dates labeled on the x-axis
+  - Adaptive y-axis with padding & clean grid (avoids banding for large ranges)
+  - Dropset entries visually highlighted
 
-- **Productivity Statistics**
-  - KPI cards (current progress, points per day)
-  - **(In Progress)** Line chart with time filter (Day / Week / Month / Year), similar to stock apps
+### Progress Visulation
+- KPI cards (e.g., Today’s points, trends)
 
-- **User Experience**
-  - Cross-platform: Android, iOS, Web, Windows, macOS, Linux
-  - Modern Material Design UI
-  - Firebase authentication & Cloud Firestore database
-  - State management with Riverpod
+### Optional: Gym Presence (Geofencing-lite)
+- “I’m at the gym” detection when staying **≥ 15 minutes** within a radius
+- One-tap: “Set Gym = current location”
+- Uses **geolocator**; foreground monitoring by default
+
+---
+
+## ❗ What’s NOT in (for now)
+
+The **Groups** feature has been **removed** from the current build.  
+It’s **under consideration** to return in the future.
 
 ---
 
 ## 📸 Screenshots
 
-| Group Overview | Progress Screen | Leaderboard |
-|----------------|-----------------|-------------|
-| ![Groups](assets/screenshots/groups.png) | ![Progress](assets/screenshots/progress.png) | ![Leaderboard](assets/screenshots/leaderboard.png) |
-
-*(Placeholder – screenshots coming soon)*
+| Daily | Gym | Progress | Leaderboard |
+|------|-----|----------|-------------|
+| *(coming soon)* | *(coming soon)* | *(coming soon)* | *(coming soon)* |
 
 ---
 
 ## 🛠️ Tech Stack
 
-- **Frontend:** Flutter (Dart)
-- **State Management:** Riverpod
-- **Backend:** Firebase (Auth, Firestore)
-- **Charts:** Syncfusion Flutter Charts
-- **UI Icons:** Cupertino Icons / Material Icons
+- **Flutter** (Dart)
+- Charts: **fl_chart**
+- Location (optional presence): **geolocator**
+- Storage: local JSON via a small `LocalStorage` helper (no backend required)
+- State: straightforward `setState` + services
+
+> Previously listed: Riverpod, Firebase/Auth/Firestore, Syncfusion — those are **not required** in the current app and are **planned/optional**.
 
 ---
 
 ## 📦 Installation
 
-### 1. Clone the repository
+### 1) Clone
 ```bash
 git clone https://github.com/Richard-Kruschinski/goalify.git
 cd goalify
+flutter pub get
