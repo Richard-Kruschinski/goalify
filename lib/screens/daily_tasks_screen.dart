@@ -84,7 +84,8 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   static const _kDailyOrderKey = 'daily_tasks_order_v1';
   static const _kFreezeTokensKey = 'daily_freeze_tokens_v1';
   static const _kFreezeDaysCounterKey = 'daily_freeze_days_counter_v1';
-  static const _kFreezeUsageKey = 'daily_freeze_usage_v1'; // Map<dateKey, List<taskId>>
+  static const _kFreezeUsageKey =
+      'daily_freeze_usage_v1'; // Map<dateKey, List<taskId>>
 
   // Congrats (einmal pro Tag)
   static const _kCongratsShownKey = 'daily_congrats_shown_v1';
@@ -127,7 +128,8 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   }
 
   String _todayKey() => _dateKey(DateTime.now());
-  String _yesterdayKey() => _dateKey(DateTime.now().subtract(const Duration(days: 1)));
+  String _yesterdayKey() =>
+      _dateKey(DateTime.now().subtract(const Duration(days: 1)));
 
   // ---- Progress: Heutige Punkte persistieren ----
   Future<void> _saveProgressToday() async {
@@ -154,13 +156,15 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
 
     // Reihenfolge
     final orderRaw = await LocalStorage.loadJson(_kDailyOrderKey, fallback: []);
-    _order =
-    (orderRaw is List) ? orderRaw.map((e) => e.toString()).toList() : <String>[];
+    _order = (orderRaw is List)
+        ? orderRaw.map((e) => e.toString()).toList()
+        : <String>[];
     _syncOrderWithTasks(); // ergänzt/aufräumt
 
     // Freeze-State
     _freezeTokens =
-        (await LocalStorage.loadJson(_kFreezeTokensKey, fallback: null)) as int? ??
+        (await LocalStorage.loadJson(_kFreezeTokensKey, fallback: null))
+        as int? ??
             2;
     _freezeDaysCounter =
         (await LocalStorage.loadJson(_kFreezeDaysCounterKey, fallback: 0))
@@ -191,7 +195,8 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     );
   }
 
-  Future<void> _saveOrder() async => LocalStorage.saveJson(_kDailyOrderKey, _order);
+  Future<void> _saveOrder() async =>
+      LocalStorage.saveJson(_kDailyOrderKey, _order);
 
   Future<void> _saveFreezeState() async {
     await LocalStorage.saveJson(_kFreezeTokensKey, _freezeTokens);
@@ -329,8 +334,10 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   // Punkte
   // ===============================================================
   void _recalcTodayPoints() {
-    _todayPoints =
-        _tasks.where((t) => t.done).fold<int>(0, (sum, t) => sum + t.points);
+    // Nur erledigte Tasks, die keep=true haben
+    _todayPoints = _tasks
+        .where((t) => t.keep && t.done)
+        .fold<int>(0, (sum, t) => sum + t.points);
   }
 
   // ===============================================================
@@ -394,7 +401,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     await _saveTasks();
     await _saveProgressToday();
 
-    // NEU: nach dem Abhaken prüfen
+    // nach dem Abhaken prüfen
     await _checkAndMaybeShowCongrats();
   }
 
@@ -522,7 +529,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
               },
             ),
 
-            // Divider + Reset-Optionen NUR für permanente (keep) Tasks
+            // Reset-Optionen NUR für permanente (keep) Tasks
             if (t.keep) const Divider(height: 0),
             if (t.keep)
               ListTile(
@@ -741,7 +748,8 @@ class _ReorderDailyTile extends StatelessWidget {
       key: key,
       child: Container(
         decoration: const BoxDecoration(
-          border: Border(bottom: BorderSide(width: 0.5, color: Color(0x1F000000))),
+          border:
+          Border(bottom: BorderSide(width: 0.5, color: Color(0x1F000000))),
         ),
         child: Row(
           children: [
@@ -793,7 +801,8 @@ class _FlameBadge extends StatelessWidget {
           Icon(Icons.local_fire_department, size: 26, color: cs.error),
           Text(
             '$streak',
-            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white),
+            style: const TextStyle(
+                fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white),
           ),
         ],
       ),
@@ -820,7 +829,8 @@ class _BestBadge extends StatelessWidget {
           Icon(Icons.emoji_events, size: 22, color: cs.secondary),
           Text(
             '$best',
-            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white),
+            style: const TextStyle(
+                fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white),
           ),
         ],
       ),
@@ -861,7 +871,8 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
     final t = DailyTask(
       id: DateTime.now().microsecondsSinceEpoch.toString(),
       title: _titleCtrl.text.trim(),
-      description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
+      description:
+      _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
       category: (_category?.trim().isEmpty ?? true) ? null : _category!.trim(),
       points: _points,
       keep: _keep,
@@ -886,7 +897,8 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
               Row(
                 children: [
                   const Text('New Daily Task',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                      style:
+                      TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
                   const Spacer(),
                   IconButton(
                     onPressed: () => Navigator.pop(context),
@@ -901,7 +913,8 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
                   labelText: 'Name',
                   hintText: 'e.g. Drink 2L water',
                 ),
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                validator: (v) =>
+                (v == null || v.trim().isEmpty) ? 'Required' : null,
                 textInputAction: TextInputAction.next,
               ),
               const SizedBox(height: 12),
@@ -1052,7 +1065,8 @@ class _EditDailyTaskSheetState extends State<_EditDailyTaskSheet> {
       context,
       _TaskFormData(
         title: _titleCtrl.text.trim(),
-        description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
+        description:
+        _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
         category: (_category?.trim().isEmpty ?? true) ? null : _category!.trim(),
         points: _points,
         keep: _keep,
@@ -1076,7 +1090,8 @@ class _EditDailyTaskSheetState extends State<_EditDailyTaskSheet> {
               Row(
                 children: [
                   const Text('Edit Task',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                      style:
+                      TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
                   const Spacer(),
                   IconButton(
                     onPressed: () => Navigator.pop(context),
@@ -1090,7 +1105,8 @@ class _EditDailyTaskSheetState extends State<_EditDailyTaskSheet> {
                 decoration: const InputDecoration(
                   labelText: 'Name',
                 ),
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                validator: (v) =>
+                (v == null || v.trim().isEmpty) ? 'Required' : null,
                 textInputAction: TextInputAction.next,
               ),
               const SizedBox(height: 12),
@@ -1210,7 +1226,8 @@ class _CongratsScreenState extends State<CongratsScreen>
   void initState() {
     super.initState();
     _confetti = ConfettiController(duration: const Duration(seconds: 2))..play();
-    _scale = AnimationController(vsync: this, duration: const Duration(milliseconds: 450))
+    _scale = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 450))
       ..forward();
   }
 
@@ -1231,7 +1248,8 @@ class _CongratsScreenState extends State<CongratsScreen>
         alignment: Alignment.center,
         children: [
           ScaleTransition(
-            scale: CurvedAnimation(parent: _scale, curve: Curves.easeOutBack),
+            scale:
+            CurvedAnimation(parent: _scale, curve: Curves.easeOutBack),
             child: Container(
               margin: const EdgeInsets.symmetric(horizontal: 24),
               padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
@@ -1246,8 +1264,8 @@ class _CongratsScreenState extends State<CongratsScreen>
                   Icon(Icons.emoji_events, size: 72, color: cs.primary),
                   const SizedBox(height: 10),
                   Container(
-                    padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: cs.primaryContainer,
                       borderRadius: BorderRadius.circular(18),

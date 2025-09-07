@@ -99,7 +99,8 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
       });
     }
 
-    // Fallback für HEUTE: falls noch kein Eintrag, aus Daily-Tasks summieren (nur Anzeige, kein Persist)
+    // Fallback für HEUTE: falls noch kein Eintrag, aus Daily-Tasks summieren
+    // *** NUR Tasks zählen, die keep == true UND done == true sind. ***
     final today = _midnight(DateTime.now());
     if (!map.containsKey(today)) {
       final tasksRaw = await LocalStorage.loadJson(_kDailyTasksKey, fallback: []);
@@ -108,10 +109,11 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
         for (final e in tasksRaw) {
           final m = Map<String, dynamic>.from(e as Map);
           final done = (m['done'] ?? false) as bool;
+          final keep = (m['keep'] ?? false) as bool;
           final pts = (m['points'] ?? 1) as int;
-          if (done) todayPts += pts;
+          if (keep && done) todayPts += pts;
         }
-        map[today] = todayPts; // nur für Anzeige
+        map[today] = todayPts; // nur für Anzeige (Persist kommt aus Daily-Screen)
       }
     }
 
@@ -138,7 +140,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
     switch (range) {
       case Range.day:
       // Tagesansicht: ein Wert für heute – als flache 24h-Linie darstellen,
-      // aber KPIs berechnen wir separat korrekt (ohne *24).
+      // KPIs werden separat korrekt berechnet.
         final value = _history[today] ?? 0;
         final start = DateTime(now.year, now.month, now.day, 0);
         return List.generate(24, (h) => ActivityPoint(start.add(Duration(hours: h)), value));
