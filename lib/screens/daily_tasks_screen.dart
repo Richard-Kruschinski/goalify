@@ -1,5 +1,10 @@
+// Daily Tasks screen with "Congrats" overlay when all tasks are done.
+// NOTE: add this to your pubspec.yaml dependencies:
+//   confetti: ^0.7.0
+
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:confetti/confetti.dart';
 import '../storage/local_storage.dart';
 
 /// ===============================================================
@@ -79,8 +84,10 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   static const _kDailyOrderKey = 'daily_tasks_order_v1';
   static const _kFreezeTokensKey = 'daily_freeze_tokens_v1';
   static const _kFreezeDaysCounterKey = 'daily_freeze_days_counter_v1';
-  static const _kFreezeUsageKey =
-      'daily_freeze_usage_v1'; // Map<dateKey, List<taskId>>
+  static const _kFreezeUsageKey = 'daily_freeze_usage_v1'; // Map<dateKey, List<taskId>>
+
+  // Congrats (einmal pro Tag)
+  static const _kCongratsShownKey = 'daily_congrats_shown_v1';
 
   final List<DailyTask> _tasks = [];
   List<String> _order = [];
@@ -120,14 +127,12 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   }
 
   String _todayKey() => _dateKey(DateTime.now());
-  String _yesterdayKey() =>
-      _dateKey(DateTime.now().subtract(const Duration(days: 1)));
+  String _yesterdayKey() => _dateKey(DateTime.now().subtract(const Duration(days: 1)));
 
   // ---- Progress: Heutige Punkte persistieren ----
   Future<void> _saveProgressToday() async {
     final key = _todayKey();
-    final raw =
-    await LocalStorage.loadJson('progress_history_v1', fallback: {});
+    final raw = await LocalStorage.loadJson('progress_history_v1', fallback: {});
     final hist = Map<String, dynamic>.from(raw as Map);
     hist[key] = _todayPoints;
     await LocalStorage.saveJson('progress_history_v1', hist);
@@ -148,17 +153,14 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     }
 
     // Reihenfolge
-    final orderRaw =
-    await LocalStorage.loadJson(_kDailyOrderKey, fallback: []);
-    _order = (orderRaw is List)
-        ? orderRaw.map((e) => e.toString()).toList()
-        : <String>[];
+    final orderRaw = await LocalStorage.loadJson(_kDailyOrderKey, fallback: []);
+    _order =
+    (orderRaw is List) ? orderRaw.map((e) => e.toString()).toList() : <String>[];
     _syncOrderWithTasks(); // ergänzt/aufräumt
 
     // Freeze-State
     _freezeTokens =
-        (await LocalStorage.loadJson(_kFreezeTokensKey, fallback: null))
-        as int? ??
+        (await LocalStorage.loadJson(_kFreezeTokensKey, fallback: null)) as int? ??
             2;
     _freezeDaysCounter =
         (await LocalStorage.loadJson(_kFreezeDaysCounterKey, fallback: 0))
@@ -189,8 +191,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     );
   }
 
-  Future<void> _saveOrder() async =>
-      LocalStorage.saveJson(_kDailyOrderKey, _order);
+  Future<void> _saveOrder() async => LocalStorage.saveJson(_kDailyOrderKey, _order);
 
   Future<void> _saveFreezeState() async {
     await LocalStorage.saveJson(_kFreezeTokensKey, _freezeTokens);
@@ -328,8 +329,36 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   // Punkte
   // ===============================================================
   void _recalcTodayPoints() {
-    _todayPoints =
-        _tasks.where((t) => t.done).fold<int>(0, (sum, t) => sum + t.points);
+    _todayPoints = _tasks.where((t) => t.done).fold<int>(0, (sum, t) => sum + t.points);
+  }
+
+  // ===============================================================
+  // Congrats: prüfen & ggf. anzeigen
+  // ===============================================================
+  Future<void> _checkAndMaybeShowCongrats() async {
+    if (_tasks.isEmpty) return;
+
+    final allDone = _tasks.every((t) => t.done);
+    if (!allDone) return;
+
+    final today = _todayKey();
+    final lastShown =
+    await LocalStorage.loadJson(_kCongratsShownKey, fallback: '');
+    if (lastShown == today) return;
+
+    await LocalStorage.saveJson(_kCongratsShownKey, today);
+    if (!mounted) return;
+
+    await Navigator.of(context).push(
+      PageRouteBuilder(
+        opaque: false,
+        barrierDismissible: true,
+        barrierColor: Colors.black54,
+        pageBuilder: (_, __, ___) => const CongratsScreen(),
+        transitionsBuilder: (_, anim, __, child) =>
+            FadeTransition(opacity: anim, child: child),
+      ),
+    );
   }
 
   // ===============================================================
@@ -363,6 +392,9 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     });
     await _saveTasks();
     await _saveProgressToday();
+
+    // NEU: nach dem Abhaken prüfen
+    await _checkAndMaybeShowCongrats();
   }
 
   Future<void> _deleteAt(int indexInOrdered) async {
@@ -509,8 +541,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
             ),
             ListTile(
               leading: const Icon(Icons.delete_outline, color: Colors.red),
-              title:
-              const Text('Delete', style: TextStyle(color: Colors.red)),
+              title: const Text('Delete', style: TextStyle(color: Colors.red)),
               onTap: () async {
                 await _deleteAt(indexInOrdered);
                 if (mounted) Navigator.pop(ctx);
@@ -538,8 +569,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
             padding: const EdgeInsets.only(right: 8),
             child: Row(
               children: [
-                Icon(Icons.ac_unit,
-                    size: 18, color: Theme.of(context).colorScheme.primary),
+                Icon(Icons.ac_unit, size: 18, color: Theme.of(context).colorScheme.primary),
                 const SizedBox(width: 4),
                 Text('$_freezeTokens'),
                 const SizedBox(width: 12),
@@ -576,40 +606,34 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
           return _ReorderDailyTile(
             key: ValueKey('daily_${t.id}'),
             index: i,
-            leadingStripColor:
-            Theme.of(context).colorScheme.primary,
+            leadingStripColor: Theme.of(context).colorScheme.primary,
             title: Text(
               t.title,
               style: t.done
-                  ? const TextStyle(
-                  decoration: TextDecoration.lineThrough)
+                  ? const TextStyle(decoration: TextDecoration.lineThrough)
                   : null,
             ),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (t.description != null &&
-                    t.description!.isNotEmpty)
+                if (t.description != null && t.description!.isNotEmpty)
                   Text(t.description!),
                 Wrap(
                   crossAxisAlignment: WrapCrossAlignment.center,
                   spacing: 8,
                   children: [
-                    if (t.category != null &&
-                        t.category!.isNotEmpty)
+                    if (t.category != null && t.category!.isNotEmpty)
                       Chip(
                         label: Text(t.category!),
                         visualDensity: VisualDensity.compact,
-                        materialTapTargetSize:
-                        MaterialTapTargetSize.shrinkWrap,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
                     Text('${t.points} pts'),
                     if (t.keep)
                       const Chip(
                         label: Text('keeps'),
                         visualDensity: VisualDensity.compact,
-                        materialTapTargetSize:
-                        MaterialTapTargetSize.shrinkWrap,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
                   ],
                 ),
@@ -632,13 +656,10 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                       : (_freezeTokens > 0
                       ? 'Freeze today (protect streak)'
                       : 'No freeze tokens left'),
-                  onPressed: (frozenToday || _freezeTokens <= 0)
-                      ? null
-                      : () => _freezeToday(t),
+                  onPressed:
+                  (frozenToday || _freezeTokens <= 0) ? null : () => _freezeToday(t),
                   icon: Icon(
-                    frozenToday
-                        ? Icons.ac_unit
-                        : Icons.ac_unit_outlined,
+                    frozenToday ? Icons.ac_unit : Icons.ac_unit_outlined,
                   ),
                 ),
                 IconButton(
@@ -704,8 +725,7 @@ class _ReorderDailyTile extends StatelessWidget {
       key: key,
       child: Container(
         decoration: const BoxDecoration(
-          border:
-          Border(bottom: BorderSide(width: 0.5, color: Color(0x1F000000))),
+          border: Border(bottom: BorderSide(width: 0.5, color: Color(0x1F000000))),
         ),
         child: Row(
           children: [
@@ -757,8 +777,7 @@ class _FlameBadge extends StatelessWidget {
           Icon(Icons.local_fire_department, size: 26, color: cs.error),
           Text(
             '$streak',
-            style: const TextStyle(
-                fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white),
+            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white),
           ),
         ],
       ),
@@ -785,8 +804,7 @@ class _BestBadge extends StatelessWidget {
           Icon(Icons.emoji_events, size: 22, color: cs.secondary),
           Text(
             '$best',
-            style: const TextStyle(
-                fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white),
+            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white),
           ),
         ],
       ),
@@ -812,13 +830,7 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
   int _points = 1;
   bool _keep = false;
 
-  static const _suggestedCategories = [
-    'Gym',
-    'Work',
-    'Study',
-    'Leisure',
-    'Skill'
-  ];
+  static const _suggestedCategories = ['Gym', 'Work', 'Study', 'Leisure', 'Skill'];
 
   @override
   void dispose() {
@@ -833,8 +845,7 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
     final t = DailyTask(
       id: DateTime.now().microsecondsSinceEpoch.toString(),
       title: _titleCtrl.text.trim(),
-      description:
-      _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
+      description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
       category: (_category?.trim().isEmpty ?? true) ? null : _category!.trim(),
       points: _points,
       keep: _keep,
@@ -859,8 +870,7 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
               Row(
                 children: [
                   const Text('New Daily Task',
-                      style:
-                      TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
                   const Spacer(),
                   IconButton(
                     onPressed: () => Navigator.pop(context),
@@ -875,8 +885,7 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
                   labelText: 'Name',
                   hintText: 'e.g. Drink 2L water',
                 ),
-                validator: (v) =>
-                (v == null || v.trim().isEmpty) ? 'Required' : null,
+                validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
                 textInputAction: TextInputAction.next,
               ),
               const SizedBox(height: 12),
@@ -938,8 +947,7 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
                 value: _keep,
                 onChanged: (v) => setState(() => _keep = v ?? false),
                 title: const Text('Keep for future days'),
-                subtitle:
-                const Text('If disabled: task is only for today'),
+                subtitle: const Text('If disabled: task is only for today'),
                 controlAffinity: ListTileControlAffinity.leading,
                 contentPadding: EdgeInsets.zero,
               ),
@@ -1003,13 +1011,7 @@ class _EditDailyTaskSheetState extends State<_EditDailyTaskSheet> {
   int _points = 1;
   bool _keep = false;
 
-  static const _suggestedCategories = [
-    'Gym',
-    'Work',
-    'Study',
-    'Leisure',
-    'Skill'
-  ];
+  static const _suggestedCategories = ['Gym', 'Work', 'Study', 'Leisure', 'Skill'];
 
   @override
   void initState() {
@@ -1034,8 +1036,7 @@ class _EditDailyTaskSheetState extends State<_EditDailyTaskSheet> {
       context,
       _TaskFormData(
         title: _titleCtrl.text.trim(),
-        description:
-        _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
+        description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
         category: (_category?.trim().isEmpty ?? true) ? null : _category!.trim(),
         points: _points,
         keep: _keep,
@@ -1059,8 +1060,7 @@ class _EditDailyTaskSheetState extends State<_EditDailyTaskSheet> {
               Row(
                 children: [
                   const Text('Edit Task',
-                      style:
-                      TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
                   const Spacer(),
                   IconButton(
                     onPressed: () => Navigator.pop(context),
@@ -1074,8 +1074,7 @@ class _EditDailyTaskSheetState extends State<_EditDailyTaskSheet> {
                 decoration: const InputDecoration(
                   labelText: 'Name',
                 ),
-                validator: (v) =>
-                (v == null || v.trim().isEmpty) ? 'Required' : null,
+                validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
                 textInputAction: TextInputAction.next,
               ),
               const SizedBox(height: 12),
@@ -1160,6 +1159,140 @@ class _EditDailyTaskSheetState extends State<_EditDailyTaskSheet> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// ===============================================================
+/// Congrats Overlay (inline)
+/// ===============================================================
+class CongratsScreen extends StatefulWidget {
+  const CongratsScreen({
+    super.key,
+    this.title = 'CONGRATS!',
+    this.subtitle = 'You finished all tasks for today',
+    this.detail = 'Well done — keep up the streaks!',
+    this.onSeeProgress,
+  });
+
+  final String title;
+  final String subtitle;
+  final String detail;
+  final VoidCallback? onSeeProgress;
+
+  @override
+  State<CongratsScreen> createState() => _CongratsScreenState();
+}
+
+class _CongratsScreenState extends State<CongratsScreen>
+    with SingleTickerProviderStateMixin {
+  late final ConfettiController _confetti;
+  late final AnimationController _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _confetti = ConfettiController(duration: const Duration(seconds: 2))..play();
+    _scale = AnimationController(vsync: this, duration: const Duration(milliseconds: 450))
+      ..forward();
+  }
+
+  @override
+  void dispose() {
+    _confetti.dispose();
+    _scale.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return Scaffold(
+      backgroundColor: Colors.black54,
+      body: Stack(
+        alignment: Alignment.center,
+        children: [
+          ScaleTransition(
+            scale: CurvedAnimation(parent: _scale, curve: Curves.easeOutBack),
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 24),
+              padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
+              decoration: BoxDecoration(
+                color: cs.surface,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              constraints: const BoxConstraints(maxWidth: 380),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.emoji_events, size: 72, color: cs.primary),
+                  const SizedBox(height: 10),
+                  Container(
+                    padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: cs.primaryContainer,
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    child: Text(
+                      widget.title,
+                      style: TextStyle(
+                        color: cs.onPrimaryContainer,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    widget.subtitle,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleMedium
+                        ?.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(widget.detail, textAlign: TextAlign.center),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      OutlinedButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Close'),
+                      ),
+                      const SizedBox(width: 12),
+                      FilledButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          widget.onSeeProgress?.call();
+                        },
+                        child: const Text('See progress'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Positioned.fill(
+            child: IgnorePointer(
+              child: ConfettiWidget(
+                confettiController: _confetti,
+                blastDirectionality: BlastDirectionality.explosive,
+                shouldLoop: true,
+                numberOfParticles: 20,
+                emissionFrequency: 0.06,
+                gravity: 0.35,
+                minBlastForce: 6,
+                maxBlastForce: 20,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

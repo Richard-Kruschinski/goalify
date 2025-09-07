@@ -12,6 +12,8 @@ dependencies:
   cupertino_icons: ^1.0.8
   # State management
   flutter_riverpod: ^2.5.1
+  confetti: ^0.7.0
+
 
   # Firebase Core
   firebase_core: ^3.15.2
