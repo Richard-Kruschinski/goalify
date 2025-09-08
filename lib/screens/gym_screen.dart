@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter/services.dart'; // <-- volle services: rootBundle, SystemChrome, DeviceOrientation
 import 'package:fl_chart/fl_chart.dart';
 import 'dart:math' as math;
 import '../storage/local_storage.dart'; // saveJson/loadJson
@@ -742,6 +742,23 @@ class _GymScreenState extends State<GymScreen> {
       context: context,
       builder: (_) => AlertDialog(
         title: Text('Progress – ${w.name}'),
+        actions: [
+          IconButton(
+            tooltip: 'Full screen',
+            icon: const Icon(Icons.fullscreen),
+            onPressed: () {
+              Navigator.pop(context); // Dialog schließen
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => FullScreenChartPage(
+                    title: w.name,
+                    logs: logs,
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
         content: SizedBox(
           width: 560,
           height: 300,
@@ -897,16 +914,10 @@ class _GymScreenState extends State<GymScreen> {
             ),
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
+       
       ),
     );
   }
-
 
   // ----------------------------- UI -----------------------------
   @override
@@ -1079,7 +1090,7 @@ class _GymScreenState extends State<GymScreen> {
             if (outcome.log != null) _addLog(w.id, outcome.log!);
           },
           onShowHistory: _openHistoryDialog,
-          onShowChart: _openProgressChartDialog, // <— NEU: Chart bei Long-press
+          onShowChart: _openProgressChartDialog, // Long-press -> Chart
           onDeleteForDay: (w) => _confirmDeleteForDay(w, day),
           onDeleteAll: _confirmClearHistoryAll,
           onUnassignFromDay: (w) => _removeAssignmentForDay(day, w.id),
@@ -1845,6 +1856,220 @@ class _LogInputDialogState extends State<LogInputDialog> {
           child: Text(widget.creationMode ? 'Save' : 'Update'),
         ),
       ],
+    );
+  }
+}
+
+/// ===============================================================
+/// Vollbild-Seite für die Chart (Landscape, immersive)
+/// ===============================================================
+class FullScreenChartPage extends StatefulWidget {
+  final String title;
+  final List<WorkoutLog> logs;
+
+  const FullScreenChartPage({
+    super.key,
+    required this.title,
+    required this.logs,
+  });
+
+  @override
+  State<FullScreenChartPage> createState() => _FullScreenChartPageState();
+}
+
+class _FullScreenChartPageState extends State<FullScreenChartPage> {
+  @override
+  void initState() {
+    super.initState();
+    // Landscape + immersive UI aktivieren
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    SystemChrome.setPreferredOrientations(
+      [DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight],
+    );
+  }
+
+  @override
+  void dispose() {
+    // Zurück zu Portrait + normale UI
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    SystemChrome.setPreferredOrientations(
+      [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown],
+    );
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    final logs = List<WorkoutLog>.from(widget.logs)..sort((a, b) => a.dateTime.compareTo(b.dateTime));
+    final spots = List<FlSpot>.generate(
+      logs.length,
+          (i) => FlSpot(
+        logs[i].dateTime.millisecondsSinceEpoch.toDouble(),
+        logs[i].weightKg,
+      ),
+    );
+
+    final double minX = spots.first.x;
+    final double maxX = spots.last.x;
+
+    double niceNum(double range, {required bool round}) {
+      if (range <= 0) return 1;
+      final double exp = math.pow(10, (math.log(range) / math.ln10).floor()).toDouble();
+      final double f = range / exp;
+      double nf;
+      if (round) {
+        if (f < 1.5) nf = 1;
+        else if (f < 3) nf = 2;
+        else if (f < 7) nf = 5;
+        else nf = 10;
+      } else {
+        if (f <= 1) nf = 1;
+        else if (f <= 2) nf = 2;
+        else if (f <= 5) nf = 5;
+        else nf = 10;
+      }
+      return nf * exp;
+    }
+
+    double rawMinY = logs.map((e) => e.weightKg).reduce(math.min);
+    double rawMaxY = logs.map((e) => e.weightKg).reduce(math.max);
+    if (rawMinY == rawMaxY) {
+      rawMinY -= 1;
+      rawMaxY += 1;
+    }
+
+    const targetLines = 5;
+    final niceRange = niceNum(rawMaxY - rawMinY, round: false);
+    final yInterval = niceNum(niceRange / (targetLines - 1), round: true);
+    final minY = (rawMinY / yInterval).floor() * yInterval;
+    final maxY = (rawMaxY / yInterval).ceil() * yInterval;
+
+    String fmtDate(DateTime d) =>
+        '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.${d.year}';
+    String fmtTooltip(DateTime d) => fmtDate(d);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.title),
+        actions: [
+          IconButton(
+            tooltip: 'Exit full screen',
+            icon: const Icon(Icons.fullscreen_exit),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ],
+      ),
+      body: SafeArea( // <— NEU: schützt vor Ecken / Gestenbereich
+        minimum: const EdgeInsets.fromLTRB(12, 12, 18, 12), // etwas Extra rechts
+        child: LineChart(
+          LineChartData(
+            // ...
+            titlesData: FlTitlesData(
+              // ...
+              bottomTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  reservedSize: 36, // <— vorher 32
+                  interval: (maxX - minX) == 0 ? 1 : (maxX - minX),
+                  getTitlesWidget: (value, meta) {
+                    const eps = 0.5;
+                    final bool isFirst = (value - minX).abs() < eps;
+                    final bool isLast  = (value - maxX).abs() < eps;
+
+                    if ((maxX - minX).abs() < eps) {
+                      final dt = DateTime.fromMillisecondsSinceEpoch(value.toInt());
+                      return SideTitleWidget(
+                        axisSide: meta.axisSide,
+                        space: 6,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: Text(fmtDate(dt), style: const TextStyle(fontSize: 12)),
+                        ),
+                      );
+                    }
+                    if (!isFirst && !isLast) return const SizedBox.shrink();
+
+                    final dt = DateTime.fromMillisecondsSinceEpoch(value.toInt());
+                    return SideTitleWidget(
+                      axisSide: meta.axisSide,
+                      space: 6,
+                      child: Padding(
+                        // rechts etwas mehr Platz für die Ecke/Gesten
+                        padding: EdgeInsets.only(left: isFirst ? 8 : 0, right: isLast ? 24 : 0),
+                        child: Text(
+                          fmtDate(dt),
+                          style: const TextStyle(fontSize: 12),
+                          textAlign: isFirst ? TextAlign.left : TextAlign.right,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              topTitles: const AxisTitles(
+                sideTitles: SideTitles(showTitles: false),
+              ),
+            ),
+            lineTouchData: LineTouchData(
+              enabled: true,
+              handleBuiltInTouches: true,
+              touchTooltipData: LineTouchTooltipData(
+                fitInsideHorizontally: true,
+                fitInsideVertically: true,
+                getTooltipColor: (_) => cs.surfaceVariant,
+                tooltipPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                getTooltipItems: (touchedSpots) => touchedSpots.map((t) {
+                  final idx = t.spotIndex.clamp(0, logs.length - 1);
+                  final dt  = DateTime.fromMillisecondsSinceEpoch(t.x.round());
+                  final isDrop = logs[idx].isDropset;
+
+                  final dateStr   = fmtTooltip(dt);
+                  final weightStr = '${t.y.toStringAsFixed(1)} kg${isDrop ? ' • Dropset' : ''}';
+
+                  return LineTooltipItem(
+                    '$dateStr\n',
+                    TextStyle(
+                      color: cs.onSurfaceVariant,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    children: [
+                      TextSpan(
+                        text: weightStr,
+                        style: TextStyle(
+                          color: cs.onSurfaceVariant,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  );
+                }).toList(),
+              ),
+            ),
+            lineBarsData: [
+              LineChartBarData(
+                spots: spots,
+                isCurved: false,
+                barWidth: 3,
+                color: cs.primary,
+                dotData: FlDotData(
+                  show: true,
+                  getDotPainter: (spot, percent, bar, index) {
+                    final isDrop = logs[index].isDropset;
+                    return FlDotCirclePainter(
+                      radius: isDrop ? 4.5 : 3.2,
+                      color: isDrop ? cs.error : cs.primary,
+                      strokeWidth: isDrop ? 2 : 1.5,
+                      strokeColor: cs.onPrimaryContainer.withOpacity(.35),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
