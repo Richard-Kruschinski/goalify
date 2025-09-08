@@ -99,6 +99,19 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   int _freezeDaysCounter = 0;
   final Map<String, List<String>> _freezeUsageByDate = {};
 
+  void _showFreezeHelp() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        duration: Duration(seconds: 3),
+        content: Text(
+          'Freeze-Token: Schützt die Streak eines keep-Tasks nur für HEUTE, '
+              'ohne ihn abzuhaken. Halte einen keep-Task gedrückt und wähle '
+              '„Freeze for today“. Kostet 1 Token.',
+        ),
+      ),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -592,16 +605,24 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
           // Freeze-Token Anzeige (oben behalten)
           Padding(
             padding: const EdgeInsets.only(right: 8),
-            child: Row(
-              children: [
-                Icon(Icons.ac_unit,
-                    size: 18, color: Theme.of(context).colorScheme.primary),
-                const SizedBox(width: 4),
-                Text('$_freezeTokens'),
-                const SizedBox(width: 12),
-              ],
+            child: GestureDetector(
+              onLongPress: _showFreezeHelp,          // ⟵ kurzer Hinweis per Long-Press
+              child: Tooltip(                        // optional: zeigt Text auch als Tooltip bei Long-Press
+                message: 'Prevents your streak from breaking today. Every week you earn one extra freeze token',
+                preferBelow: false,
+                child: Row(
+                  children: [
+                    Icon(Icons.ac_unit,
+                        size: 18, color: Theme.of(context).colorScheme.primary),
+                    const SizedBox(width: 4),
+                    Text('$_freezeTokens'),
+                    const SizedBox(width: 12),
+                  ],
+                ),
+              ),
             ),
           ),
+
           Padding(
             padding: const EdgeInsets.only(right: 12),
             child: Center(
