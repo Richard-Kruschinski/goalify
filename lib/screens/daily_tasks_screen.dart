@@ -84,8 +84,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   static const _kDailyOrderKey = 'daily_tasks_order_v1';
   static const _kFreezeTokensKey = 'daily_freeze_tokens_v1';
   static const _kFreezeDaysCounterKey = 'daily_freeze_days_counter_v1';
-  static const _kFreezeUsageKey =
-      'daily_freeze_usage_v1'; // Map<dateKey, List<taskId>>
+  static const _kFreezeUsageKey = 'daily_freeze_usage_v1'; // Map<dateKey, List<taskId>>
 
   // Congrats (einmal pro Tag)
   static const _kCongratsShownKey = 'daily_congrats_shown_v1';
@@ -128,8 +127,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   }
 
   String _todayKey() => _dateKey(DateTime.now());
-  String _yesterdayKey() =>
-      _dateKey(DateTime.now().subtract(const Duration(days: 1)));
+  String _yesterdayKey() => _dateKey(DateTime.now().subtract(const Duration(days: 1)));
 
   // ---- Progress: Heutige Punkte persistieren ----
   Future<void> _saveProgressToday() async {
@@ -156,19 +154,16 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
 
     // Reihenfolge
     final orderRaw = await LocalStorage.loadJson(_kDailyOrderKey, fallback: []);
-    _order = (orderRaw is List)
-        ? orderRaw.map((e) => e.toString()).toList()
-        : <String>[];
+    _order =
+    (orderRaw is List) ? orderRaw.map((e) => e.toString()).toList() : <String>[];
     _syncOrderWithTasks(); // ergänzt/aufräumt
 
     // Freeze-State
     _freezeTokens =
-        (await LocalStorage.loadJson(_kFreezeTokensKey, fallback: null))
-        as int? ??
+        (await LocalStorage.loadJson(_kFreezeTokensKey, fallback: null)) as int? ??
             2;
     _freezeDaysCounter =
-        (await LocalStorage.loadJson(_kFreezeDaysCounterKey, fallback: 0))
-        as int? ??
+        (await LocalStorage.loadJson(_kFreezeDaysCounterKey, fallback: 0)) as int? ??
             0;
 
     final fuRaw = await LocalStorage.loadJson(_kFreezeUsageKey, fallback: {});
@@ -176,8 +171,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     if (fuRaw is Map) {
       fuRaw.forEach((k, v) {
         if (v is List) {
-          _freezeUsageByDate[k.toString()] =
-              v.map((e) => e.toString()).toList();
+          _freezeUsageByDate[k.toString()] = v.map((e) => e.toString()).toList();
         }
       });
     }
@@ -195,8 +189,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     );
   }
 
-  Future<void> _saveOrder() async =>
-      LocalStorage.saveJson(_kDailyOrderKey, _order);
+  Future<void> _saveOrder() async => LocalStorage.saveJson(_kDailyOrderKey, _order);
 
   Future<void> _saveFreezeState() async {
     await LocalStorage.saveJson(_kFreezeTokensKey, _freezeTokens);
@@ -335,9 +328,8 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   // ===============================================================
   void _recalcTodayPoints() {
     // Nur erledigte Tasks, die keep=true haben
-    _todayPoints = _tasks
-        .where((t) => t.keep && t.done)
-        .fold<int>(0, (sum, t) => sum + t.points);
+    _todayPoints =
+        _tasks.where((t) => t.keep && t.done).fold<int>(0, (sum, t) => sum + t.points);
   }
 
   // ===============================================================
@@ -452,12 +444,32 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   }
 
   Future<void> _openTaskActions(DailyTask t, int indexInOrdered) async {
+    final frozenToday = _wasFrozenOn(_todayKey(), t.id);
+
     await showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
       builder: (ctx) => SafeArea(
         child: Wrap(
           children: [
+            // Freeze nur für keep-Tasks anbieten
+            if (t.keep)
+              ListTile(
+                leading: const Icon(Icons.ac_unit),
+                title: const Text('Freeze for today'),
+                subtitle: Text(frozenToday
+                    ? 'Already frozen'
+                    : (_freezeTokens > 0 ? 'Protect your streak' : 'No tokens left')),
+                enabled: !frozenToday && _freezeTokens > 0,
+                onTap: (!frozenToday && _freezeTokens > 0)
+                    ? () async {
+                  await _freezeToday(t);
+                  if (mounted) Navigator.pop(ctx);
+                }
+                    : null,
+              ),
+            if (t.keep) const Divider(height: 0),
+
             ListTile(
               leading: const Icon(Icons.edit),
               title: const Text('Edit'),
@@ -577,7 +589,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
       appBar: AppBar(
         title: const Text('Daily Tasks'),
         actions: [
-          // Freeze-Token Anzeige
+          // Freeze-Token Anzeige (oben behalten)
           Padding(
             padding: const EdgeInsets.only(right: 8),
             child: Row(
@@ -615,7 +627,6 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
         buildDefaultDragHandles: false,
         itemBuilder: (_, i) {
           final t = ordered[i];
-          final frozenToday = _wasFrozenOn(_todayKey(), t.id);
 
           return _ReorderDailyTile(
             key: ValueKey('daily_${t.id}'),
@@ -623,10 +634,8 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
             leadingStripColor: Theme.of(context).colorScheme.primary,
             title: Text(
               t.title,
-              style: t.done
-                  ? const TextStyle(
-                  decoration: TextDecoration.lineThrough)
-                  : null,
+              style:
+              t.done ? const TextStyle(decoration: TextDecoration.lineThrough) : null,
             ),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -641,16 +650,14 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                       Chip(
                         label: Text(t.category!),
                         visualDensity: VisualDensity.compact,
-                        materialTapTargetSize:
-                        MaterialTapTargetSize.shrinkWrap,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
                     Text('${t.points} pts'),
                     if (t.keep)
                       const Chip(
                         label: Text('keeps'),
                         visualDensity: VisualDensity.compact,
-                        materialTapTargetSize:
-                        MaterialTapTargetSize.shrinkWrap,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
                   ],
                 ),
@@ -660,7 +667,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
             onLeadingCheckboxChanged: (_) => _toggleDone(t),
             onLongPress: () => _openTaskActions(t, i),
 
-            // Trailing Actions: nur für permanente (keep) Tasks zeigen
+            // Trailing Actions: KEINE ❄️-Schaltfläche mehr
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -669,21 +676,6 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                   const SizedBox(width: 4),
                   _BestBadge(best: t.bestStreak),
                   const SizedBox(width: 6),
-                  IconButton(
-                    tooltip: frozenToday
-                        ? 'Frozen for today'
-                        : (_freezeTokens > 0
-                        ? 'Freeze today (protect streak)'
-                        : 'No freeze tokens left'),
-                    onPressed: (frozenToday || _freezeTokens <= 0)
-                        ? null
-                        : () => _freezeToday(t),
-                    icon: Icon(
-                      frozenToday
-                          ? Icons.ac_unit
-                          : Icons.ac_unit_outlined,
-                    ),
-                  ),
                 ],
                 IconButton(
                   tooltip: 'Delete',
@@ -748,8 +740,7 @@ class _ReorderDailyTile extends StatelessWidget {
       key: key,
       child: Container(
         decoration: const BoxDecoration(
-          border:
-          Border(bottom: BorderSide(width: 0.5, color: Color(0x1F000000))),
+          border: Border(bottom: BorderSide(width: 0.5, color: Color(0x1F000000))),
         ),
         child: Row(
           children: [
@@ -801,8 +792,7 @@ class _FlameBadge extends StatelessWidget {
           Icon(Icons.local_fire_department, size: 26, color: cs.error),
           Text(
             '$streak',
-            style: const TextStyle(
-                fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white),
+            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white),
           ),
         ],
       ),
@@ -829,8 +819,7 @@ class _BestBadge extends StatelessWidget {
           Icon(Icons.emoji_events, size: 22, color: cs.secondary),
           Text(
             '$best',
-            style: const TextStyle(
-                fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white),
+            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white),
           ),
         ],
       ),
@@ -871,8 +860,7 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
     final t = DailyTask(
       id: DateTime.now().microsecondsSinceEpoch.toString(),
       title: _titleCtrl.text.trim(),
-      description:
-      _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
+      description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
       category: (_category?.trim().isEmpty ?? true) ? null : _category!.trim(),
       points: _points,
       keep: _keep,
@@ -897,8 +885,7 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
               Row(
                 children: [
                   const Text('New Daily Task',
-                      style:
-                      TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
                   const Spacer(),
                   IconButton(
                     onPressed: () => Navigator.pop(context),
@@ -913,8 +900,7 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
                   labelText: 'Name',
                   hintText: 'e.g. Drink 2L water',
                 ),
-                validator: (v) =>
-                (v == null || v.trim().isEmpty) ? 'Required' : null,
+                validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
                 textInputAction: TextInputAction.next,
               ),
               const SizedBox(height: 12),
@@ -1065,8 +1051,7 @@ class _EditDailyTaskSheetState extends State<_EditDailyTaskSheet> {
       context,
       _TaskFormData(
         title: _titleCtrl.text.trim(),
-        description:
-        _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
+        description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
         category: (_category?.trim().isEmpty ?? true) ? null : _category!.trim(),
         points: _points,
         keep: _keep,
@@ -1090,8 +1075,7 @@ class _EditDailyTaskSheetState extends State<_EditDailyTaskSheet> {
               Row(
                 children: [
                   const Text('Edit Task',
-                      style:
-                      TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
                   const Spacer(),
                   IconButton(
                     onPressed: () => Navigator.pop(context),
@@ -1105,8 +1089,7 @@ class _EditDailyTaskSheetState extends State<_EditDailyTaskSheet> {
                 decoration: const InputDecoration(
                   labelText: 'Name',
                 ),
-                validator: (v) =>
-                (v == null || v.trim().isEmpty) ? 'Required' : null,
+                validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
                 textInputAction: TextInputAction.next,
               ),
               const SizedBox(height: 12),
@@ -1226,8 +1209,8 @@ class _CongratsScreenState extends State<CongratsScreen>
   void initState() {
     super.initState();
     _confetti = ConfettiController(duration: const Duration(seconds: 2))..play();
-    _scale = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 450))
+    _scale =
+    AnimationController(vsync: this, duration: const Duration(milliseconds: 450))
       ..forward();
   }
 
@@ -1248,8 +1231,7 @@ class _CongratsScreenState extends State<CongratsScreen>
         alignment: Alignment.center,
         children: [
           ScaleTransition(
-            scale:
-            CurvedAnimation(parent: _scale, curve: Curves.easeOutBack),
+            scale: CurvedAnimation(parent: _scale, curve: Curves.easeOutBack),
             child: Container(
               margin: const EdgeInsets.symmetric(horizontal: 24),
               padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
@@ -1264,8 +1246,7 @@ class _CongratsScreenState extends State<CongratsScreen>
                   Icon(Icons.emoji_events, size: 72, color: cs.primary),
                   const SizedBox(height: 10),
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: cs.primaryContainer,
                       borderRadius: BorderRadius.circular(18),
