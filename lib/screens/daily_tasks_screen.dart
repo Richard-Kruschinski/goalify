@@ -14,16 +14,16 @@ class DailyTask {
   final String id;
   final String title;
   final String? description;
-  final String? category; // z. B. Gym, Work, Leisure
+  final String? category; // e.g. Gym, Work, Leisure
   final int points;
-  final bool keep; // true = bleibt über Tage, false = nur heute
+  final bool keep; // true = persists across days, false = one-off for a date
 
-  // --- Streaks ---
-  int streak; // aktuelle Streak-Länge (Tage)
-  int bestStreak; // Bestleistung
-  String? lastDoneKey; // Datumsschlüssel des letzten erledigten Tages (yyyy-mm-dd)
+  // --- Streaks (for keep tasks only) ---
+  int streak; // current streak length (days)
+  int bestStreak; // best ever
+  String? lastDoneKey; // dateKey (yyyy-mm-dd) when last completed
 
-  bool done; // "heute" abgehakt (wird beim Tageswechsel zurückgesetzt)
+  bool done; // "today" checked (resets on rollover for keep; per-date for one-offs)
 
   DailyTask({
     required this.id,
@@ -65,6 +65,9 @@ class DailyTask {
   );
 }
 
+/// View modes
+enum DailyViewMode { today, byDate }
+
 /// ===============================================================
 /// Screen
 /// ===============================================================
@@ -76,21 +79,30 @@ class DailyTasksScreen extends StatefulWidget {
 
 class _DailyTasksScreenState extends State<DailyTasksScreen>
     with WidgetsBindingObserver {
-  // Storage Keys
+  // Storage Keys (keep tasks)
   static const _kDailyTasksKey = 'daily_tasks_v1';
   static const _kDailyRolloverKey = 'daily_last_rollover_v1';
-
-  // Reihenfolge, Freeze-Tokens & -Nutzung
-  static const _kDailyOrderKey = 'daily_tasks_order_v1';
-  static const _kFreezeTokensKey = 'daily_freeze_tokens_v1';
-  static const _kFreezeDaysCounterKey = 'daily_freeze_days_counter_v1';
-  static const _kFreezeUsageKey = 'daily_freeze_usage_v1'; // Map<dateKey, List<taskId>>
-
-  // Congrats (einmal pro Tag)
   static const _kCongratsShownKey = 'daily_congrats_shown_v1';
 
-  final List<DailyTask> _tasks = [];
-  List<String> _order = [];
+  // Orders
+  static const _kDailyOrderKey = 'daily_tasks_order_v1'; // keep tasks order
+  static const _kOrderByDateKey =
+      'daily_tasks_order_by_date_v1'; // Map<dateKey, List<id>>
+
+  // Freeze
+  static const _kFreezeTokensKey = 'daily_freeze_tokens_v1';
+  static const _kFreezeDaysCounterKey = 'daily_freeze_days_counter_v1';
+  static const _kFreezeUsageKey =
+      'daily_freeze_usage_v1'; // Map<dateKey, List<taskId>>
+
+  // NEW: one-off tasks per day (only keep=false live here)
+  static const _kOneOffByDateKey = 'daily_oneoff_by_date_v1'; // Map<dateKey, List<task>>
+
+  // State
+  final List<DailyTask> _keepTasks = []; // keep=true
+  final Map<String, List<DailyTask>> _oneOffByDate = {}; // keep=false by date
+  List<String> _orderKeep = [];
+  Map<String, List<String>> _orderByDate = {};
 
   int _todayPoints = 0;
 
@@ -99,14 +111,18 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   int _freezeDaysCounter = 0;
   final Map<String, List<String>> _freezeUsageByDate = {};
 
+  // View selection
+  DailyViewMode _mode = DailyViewMode.today;
+  DateTime _selectedDate = DateTime.now();
+
+  // Helpers
   void _showFreezeHelp() {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         duration: Duration(seconds: 3),
         content: Text(
-          'Freeze-Token: Schützt die Streak eines keep-Tasks nur für HEUTE, '
-              'ohne ihn abzuhaken. Halte einen keep-Task gedrückt und wähle '
-              '„Freeze for today“. Kostet 1 Token.',
+          'Freeze token: protects a keep-task streak for TODAY without checking it off. '
+              'Long-press a keep-task and choose "Freeze for today". Costs 1 token.',
         ),
       ),
     );
@@ -116,7 +132,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _load(); // lädt + prüft Tageswechsel
+    _load(); // loads + applies rollover
   }
 
   @override
@@ -128,7 +144,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      _dailyRolloverIfNeeded(); // Prüfen, wenn App wieder im Vordergrund ist
+      _dailyRolloverIfNeeded();
     }
   }
 
@@ -140,9 +156,11 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   }
 
   String _todayKey() => _dateKey(DateTime.now());
-  String _yesterdayKey() => _dateKey(DateTime.now().subtract(const Duration(days: 1)));
+  String _yesterdayKey() =>
+      _dateKey(DateTime.now().subtract(const Duration(days: 1)));
+  String _selectedKey() => _dateKey(_selectedDate);
 
-  // ---- Progress: Heutige Punkte persistieren ----
+  // ---- Progress: save today’s points ----
   Future<void> _saveProgressToday() async {
     final key = _todayKey();
     final raw = await LocalStorage.loadJson('progress_history_v1', fallback: {});
@@ -152,31 +170,73 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   }
 
   // ===============================================================
-  // Laden & Speichern
+  // Load & Save
   // ===============================================================
   Future<void> _load() async {
-    // Tasks
-    final raw = await LocalStorage.loadJson(_kDailyTasksKey, fallback: []);
-    if (raw is List) {
-      _tasks
+    // Keep-tasks (legacy list)
+    final rawKeep = await LocalStorage.loadJson(_kDailyTasksKey, fallback: []);
+    if (rawKeep is List) {
+      _keepTasks
         ..clear()
         ..addAll(
-          raw.map((e) => DailyTask.fromMap(Map<String, dynamic>.from(e))),
+          rawKeep.map((e) => DailyTask.fromMap(Map<String, dynamic>.from(e))),
         );
     }
 
-    // Reihenfolge
-    final orderRaw = await LocalStorage.loadJson(_kDailyOrderKey, fallback: []);
-    _order =
-    (orderRaw is List) ? orderRaw.map((e) => e.toString()).toList() : <String>[];
-    _syncOrderWithTasks(); // ergänzt/aufräumt
+    // MIGRATION: if any non-keep sneaked into old list, move them to TODAY bucket
+    if (_keepTasks.any((t) => !t.keep)) {
+      final today = _todayKey();
+      final off = _keepTasks.where((t) => !t.keep).toList();
+      _keepTasks.removeWhere((t) => !t.keep);
+      final list = _oneOffByDate.putIfAbsent(today, () => <DailyTask>[]);
+      list.addAll(off.map((t) => t..done = t.done));
+      await LocalStorage.saveJson(
+          _kDailyTasksKey, _keepTasks.map((t) => t.toMap()).toList());
+    }
 
-    // Freeze-State
+    // Orders
+    final orderKeepRaw =
+    await LocalStorage.loadJson(_kDailyOrderKey, fallback: []);
+    _orderKeep = (orderKeepRaw is List)
+        ? orderKeepRaw.map((e) => e.toString()).toList()
+        : <String>[];
+
+    final orderByDateRaw =
+    await LocalStorage.loadJson(_kOrderByDateKey, fallback: {});
+    _orderByDate.clear();
+    if (orderByDateRaw is Map) {
+      orderByDateRaw.forEach((k, v) {
+        if (v is List) {
+          _orderByDate[k.toString()] =
+              v.map((e) => e.toString()).toList(growable: true);
+        }
+      });
+    }
+
+    // One-offs by date
+    final oneOffRaw =
+    await LocalStorage.loadJson(_kOneOffByDateKey, fallback: {});
+    _oneOffByDate.clear();
+    if (oneOffRaw is Map) {
+      oneOffRaw.forEach((k, v) {
+        if (v is List) {
+          final list = v
+              .map((e) => DailyTask.fromMap(Map<String, dynamic>.from(e)))
+              .where((t) => !t.keep)
+              .toList();
+          _oneOffByDate[k.toString()] = list;
+        }
+      });
+    }
+
+    // Freeze state
     _freezeTokens =
-        (await LocalStorage.loadJson(_kFreezeTokensKey, fallback: null)) as int? ??
+        (await LocalStorage.loadJson(_kFreezeTokensKey, fallback: null))
+        as int? ??
             2;
     _freezeDaysCounter =
-        (await LocalStorage.loadJson(_kFreezeDaysCounterKey, fallback: 0)) as int? ??
+        (await LocalStorage.loadJson(_kFreezeDaysCounterKey, fallback: 0))
+        as int? ??
             0;
 
     final fuRaw = await LocalStorage.loadJson(_kFreezeUsageKey, fallback: {});
@@ -184,25 +244,38 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     if (fuRaw is Map) {
       fuRaw.forEach((k, v) {
         if (v is List) {
-          _freezeUsageByDate[k.toString()] = v.map((e) => e.toString()).toList();
+          _freezeUsageByDate[k.toString()] =
+              v.map((e) => e.toString()).toList();
         }
       });
     }
 
-    await _dailyRolloverIfNeeded(); // Tageswechsel anwenden
+    await _dailyRolloverIfNeeded(); // apply rollover
     _recalcTodayPoints();
     await _saveProgressToday();
     if (mounted) setState(() {});
   }
 
-  Future<void> _saveTasks() async {
+  Future<void> _saveKeepTasks() async {
     await LocalStorage.saveJson(
       _kDailyTasksKey,
-      _tasks.map((t) => t.toMap()).toList(),
+      _keepTasks.map((t) => t.toMap()).toList(),
     );
   }
 
-  Future<void> _saveOrder() async => LocalStorage.saveJson(_kDailyOrderKey, _order);
+  Future<void> _saveOneOffMap() async {
+    final map = <String, List<Map<String, dynamic>>>{};
+    _oneOffByDate.forEach((k, v) {
+      map[k] = v.map((t) => t.toMap()).toList();
+    });
+    await LocalStorage.saveJson(_kOneOffByDateKey, map);
+  }
+
+  Future<void> _saveOrderKeep() async =>
+      LocalStorage.saveJson(_kDailyOrderKey, _orderKeep);
+
+  Future<void> _saveOrderByDate() async =>
+      LocalStorage.saveJson(_kOrderByDateKey, _orderByDate);
 
   Future<void> _saveFreezeState() async {
     await LocalStorage.saveJson(_kFreezeTokensKey, _freezeTokens);
@@ -210,48 +283,69 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     await LocalStorage.saveJson(_kFreezeUsageKey, _freezeUsageByDate);
   }
 
-  void _syncOrderWithTasks() {
-    final ids = _tasks.map((t) => t.id).toList();
+  // Keep order sync
+  void _syncOrderKeepWithTasks() {
+    final ids = _keepTasks.map((t) => t.id).toList();
     bool changed = false;
-
-    // fehlende anhängen
     for (final id in ids) {
-      if (!_order.contains(id)) {
-        _order.add(id);
+      if (!_orderKeep.contains(id)) {
+        _orderKeep.add(id);
         changed = true;
       }
     }
-    // nicht mehr vorhandene entfernen
     final setIds = ids.toSet();
-    final before = _order.length;
-    _order.removeWhere((id) => !setIds.contains(id));
-    if (before != _order.length) changed = true;
-
-    if (changed) _saveOrder();
+    final before = _orderKeep.length;
+    _orderKeep.removeWhere((id) => !setIds.contains(id));
+    if (before != _orderKeep.length) changed = true;
+    if (changed) _saveOrderKeep();
   }
 
-  /// Sichtbar sortierte Liste:
-  /// - Manuelle Reihenfolge aus `_order`
-  /// - aber: offene Aufgaben zuerst, erledigte am Ende.
-  /// `_order` selbst wird **nicht** verändert – so kann ein Task nach dem
-  /// Ent-haken wieder an seine ursprüngliche Position springen.
-  List<DailyTask> _orderedTasks() {
-    _syncOrderWithTasks();
-
-    final map = {for (final t in _tasks) t.id: t};
-    final List<DailyTask> open = [];
-    final List<DailyTask> done = [];
-
-    for (final id in _order) {
-      final t = map[id];
-      if (t == null) continue;
-      (t.done ? done : open).add(t);
+  // One-off order sync
+  void _syncOrderForDate(String dateKey) {
+    final ids = (_oneOffByDate[dateKey] ?? const <DailyTask>[])
+        .map((t) => t.id)
+        .toList();
+    final order = List<String>.from(_orderByDate[dateKey] ?? const []);
+    bool changed = false;
+    for (final id in ids) {
+      if (!order.contains(id)) {
+        order.add(id);
+        changed = true;
+      }
     }
-    return [...open, ...done];
+    if (changed) {
+      _orderByDate[dateKey] = order;
+      _saveOrderByDate();
+    }
+  }
+
+  /// Visible list for current context:
+  /// - keep tasks first (open first, done last) using _orderKeep
+  /// - then one-offs for the chosen date using _orderByDate[dateKey]
+  List<DailyTask> _orderedTasksFor(String dateKey) {
+    _syncOrderKeepWithTasks();
+    _syncOrderForDate(dateKey);
+
+    // Keep tasks
+    final keepMap = {for (final t in _keepTasks) t.id: t};
+    final List<DailyTask> keepOpen = [];
+    final List<DailyTask> keepDone = [];
+    for (final id in _orderKeep) {
+      final t = keepMap[id];
+      if (t == null) continue;
+      (t.done ? keepDone : keepOpen).add(t);
+    }
+
+    // One-offs for that date
+    final offs = List<DailyTask>.from(_oneOffByDate[dateKey] ?? const []);
+    final order = List<String>.from(_orderByDate[dateKey] ?? const []);
+    offs.sort((a, b) => order.indexOf(a.id).compareTo(order.indexOf(b.id)));
+
+    return [...keepOpen, ...keepDone, ...offs];
   }
 
   // ===============================================================
-  // Daily Rollover + Streak/Freeze-Logik
+  // Daily rollover + streak/freeze logic (keep tasks)
   // ===============================================================
   Future<void> _markRolloverDoneForToday() async {
     await LocalStorage.saveJson(_kDailyRolloverKey, _todayKey());
@@ -269,56 +363,51 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   Future<void> _dailyRolloverIfNeeded() async {
     final last = await LocalStorage.loadJson(_kDailyRolloverKey, fallback: '');
     final today = _todayKey();
-    if (last == today) return; // schon erledigt
+    if (last == today) return;
 
     final yesterday = _yesterdayKey();
 
-    // --- Streak aktualisieren (gestern auswerten) ---
-    for (final t in _tasks) {
-      if (!t.keep) continue; // "nur heute" Aufgaben sind gleich weg
+    // --- Streak update (evaluate yesterday) ---
+    for (final t in _keepTasks) {
+      if (!t.keep) continue;
       if (t.done) {
-        // erledigt am gestrigen Tag
+        // completed yesterday
         if (t.lastDoneKey == yesterday) {
           t.streak += 1;
         } else {
           t.streak = 1;
         }
         t.lastDoneKey = yesterday;
-        if (t.streak > t.bestStreak) {
-          t.bestStreak = t.streak;
-        }
+        if (t.streak > t.bestStreak) t.bestStreak = t.streak;
       } else {
-        // nicht erledigt -> Streak schützen, wenn gefreezed; sonst reset
+        // not done -> protect only if frozen yesterday
         if (!_wasFrozenOn(yesterday, t.id)) {
           t.streak = 0;
         }
       }
     }
-    // Freeze-Verbrauch für gestern aufräumen
     _clearFreezeForDate(yesterday);
 
-    // --- Tageswechsel: Aufgaben anpassen wie bisher ---
-    bool changed = false;
+    // --- Day change ---
+    bool changedKeep = false;
 
-    // 1) "Nur heute" -> löschen
-    _tasks.removeWhere((t) {
-      final remove = !t.keep;
-      if (remove) {
-        _order.remove(t.id);
-        changed = true;
-      }
-      return remove;
-    });
-
-    // 2) "Bleibt" -> Haken entfernen
-    for (final t in _tasks) {
+    // 1) keep tasks: uncheck for a new day
+    for (final t in _keepTasks) {
       if (t.keep && t.done) {
         t.done = false;
-        changed = true;
+        changedKeep = true;
       }
     }
 
-    // --- Freeze-Tokens: alle 7 Tage +1 ---
+    // 2) one-offs: drop yesterday's bucket entirely (completed or not)
+    if (_oneOffByDate.containsKey(yesterday)) {
+      _oneOffByDate.remove(yesterday);
+      _orderByDate.remove(yesterday);
+      await _saveOneOffMap();
+      await _saveOrderByDate();
+    }
+
+    // --- Freeze tokens: +1 each 7 days ---
     _freezeDaysCounter += 1;
     if (_freezeDaysCounter % 7 == 0) {
       _freezeTokens += 1;
@@ -329,37 +418,36 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     await _saveProgressToday();
     await _saveFreezeState();
 
-    if (changed) {
-      await _saveTasks();
-      await _saveOrder();
+    if (changedKeep) {
+      await _saveKeepTasks();
       if (mounted) setState(() {});
     }
   }
 
   // ===============================================================
-  // Punkte
+  // Points (only keep & done today count toward "Today" points)
   // ===============================================================
   void _recalcTodayPoints() {
-    // Nur erledigte Tasks, die keep=true haben
     _todayPoints =
-        _tasks.where((t) => t.keep && t.done).fold<int>(0, (sum, t) => sum + t.points);
+        _keepTasks.where((t) => t.keep && t.done).fold<int>(0, (s, t) => s + t.points);
   }
 
   // ===============================================================
-  // Congrats: prüfen & ggf. anzeigen
+  // Congrats: only for TODAY and only when everything (keep + today’s one-offs) is done
   // ===============================================================
   Future<void> _checkAndMaybeShowCongrats() async {
-    if (_tasks.isEmpty) return;
+    final todayKey = _todayKey();
+    final all = _orderedTasksFor(todayKey);
+    if (all.isEmpty) return;
 
-    final allDone = _tasks.every((t) => t.done);
+    final allDone = all.every((t) => t.done);
     if (!allDone) return;
 
-    final today = _todayKey();
     final lastShown =
     await LocalStorage.loadJson(_kCongratsShownKey, fallback: '');
-    if (lastShown == today) return;
+    if (lastShown == todayKey) return;
 
-    await LocalStorage.saveJson(_kCongratsShownKey, today);
+    await LocalStorage.saveJson(_kCongratsShownKey, todayKey);
     if (!mounted) return;
 
     await Navigator.of(context).push(
@@ -377,52 +465,86 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   // ===============================================================
   // Create / Toggle / Delete / Freeze / Reorder / Actions
   // ===============================================================
-  Future<void> _openCreateTaskSheet() async {
-    final created = await showModalBottomSheet<DailyTask>(
+  Future<void> _openCreateTaskSheet({required String forDateKey}) async {
+    final created = await showModalBottomSheet<_CreateResult>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (_) => const _CreateDailyTaskSheet(),
+      builder: (_) => _CreateDailyTaskSheet(
+        defaultDateKey: forDateKey,
+      ),
     );
 
     if (!mounted) return;
     if (created != null) {
-      setState(() {
-        _tasks.add(created);
-        _order.add(created.id);
-        _recalcTodayPoints();
-      });
-      await _saveTasks();
-      await _saveOrder();
-      await _saveProgressToday();
+      if (created.task.keep) {
+        setState(() {
+          _keepTasks.add(created.task..done = false);
+          _orderKeep.add(created.task.id);
+          _recalcTodayPoints();
+        });
+        await _saveKeepTasks();
+        await _saveOrderKeep();
+        await _saveProgressToday();
+      } else {
+        final key = created.dateKey ?? forDateKey;
+        final list = _oneOffByDate.putIfAbsent(key, () => <DailyTask>[]);
+        setState(() {
+          list.add(created.task);
+          final ord = _orderByDate.putIfAbsent(key, () => <String>[]);
+          ord.add(created.task.id);
+        });
+        await _saveOneOffMap();
+        await _saveOrderByDate();
+      }
     }
   }
 
-  Future<void> _toggleDone(DailyTask t) async {
+  Future<void> _toggleDone(DailyTask t, {required String dateKey}) async {
     setState(() {
       t.done = !t.done;
       _recalcTodayPoints();
     });
-    await _saveTasks();
-    await _saveProgressToday();
-
-    // nach dem Abhaken prüfen
-    await _checkAndMaybeShowCongrats();
+    if (t.keep) {
+      await _saveKeepTasks();
+    } else {
+      await _saveOneOffMap();
+    }
+    if (dateKey == _todayKey()) {
+      await _saveProgressToday();
+      await _checkAndMaybeShowCongrats();
+    }
   }
 
-  Future<void> _deleteAt(int indexInOrdered) async {
-    final list = _orderedTasks();
+  Future<void> _deleteAt(int indexInOrdered, {required String dateKey}) async {
+    final list = _orderedTasksFor(dateKey);
     if (indexInOrdered < 0 || indexInOrdered >= list.length) return;
     final t = list[indexInOrdered];
 
     setState(() {
-      _tasks.removeWhere((x) => x.id == t.id);
-      _order.remove(t.id);
+      if (t.keep) {
+        _keepTasks.removeWhere((x) => x.id == t.id);
+        _orderKeep.remove(t.id);
+      } else {
+        final dayList = _oneOffByDate[dateKey];
+        dayList?.removeWhere((x) => x.id == t.id);
+        _orderByDate[dateKey]?.remove(t.id);
+        if (dayList != null && dayList.isEmpty) {
+          _oneOffByDate.remove(dateKey);
+          _orderByDate.remove(dateKey);
+        }
+      }
       _recalcTodayPoints();
     });
-    await _saveTasks();
-    await _saveOrder();
-    await _saveProgressToday();
+
+    if (t.keep) {
+      await _saveKeepTasks();
+      await _saveOrderKeep();
+    } else {
+      await _saveOneOffMap();
+      await _saveOrderByDate();
+    }
+    if (dateKey == _todayKey()) await _saveProgressToday();
   }
 
   Future<void> _freezeToday(DailyTask t) async {
@@ -438,25 +560,53 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     await _saveFreezeState();
   }
 
-  void _onReorder(int oldIndex, int newIndex) {
-    final ordered = _orderedTasks();
+  void _onReorder(int oldIndex, int newIndex, {required String dateKey}) {
+    final ordered = _orderedTasksFor(dateKey);
     if (newIndex > oldIndex) newIndex -= 1;
 
-    // Arbeite auf IDs der sichtbaren Reihenfolge
-    final ids = ordered.map((e) => e.id).toList();
-    final moved = ids.removeAt(oldIndex);
-    ids.insert(newIndex, moved);
+    // We keep the strategy: reorder within keep-block and one-off block independently.
+    final keepIds = _keepTasks.map((e) => e.id).toSet();
+    final isOldKeep = keepIds.contains(ordered[oldIndex].id);
+    final isNewKeep = keepIds.contains(ordered[newIndex].id);
 
-    // Neue aktive Reihenfolge vorne einsortieren
-    final set = ids.toSet();
-    _order.removeWhere(set.contains);
-    _order.insertAll(0, ids);
+    if (isOldKeep && isNewKeep) {
+      // reorder keep ids only
+      final ids = _keepTasks.map((e) => e.id).toList();
+      final movedId = ordered[oldIndex].id;
+      ids.remove(movedId);
+      final insertAt = ids.indexOf(ordered[newIndex].id);
+      ids.insert(insertAt, movedId);
+      final set = ids.toSet();
+      _orderKeep.removeWhere(set.contains);
+      _orderKeep.insertAll(0, ids);
+      _saveOrderKeep();
+      setState(() {});
+      return;
+    }
 
-    _saveOrder();
-    setState(() {});
+    if (!isOldKeep && !isNewKeep) {
+      final dayIds =
+      (_oneOffByDate[dateKey] ?? const <DailyTask>[]).map((e) => e.id).toList();
+      final movedId = ordered[oldIndex].id;
+      dayIds.remove(movedId);
+      final insertAt = dayIds.indexOf(ordered[newIndex].id);
+      dayIds.insert(insertAt, movedId);
+
+      final set = dayIds.toSet();
+      final ord = _orderByDate[dateKey] ?? <String>[];
+      ord.removeWhere(set.contains);
+      ord.insertAll(0, dayIds);
+      _orderByDate[dateKey] = ord;
+      _saveOrderByDate();
+      setState(() {});
+      return;
+    }
+
+    // Cross-block moves are not supported; just ignore to keep blocks separate.
   }
 
-  Future<void> _openTaskActions(DailyTask t, int indexInOrdered) async {
+  Future<void> _openTaskActions(
+      DailyTask t, int indexInOrdered, String dateKey) async {
     final frozenToday = _wasFrozenOn(_todayKey(), t.id);
 
     await showModalBottomSheet<void>(
@@ -465,14 +615,15 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
       builder: (ctx) => SafeArea(
         child: Wrap(
           children: [
-            // Freeze nur für keep-Tasks anbieten
             if (t.keep)
               ListTile(
                 leading: const Icon(Icons.ac_unit),
                 title: const Text('Freeze for today'),
                 subtitle: Text(frozenToday
                     ? 'Already frozen'
-                    : (_freezeTokens > 0 ? 'Protect your streak' : 'No tokens left')),
+                    : (_freezeTokens > 0
+                    ? 'Protect your streak'
+                    : 'No tokens left')),
                 enabled: !frozenToday && _freezeTokens > 0,
                 onTap: (!frozenToday && _freezeTokens > 0)
                     ? () async {
@@ -483,6 +634,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
               ),
             if (t.keep) const Divider(height: 0),
 
+            // Edit (for simplicity, keep flag is not changed in edit here)
             ListTile(
               leading: const Icon(Icons.edit),
               title: const Text('Edit'),
@@ -494,22 +646,42 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                   builder: (_) => _EditDailyTaskSheet(task: t),
                 );
                 if (data != null) {
-                  final idx = _tasks.indexWhere((x) => x.id == t.id);
-                  if (idx >= 0) {
-                    final updated = DailyTask(
-                      id: t.id,
-                      title: data.title,
-                      description: data.description,
-                      category: data.category,
-                      points: data.points,
-                      keep: data.keep,
-                      streak: _tasks[idx].streak,
-                      bestStreak: _tasks[idx].bestStreak,
-                      lastDoneKey: _tasks[idx].lastDoneKey,
-                      done: _tasks[idx].done,
-                    );
-                    setState(() => _tasks[idx] = updated);
-                    await _saveTasks();
+                  if (t.keep) {
+                    final idx = _keepTasks.indexWhere((x) => x.id == t.id);
+                    if (idx >= 0) {
+                      setState(() {
+                        _keepTasks[idx] = DailyTask(
+                          id: t.id,
+                          title: data.title,
+                          description: data.description,
+                          category: data.category,
+                          points: data.points,
+                          keep: true,
+                          streak: _keepTasks[idx].streak,
+                          bestStreak: _keepTasks[idx].bestStreak,
+                          lastDoneKey: _keepTasks[idx].lastDoneKey,
+                          done: _keepTasks[idx].done,
+                        );
+                      });
+                      await _saveKeepTasks();
+                    }
+                  } else {
+                    final list = _oneOffByDate[dateKey];
+                    final idx = list?.indexWhere((x) => x.id == t.id) ?? -1;
+                    if (list != null && idx >= 0) {
+                      setState(() {
+                        list[idx] = DailyTask(
+                          id: t.id,
+                          title: data.title,
+                          description: data.description,
+                          category: data.category,
+                          points: data.points,
+                          keep: false,
+                          done: list[idx].done,
+                        );
+                      });
+                      await _saveOneOffMap();
+                    }
                   }
                 }
                 if (mounted) Navigator.pop(ctx);
@@ -526,35 +698,46 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                   category: t.category,
                   points: t.points,
                   keep: t.keep,
-                  streak: 0,
-                  bestStreak: 0,
+                  streak: t.keep ? 0 : 0,
+                  bestStreak: t.keep ? 0 : 0,
                   lastDoneKey: null,
                   done: false,
                 );
-                setState(() {
-                  _tasks.add(copy);
-                  // hinter dem Original einfügen
-                  _order.insert(indexInOrdered + 1, copy.id);
-                });
-                await _saveTasks();
-                await _saveOrder();
+                if (t.keep) {
+                  setState(() {
+                    _keepTasks.add(copy);
+                    _orderKeep.add(copy.id);
+                  });
+                  await _saveKeepTasks();
+                  await _saveOrderKeep();
+                } else {
+                  final list =
+                  _oneOffByDate.putIfAbsent(dateKey, () => <DailyTask>[]);
+                  setState(() {
+                    list.add(copy);
+                    final ord =
+                    _orderByDate.putIfAbsent(dateKey, () => <String>[]);
+                    ord.add(copy.id);
+                  });
+                  await _saveOneOffMap();
+                  await _saveOrderByDate();
+                }
                 if (mounted) Navigator.pop(ctx);
               },
             ),
-            ListTile(
-              leading: const Icon(Icons.vertical_align_top),
-              title: const Text('Move to top'),
-              onTap: () async {
-                setState(() {
-                  _order.remove(t.id);
-                  _order.insert(0, t.id);
-                });
-                await _saveOrder();
-                if (mounted) Navigator.pop(ctx);
-              },
-            ),
-
-            // Reset-Optionen NUR für permanente (keep) Tasks
+            if (t.keep)
+              ListTile(
+                leading: const Icon(Icons.vertical_align_top),
+                title: const Text('Move to top'),
+                onTap: () async {
+                  setState(() {
+                    _orderKeep.remove(t.id);
+                    _orderKeep.insert(0, t.id);
+                  });
+                  await _saveOrderKeep();
+                  if (mounted) Navigator.pop(ctx);
+                },
+              ),
             if (t.keep) const Divider(height: 0),
             if (t.keep)
               ListTile(
@@ -562,7 +745,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                 title: const Text('Reset current streak'),
                 onTap: () async {
                   setState(() => t.streak = 0);
-                  await _saveTasks();
+                  await _saveKeepTasks();
                   if (mounted) Navigator.pop(ctx);
                 },
               ),
@@ -572,16 +755,16 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                 title: const Text('Reset best streak'),
                 onTap: () async {
                   setState(() => t.bestStreak = 0);
-                  await _saveTasks();
+                  await _saveKeepTasks();
                   if (mounted) Navigator.pop(ctx);
                 },
               ),
-
             ListTile(
               leading: const Icon(Icons.delete_outline, color: Colors.red),
-              title: const Text('Delete', style: TextStyle(color: Colors.red)),
+              title: const Text('Delete',
+                  style: TextStyle(color: Colors.red)),
               onTap: () async {
-                await _deleteAt(indexInOrdered);
+                await _deleteAt(indexInOrdered, dateKey: dateKey);
                 if (mounted) Navigator.pop(ctx);
               },
             ),
@@ -596,24 +779,74 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   // ===============================================================
   @override
   Widget build(BuildContext context) {
-    final ordered = _orderedTasks();
+    final dateKey = _mode == DailyViewMode.today ? _todayKey() : _selectedKey();
+    final ordered = _orderedTasksFor(dateKey);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Daily Tasks'),
         actions: [
-          // Freeze-Token Anzeige (oben behalten)
+          // View switch
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: ToggleButtons(
+              isSelected: [
+                _mode == DailyViewMode.today,
+                _mode == DailyViewMode.byDate
+              ],
+              onPressed: (i) {
+                setState(() {
+                  _mode = i == 0 ? DailyViewMode.today : DailyViewMode.byDate;
+                });
+              },
+              borderRadius: BorderRadius.circular(8),
+              constraints:
+              const BoxConstraints(minHeight: 36, minWidth: 64),
+              children: const [
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8),
+                  child: Text('Today'),
+                ),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8),
+                  child: Text('By date'),
+                ),
+              ],
+            ),
+          ),
+
+          if (_mode == DailyViewMode.byDate)
+            IconButton(
+              tooltip: 'Pick date',
+              onPressed: () async {
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: _selectedDate,
+                  firstDate: DateTime.now()
+                      .subtract(const Duration(days: 0)), // no past planning
+                  lastDate: DateTime.now().add(const Duration(days: 365)),
+                );
+                if (picked != null) {
+                  setState(() => _selectedDate = picked);
+                }
+              },
+              icon: const Icon(Icons.event),
+            ),
+
+          // Freeze tokens (keep at top)
           Padding(
             padding: const EdgeInsets.only(right: 8),
             child: GestureDetector(
-              onLongPress: _showFreezeHelp,          // ⟵ kurzer Hinweis per Long-Press
-              child: Tooltip(                        // optional: zeigt Text auch als Tooltip bei Long-Press
-                message: 'Prevents your streak from breaking today. Every week you earn one extra freeze token',
+              onLongPress: _showFreezeHelp,
+              child: Tooltip(
+                message:
+                'Prevents your keep-task streak from breaking today. You earn one token each week.',
                 preferBelow: false,
                 child: Row(
                   children: [
                     Icon(Icons.ac_unit,
-                        size: 18, color: Theme.of(context).colorScheme.primary),
+                        size: 18,
+                        color: Theme.of(context).colorScheme.primary),
                     const SizedBox(width: 4),
                     Text('$_freezeTokens'),
                     const SizedBox(width: 12),
@@ -623,40 +856,51 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
             ),
           ),
 
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: Center(
-              child: Text(
-                'Today: $_todayPoints pts',
-                style: Theme.of(context).textTheme.bodyMedium,
+          // Today points (only in Today view)
+          if (_mode == DailyViewMode.today)
+            Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: Center(
+                child: Text(
+                  'Today: $_todayPoints pts',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
               ),
             ),
-          ),
           IconButton(
-            tooltip: 'Reset all (daily)',
-            onPressed: ordered.isEmpty ? null : _resetAll,
+            tooltip: 'Reset all (today)',
+            onPressed: ordered.isEmpty || _mode != DailyViewMode.today
+                ? null
+                : _resetAllToday,
             icon: const Icon(Icons.refresh),
           ),
         ],
       ),
       body: ordered.isEmpty
-          ? const Center(child: Text('No daily tasks yet'))
+          ? Center(
+        child: Text(_mode == DailyViewMode.today
+            ? 'No tasks for today'
+            : 'No tasks on ${_selectedKey()}'),
+      )
           : ReorderableListView.builder(
         padding: const EdgeInsets.only(bottom: 96, top: 8),
         itemCount: ordered.length,
-        onReorder: _onReorder,
+        onReorder: (a, b) => _onReorder(a, b, dateKey: dateKey),
         buildDefaultDragHandles: false,
         itemBuilder: (_, i) {
           final t = ordered[i];
+          final isKeep = t.keep;
 
           return _ReorderDailyTile(
-            key: ValueKey('daily_${t.id}'),
+            key: ValueKey('daily_${dateKey}_${t.id}'),
             index: i,
             leadingStripColor: Theme.of(context).colorScheme.primary,
             title: Text(
               t.title,
-              style:
-              t.done ? const TextStyle(decoration: TextDecoration.lineThrough) : null,
+              style: t.done
+                  ? const TextStyle(
+                  decoration: TextDecoration.lineThrough)
+                  : null,
             ),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -671,28 +915,39 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                       Chip(
                         label: Text(t.category!),
                         visualDensity: VisualDensity.compact,
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        materialTapTargetSize:
+                        MaterialTapTargetSize.shrinkWrap,
                       ),
                     Text('${t.points} pts'),
-                    if (t.keep)
+                    if (isKeep)
                       const Chip(
                         label: Text('keeps'),
                         visualDensity: VisualDensity.compact,
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        materialTapTargetSize:
+                        MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    if (!isKeep)
+                      Chip(
+                        label: Text(_mode == DailyViewMode.today
+                            ? 'today only'
+                            : dateKey),
+                        visualDensity: VisualDensity.compact,
+                        materialTapTargetSize:
+                        MaterialTapTargetSize.shrinkWrap,
                       ),
                   ],
                 ),
               ],
             ),
             leadingCheckboxValue: t.done,
-            onLeadingCheckboxChanged: (_) => _toggleDone(t),
-            onLongPress: () => _openTaskActions(t, i),
-
-            // Trailing Actions: KEINE ❄️-Schaltfläche mehr
+            onLeadingCheckboxChanged: (_) =>
+                _toggleDone(t, dateKey: dateKey),
+            onLongPress: () =>
+                _openTaskActions(t, i, dateKey), // actions sheet
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (t.keep) ...[
+                if (isKeep) ...[
                   _FlameBadge(streak: t.streak),
                   const SizedBox(width: 4),
                   _BestBadge(best: t.bestStreak),
@@ -700,7 +955,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                 ],
                 IconButton(
                   tooltip: 'Delete',
-                  onPressed: () => _deleteAt(i),
+                  onPressed: () => _deleteAt(i, dateKey: dateKey),
                   icon: const Icon(Icons.delete_outline),
                 ),
               ],
@@ -709,29 +964,34 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: _openCreateTaskSheet,
+        onPressed: () => _openCreateTaskSheet(
+          forDateKey:
+          _mode == DailyViewMode.today ? _todayKey() : _selectedKey(),
+        ),
         icon: const Icon(Icons.add),
-        label: const Text('Add'),
+        label: Text(
+          _mode == DailyViewMode.today ? 'Add for today' : 'Add for date',
+        ),
       ),
     );
   }
 
-  // -- Reset all (nur Haken weg, nichts löschen)
-  Future<void> _resetAll() async {
-    if (_tasks.isEmpty) return;
+  // -- Reset all (only uncheck keep tasks today; one-offs stay untouched)
+  Future<void> _resetAllToday() async {
+    if (_keepTasks.isEmpty) return;
     setState(() {
-      for (final t in _tasks) {
+      for (final t in _keepTasks) {
         t.done = false;
       }
       _recalcTodayPoints();
     });
-    await _saveTasks();
-    await _saveProgressToday(); // Tagespunkte -> 0 sichern
+    await _saveKeepTasks();
+    await _saveProgressToday(); // 0 points
   }
 }
 
 /// ===============================================================
-/// Reorder-Tile (mit Drag-Strip links wie im Gym-Screen)
+/// Reorder-Tile (with left drag strip)
 /// ===============================================================
 class _ReorderDailyTile extends StatelessWidget {
   final int index;
@@ -795,7 +1055,7 @@ class _ReorderDailyTile extends StatelessWidget {
 }
 
 /// ===============================================================
-/// 🔥-Badge (aktuelle Streak)
+/// 🔥-Badge (current streak)
 /// ===============================================================
 class _FlameBadge extends StatelessWidget {
   final int streak;
@@ -813,7 +1073,8 @@ class _FlameBadge extends StatelessWidget {
           Icon(Icons.local_fire_department, size: 26, color: cs.error),
           Text(
             '$streak',
-            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white),
+            style: const TextStyle(
+                fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white),
           ),
         ],
       ),
@@ -822,7 +1083,7 @@ class _FlameBadge extends StatelessWidget {
 }
 
 /// ===============================================================
-/// 🏆-Badge (Best Streak)
+/// 🏆-Badge (best streak)
 /// ===============================================================
 class _BestBadge extends StatelessWidget {
   final int best;
@@ -840,7 +1101,8 @@ class _BestBadge extends StatelessWidget {
           Icon(Icons.emoji_events, size: 22, color: cs.secondary),
           Text(
             '$best',
-            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white),
+            style: const TextStyle(
+                fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white),
           ),
         ],
       ),
@@ -849,10 +1111,17 @@ class _BestBadge extends StatelessWidget {
 }
 
 /// ===============================================================
-/// Bottom Sheet Formular (Create)
+/// Create bottom sheet (supports scheduling date for one-offs)
 /// ===============================================================
+class _CreateResult {
+  final DailyTask task;
+  final String? dateKey; // only for keep=false
+  const _CreateResult(this.task, this.dateKey);
+}
+
 class _CreateDailyTaskSheet extends StatefulWidget {
-  const _CreateDailyTaskSheet();
+  final String defaultDateKey; // suggested date for one-offs
+  const _CreateDailyTaskSheet({required this.defaultDateKey});
 
   @override
   State<_CreateDailyTaskSheet> createState() => _CreateDailyTaskSheetState();
@@ -866,7 +1135,17 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
   int _points = 1;
   bool _keep = false;
 
+  late DateTime _scheduledDate;
+
   static const _suggestedCategories = ['Gym', 'Work', 'Study', 'Leisure', 'Skill'];
+
+  @override
+  void initState() {
+    super.initState();
+    // parse default dateKey
+    final parts = widget.defaultDateKey.split('-').map(int.parse).toList();
+    _scheduledDate = DateTime(parts[0], parts[1], parts[2]);
+  }
 
   @override
   void dispose() {
@@ -874,6 +1153,9 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
     _descCtrl.dispose();
     super.dispose();
   }
+
+  String _dateKey(DateTime d) =>
+      '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
@@ -887,12 +1169,14 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
       keep: _keep,
     );
 
-    Navigator.pop(context, t);
+    Navigator.pop(context, _CreateResult(t, _keep ? null : _dateKey(_scheduledDate)));
   }
 
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.of(context).viewInsets.bottom;
+    final today = DateTime.now();
+
     return Padding(
       padding: EdgeInsets.only(bottom: bottom),
       child: SingleChildScrollView(
@@ -906,7 +1190,8 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
               Row(
                 children: [
                   const Text('New Daily Task',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                      style:
+                      TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
                   const Spacer(),
                   IconButton(
                     onPressed: () => Navigator.pop(context),
@@ -921,7 +1206,8 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
                   labelText: 'Name',
                   hintText: 'e.g. Drink 2L water',
                 ),
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                validator: (v) =>
+                (v == null || v.trim().isEmpty) ? 'Required' : null,
                 textInputAction: TextInputAction.next,
               ),
               const SizedBox(height: 12),
@@ -983,9 +1269,36 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
                 value: _keep,
                 onChanged: (v) => setState(() => _keep = v ?? false),
                 title: const Text('Keep for future days'),
-                subtitle: const Text('If disabled: task is only for today'),
+                subtitle: const Text('If disabled: task is for a specific date'),
                 controlAffinity: ListTileControlAffinity.leading,
                 contentPadding: EdgeInsets.zero,
+              ),
+              const SizedBox(height: 12),
+              // Date picker only for one-offs
+              Opacity(
+                opacity: _keep ? 0.5 : 1,
+                child: IgnorePointer(
+                  ignoring: _keep,
+                  child: ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.event),
+                    title: const Text('Scheduled date'),
+                    subtitle: Text(
+                        '${_scheduledDate.year}-${_scheduledDate.month.toString().padLeft(2, '0')}-${_scheduledDate.day.toString().padLeft(2, '0')}'),
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate:
+                        _scheduledDate.isBefore(today) ? today : _scheduledDate,
+                        firstDate: today,
+                        lastDate: today.add(const Duration(days: 365)),
+                      );
+                      if (picked != null) {
+                        setState(() => _scheduledDate = picked);
+                      }
+                    },
+                  ),
+                ),
               ),
               const SizedBox(height: 12),
               Row(
@@ -1014,7 +1327,7 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
 }
 
 /// ===============================================================
-/// Bottom Sheet Formular (Edit)
+/// Edit bottom sheet (keep flag not moved between models here)
 /// ===============================================================
 class _TaskFormData {
   final String title;
@@ -1056,7 +1369,7 @@ class _EditDailyTaskSheetState extends State<_EditDailyTaskSheet> {
     _descCtrl = TextEditingController(text: widget.task.description ?? '');
     _category = widget.task.category;
     _points = widget.task.points;
-    _keep = widget.task.keep;
+    _keep = widget.task.keep; // kept for completeness; not used to migrate
   }
 
   @override
@@ -1072,7 +1385,8 @@ class _EditDailyTaskSheetState extends State<_EditDailyTaskSheet> {
       context,
       _TaskFormData(
         title: _titleCtrl.text.trim(),
-        description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
+        description:
+        _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
         category: (_category?.trim().isEmpty ?? true) ? null : _category!.trim(),
         points: _points,
         keep: _keep,
@@ -1096,7 +1410,8 @@ class _EditDailyTaskSheetState extends State<_EditDailyTaskSheet> {
               Row(
                 children: [
                   const Text('Edit Task',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                      style:
+                      TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
                   const Spacer(),
                   IconButton(
                     onPressed: () => Navigator.pop(context),
@@ -1110,7 +1425,8 @@ class _EditDailyTaskSheetState extends State<_EditDailyTaskSheet> {
                 decoration: const InputDecoration(
                   labelText: 'Name',
                 ),
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                validator: (v) =>
+                (v == null || v.trim().isEmpty) ? 'Required' : null,
                 textInputAction: TextInputAction.next,
               ),
               const SizedBox(height: 12),
@@ -1201,7 +1517,7 @@ class _EditDailyTaskSheetState extends State<_EditDailyTaskSheet> {
 }
 
 /// ===============================================================
-/// Congrats Overlay (inline)
+/// Congrats overlay
 /// ===============================================================
 class CongratsScreen extends StatefulWidget {
   const CongratsScreen({
@@ -1267,7 +1583,8 @@ class _CongratsScreenState extends State<CongratsScreen>
                   Icon(Icons.emoji_events, size: 72, color: cs.primary),
                   const SizedBox(height: 10),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: cs.primaryContainer,
                       borderRadius: BorderRadius.circular(18),
