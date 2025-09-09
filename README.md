@@ -38,12 +38,6 @@ I started building Goalify because I realized I was losing track of my weight pr
 
 ### Progress Visulation
 - KPI cards (e.g., Today’s points, trends)
-
-### Optional: Gym Presence (Geofencing-lite)
-- “I’m at the gym” detection when staying **≥ 15 minutes** within a radius
-- One-tap: “Set Gym = current location”
-- Uses **geolocator**; foreground monitoring by default
-
 ---
 
 ## ❗ What’s NOT in (for now)
