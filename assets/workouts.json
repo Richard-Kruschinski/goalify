@@ -70,13 +70,6 @@
     "muscles": ["Calves (Gastrocnemius)"]
   },
   {
-    "id": "preacher_curls_machine",
-    "name": "Preacher Curls (Machine)",
-    "description": "Machine-supported preacher curl emphasizing controlled biceps isolation.",
-    "icon": "fitness_center",
-    "muscles": ["Biceps"]
-  },
-  {
     "id": "concentration_curls",
     "name": "Concentration Curls",
     "description": "One-arm biceps curl. Focuses on peak contraction and isolation.",
@@ -154,6 +147,13 @@
     "muscles": ["Upper Chest", "Shoulders", "Triceps"]
   },
   {
+    "id": "lateral_neck_flexion",
+    "name": "Lateral Neck Flexion",
+    "description": "Side-to-side neck flexion. Use light resistance and slow tempo.",
+    "icon": "fitness_center",
+    "muscles": ["Neck (Lateral Flexors: SCM, Scalenes)"]
+  },
+  {
     "id": "lateral_raise_dumbbell",
     "name": "Lateral Raise (Dumbbell)",
     "description": "Classic shoulder exercise with dumbbells for lateral delts.",
@@ -196,11 +196,32 @@
     "muscles": ["Quads"]
   },
   {
+    "id": "neck_curls",
+    "name": "Neck Curls",
+    "description": "Neck flexion against resistance. Keep range controlled and avoid jerking.",
+    "icon": "fitness_center",
+    "muscles": ["Neck Flexors (SCM, Longus Colli)"]
+  },
+  {
+    "id": "neck_extension",
+    "name": "Neck Extension",
+    "description": "Neck extension against resistance to strengthen posterior neck.",
+    "icon": "fitness_center",
+    "muscles": ["Neck Extensors (Upper Traps, Splenius, Erector Cervicis)"]
+  },
+  {
     "id": "overhead_press",
     "name": "Overhead Press",
     "description": "Press barbell overhead. Focus on shoulder strength and core stability.",
     "icon": "upload",
     "muscles": ["Shoulders", "Triceps", "Core"]
+  },
+  {
+    "id": "preacher_curls_machine",
+    "name": "Preacher Curls (Machine)",
+    "description": "Machine-supported preacher curl emphasizing controlled biceps isolation.",
+    "icon": "fitness_center",
+    "muscles": ["Biceps"]
   },
   {
     "id": "pull_ups",
@@ -264,6 +285,20 @@
     "description": "Row variation with T-bar. Targets upper back and rear delts.",
     "icon": "fitness_center",
     "muscles": ["Back", "Rear Delts"]
+  },
+  {
+    "id": "tricep_extension_machine",
+    "name": "Tricep Extension (Machine)",
+    "description": "Machine-guided triceps extension for stable, isolated elbow extension.",
+    "icon": "fitness_center",
+    "muscles": ["Triceps"]
+  },
+  {
+    "id": "tricep_extension_rope_isolated",
+    "name": "Tricep Extension (Rope, Isolated)",
+    "description": "Cable rope triceps extension with strict form and end-range flare for isolation.",
+    "icon": "fitness_center",
+    "muscles": ["Triceps"]
   },
   {
     "id": "triceps_pushdown",
