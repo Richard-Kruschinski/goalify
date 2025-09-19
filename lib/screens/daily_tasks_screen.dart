@@ -96,7 +96,8 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
       'daily_freeze_usage_v1'; // Map<dateKey, List<taskId>>
 
   // NEW: one-off tasks per day (only keep=false live here)
-  static const _kOneOffByDateKey = 'daily_oneoff_by_date_v1'; // Map<dateKey, List<task>>
+  static const _kOneOffByDateKey =
+      'daily_oneoff_by_date_v1'; // Map<dateKey, List<task>>
 
   // State
   final List<DailyTask> _keepTasks = []; // keep=true
@@ -163,7 +164,8 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   // ---- Progress: save today’s points ----
   Future<void> _saveProgressToday() async {
     final key = _todayKey();
-    final raw = await LocalStorage.loadJson('progress_history_v1', fallback: {});
+    final raw =
+    await LocalStorage.loadJson('progress_history_v1', fallback: {});
     final hist = Map<String, dynamic>.from(raw as Map);
     hist[key] = _todayPoints;
     await LocalStorage.saveJson('progress_history_v1', hist);
@@ -361,7 +363,8 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   }
 
   Future<void> _dailyRolloverIfNeeded() async {
-    final last = await LocalStorage.loadJson(_kDailyRolloverKey, fallback: '');
+    final last =
+    await LocalStorage.loadJson(_kDailyRolloverKey, fallback: '');
     final today = _todayKey();
     if (last == today) return;
 
@@ -428,8 +431,9 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   // Points (only keep & done today count toward "Today" points)
   // ===============================================================
   void _recalcTodayPoints() {
-    _todayPoints =
-        _keepTasks.where((t) => t.keep && t.done).fold<int>(0, (s, t) => s + t.points);
+    _todayPoints = _keepTasks
+        .where((t) => t.keep && t.done)
+        .fold<int>(0, (s, t) => s + t.points);
   }
 
   // ===============================================================
@@ -761,8 +765,8 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
               ),
             ListTile(
               leading: const Icon(Icons.delete_outline, color: Colors.red),
-              title: const Text('Delete',
-                  style: TextStyle(color: Colors.red)),
+              title:
+              const Text('Delete', style: TextStyle(color: Colors.red)),
               onTap: () async {
                 await _deleteAt(indexInOrdered, dateKey: dateKey);
                 if (mounted) Navigator.pop(ctx);
@@ -1055,7 +1059,7 @@ class _ReorderDailyTile extends StatelessWidget {
 }
 
 /// ===============================================================
-/// 🔥-Badge (current streak)
+/// 🔥-Badge (current streak) with black outline on number
 /// ===============================================================
 class _FlameBadge extends StatelessWidget {
   final int streak;
@@ -1071,10 +1075,27 @@ class _FlameBadge extends StatelessWidget {
         alignment: Alignment.center,
         children: [
           Icon(Icons.local_fire_department, size: 26, color: cs.error),
+          // Outline
+          Text(
+            '$streak',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              foreground: Paint()
+                ..style = PaintingStyle.stroke
+                ..strokeWidth = 2
+                ..color = Colors.black,
+            ),
+          ),
+          // Fill
+          const SizedBox.shrink(),
           Text(
             '$streak',
             style: const TextStyle(
-                fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white),
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+            ),
           ),
         ],
       ),
@@ -1083,7 +1104,7 @@ class _FlameBadge extends StatelessWidget {
 }
 
 /// ===============================================================
-/// 🏆-Badge (best streak)
+/// 🏆-Badge (best streak) with black outline on number
 /// ===============================================================
 class _BestBadge extends StatelessWidget {
   final int best;
@@ -1099,10 +1120,26 @@ class _BestBadge extends StatelessWidget {
         alignment: Alignment.center,
         children: [
           Icon(Icons.emoji_events, size: 22, color: cs.secondary),
+          // Outline
+          Text(
+            '$best',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              foreground: Paint()
+                ..style = PaintingStyle.stroke
+                ..strokeWidth = 2
+                ..color = Colors.black,
+            ),
+          ),
+          // Fill
           Text(
             '$best',
             style: const TextStyle(
-                fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white),
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+            ),
           ),
         ],
       ),
@@ -1251,7 +1288,7 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
                       max: 10,
                       divisions: 9,
                       label: '$_points',
-                      onChanged: (v) => setState(() => _points = v.round()),
+                      onChanged: (v) => setState(() => _points = v.round() ),
                     ),
                   ),
                   SizedBox(
