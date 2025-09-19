@@ -84,10 +84,14 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   static const _kDailyRolloverKey = 'daily_last_rollover_v1';
   static const _kCongratsShownKey = 'daily_congrats_shown_v1';
 
-  // Orders
+  // Legacy orders (kept for compatibility / seeding)
   static const _kDailyOrderKey = 'daily_tasks_order_v1'; // keep tasks order
   static const _kOrderByDateKey =
       'daily_tasks_order_by_date_v1'; // Map<dateKey, List<id>>
+
+  // NEW: combined order (keep + one-offs) per date
+  static const _kOrderCombinedKey =
+      'daily_order_combined_v1'; // Map<dateKey, List<id>>
 
   // Freeze
   static const _kFreezeTokensKey = 'daily_freeze_tokens_v1';
@@ -102,8 +106,13 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   // State
   final List<DailyTask> _keepTasks = []; // keep=true
   final Map<String, List<DailyTask>> _oneOffByDate = {}; // keep=false by date
+
+  // legacy/local orders
   List<String> _orderKeep = [];
   Map<String, List<String>> _orderByDate = {};
+
+  // combined per date
+  final Map<String, List<String>> _orderCombined = {};
 
   int _todayPoints = 0;
 
@@ -196,7 +205,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
           _kDailyTasksKey, _keepTasks.map((t) => t.toMap()).toList());
     }
 
-    // Orders
+    // Legacy orders
     final orderKeepRaw =
     await LocalStorage.loadJson(_kDailyOrderKey, fallback: []);
     _orderKeep = (orderKeepRaw is List)
@@ -227,6 +236,19 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
               .where((t) => !t.keep)
               .toList();
           _oneOffByDate[k.toString()] = list;
+        }
+      });
+    }
+
+    // Combined order
+    final combinedRaw =
+    await LocalStorage.loadJson(_kOrderCombinedKey, fallback: {});
+    _orderCombined.clear();
+    if (combinedRaw is Map) {
+      combinedRaw.forEach((k, v) {
+        if (v is List) {
+          _orderCombined[k.toString()] =
+              v.map((e) => e.toString()).toList(growable: true);
         }
       });
     }
@@ -279,13 +301,16 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   Future<void> _saveOrderByDate() async =>
       LocalStorage.saveJson(_kOrderByDateKey, _orderByDate);
 
+  Future<void> _saveOrderCombined() async =>
+      LocalStorage.saveJson(_kOrderCombinedKey, _orderCombined);
+
   Future<void> _saveFreezeState() async {
     await LocalStorage.saveJson(_kFreezeTokensKey, _freezeTokens);
     await LocalStorage.saveJson(_kFreezeDaysCounterKey, _freezeDaysCounter);
     await LocalStorage.saveJson(_kFreezeUsageKey, _freezeUsageByDate);
   }
 
-  // Keep order sync
+  // Keep order sync (legacy - still used to seed combined)
   void _syncOrderKeepWithTasks() {
     final ids = _keepTasks.map((t) => t.id).toList();
     bool changed = false;
@@ -302,11 +327,10 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     if (changed) _saveOrderKeep();
   }
 
-  // One-off order sync
+  // One-off order sync (legacy - seed combined)
   void _syncOrderForDate(String dateKey) {
-    final ids = (_oneOffByDate[dateKey] ?? const <DailyTask>[])
-        .map((t) => t.id)
-        .toList();
+    final ids =
+    (_oneOffByDate[dateKey] ?? const <DailyTask>[]).map((t) => t.id).toList();
     final order = List<String>.from(_orderByDate[dateKey] ?? const []);
     bool changed = false;
     for (final id in ids) {
@@ -321,29 +345,66 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     }
   }
 
-  /// Visible list for current context:
-  /// - keep tasks first (open first, done last) using _orderKeep
-  /// - then one-offs for the chosen date using _orderByDate[dateKey]
-  List<DailyTask> _orderedTasksFor(String dateKey) {
+  // NEW: ensure combined order for date contains exactly the task ids present
+  void _syncCombinedForDate(String dateKey) {
     _syncOrderKeepWithTasks();
     _syncOrderForDate(dateKey);
 
-    // Keep tasks
-    final keepMap = {for (final t in _keepTasks) t.id: t};
-    final List<DailyTask> keepOpen = [];
-    final List<DailyTask> keepDone = [];
-    for (final id in _orderKeep) {
-      final t = keepMap[id];
-      if (t == null) continue;
-      (t.done ? keepDone : keepOpen).add(t);
+    final presentIds = <String>{
+      ..._keepTasks.map((e) => e.id),
+      ...(_oneOffByDate[dateKey] ?? const <DailyTask>[]).map((e) => e.id),
+    };
+
+    var combined = List<String>.from(_orderCombined[dateKey] ?? const []);
+
+    // remove missing
+    combined.removeWhere((id) => !presentIds.contains(id));
+
+    // if empty (first time): seed with legacy orders (keeps in legacy order, then one-offs)
+    if (combined.isEmpty) {
+      final legacyKeepOrder = _orderKeep
+          .where((id) => presentIds.contains(id))
+          .toList(growable: true);
+      final legacyOffOrder =
+      (_orderByDate[dateKey] ?? const <String>[]).where(presentIds.contains).toList();
+      combined = [...legacyKeepOrder, ...legacyOffOrder];
     }
 
-    // One-offs for that date
-    final offs = List<DailyTask>.from(_oneOffByDate[dateKey] ?? const []);
-    final order = List<String>.from(_orderByDate[dateKey] ?? const []);
-    offs.sort((a, b) => order.indexOf(a.id).compareTo(order.indexOf(b.id)));
+    // append any new ids at end (stable)
+    for (final id in presentIds) {
+      if (!combined.contains(id)) combined.add(id);
+    }
 
-    return [...keepOpen, ...keepDone, ...offs];
+    _orderCombined[dateKey] = combined;
+    _saveOrderCombined();
+  }
+
+  /// Visible list for current context:
+  /// SINGLE combined order per date (keep + one-offs interleavable)
+  List<DailyTask> _orderedTasksFor(String dateKey) {
+    _syncCombinedForDate(dateKey);
+
+    // Build id -> task map of all tasks visible that day
+    final map = <String, DailyTask>{
+      for (final t in _keepTasks) t.id: t,
+      for (final t in (_oneOffByDate[dateKey] ?? const <DailyTask>[])) t.id: t,
+    };
+
+    final ids = _orderCombined[dateKey] ?? const <String>[];
+    final result = <DailyTask>[];
+
+    // 1) add in combined order
+    for (final id in ids) {
+      final t = map[id];
+      if (t != null) {
+        result.add(t);
+        map.remove(id);
+      }
+    }
+    // 2) append any leftovers (shouldn't happen, but safe)
+    result.addAll(map.values);
+
+    return result;
   }
 
   // ===============================================================
@@ -406,8 +467,10 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     if (_oneOffByDate.containsKey(yesterday)) {
       _oneOffByDate.remove(yesterday);
       _orderByDate.remove(yesterday);
+      _orderCombined.remove(yesterday);
       await _saveOneOffMap();
       await _saveOrderByDate();
+      await _saveOrderCombined();
     }
 
     // --- Freeze tokens: +1 each 7 days ---
@@ -484,7 +547,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
       if (created.task.keep) {
         setState(() {
           _keepTasks.add(created.task..done = false);
-          _orderKeep.add(created.task.id);
+          _orderKeep.add(created.task.id); // legacy
           _recalcTodayPoints();
         });
         await _saveKeepTasks();
@@ -495,12 +558,21 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
         final list = _oneOffByDate.putIfAbsent(key, () => <DailyTask>[]);
         setState(() {
           list.add(created.task);
-          final ord = _orderByDate.putIfAbsent(key, () => <String>[]);
+          final ord = _orderByDate.putIfAbsent(key, () => <String>[]); // legacy
           ord.add(created.task.id);
         });
         await _saveOneOffMap();
         await _saveOrderByDate();
       }
+
+      // ensure new item is appended to combined order of that date
+      final key = created.dateKey ?? forDateKey;
+      _syncCombinedForDate(key);
+      if (!_orderCombined[key]!.contains(created.task.id)) {
+        _orderCombined[key]!.add(created.task.id);
+        await _saveOrderCombined();
+      }
+      if (mounted) setState(() {});
     }
   }
 
@@ -538,6 +610,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
           _orderByDate.remove(dateKey);
         }
       }
+      _orderCombined[dateKey]?.remove(t.id); // remove from combined
       _recalcTodayPoints();
     });
 
@@ -548,6 +621,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
       await _saveOneOffMap();
       await _saveOrderByDate();
     }
+    await _saveOrderCombined();
     if (dateKey == _todayKey()) await _saveProgressToday();
   }
 
@@ -564,49 +638,19 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     await _saveFreezeState();
   }
 
+  // NEW: single combined reorder across keep + one-off
   void _onReorder(int oldIndex, int newIndex, {required String dateKey}) {
-    final ordered = _orderedTasksFor(dateKey);
+    _syncCombinedForDate(dateKey);
     if (newIndex > oldIndex) newIndex -= 1;
-
-    // We keep the strategy: reorder within keep-block and one-off block independently.
-    final keepIds = _keepTasks.map((e) => e.id).toSet();
-    final isOldKeep = keepIds.contains(ordered[oldIndex].id);
-    final isNewKeep = keepIds.contains(ordered[newIndex].id);
-
-    if (isOldKeep && isNewKeep) {
-      // reorder keep ids only
-      final ids = _keepTasks.map((e) => e.id).toList();
-      final movedId = ordered[oldIndex].id;
-      ids.remove(movedId);
-      final insertAt = ids.indexOf(ordered[newIndex].id);
-      ids.insert(insertAt, movedId);
-      final set = ids.toSet();
-      _orderKeep.removeWhere(set.contains);
-      _orderKeep.insertAll(0, ids);
-      _saveOrderKeep();
-      setState(() {});
+    final ids = _orderCombined[dateKey] ?? <String>[];
+    if (oldIndex < 0 || oldIndex >= ids.length || newIndex < 0 || newIndex >= ids.length) {
       return;
     }
-
-    if (!isOldKeep && !isNewKeep) {
-      final dayIds =
-      (_oneOffByDate[dateKey] ?? const <DailyTask>[]).map((e) => e.id).toList();
-      final movedId = ordered[oldIndex].id;
-      dayIds.remove(movedId);
-      final insertAt = dayIds.indexOf(ordered[newIndex].id);
-      dayIds.insert(insertAt, movedId);
-
-      final set = dayIds.toSet();
-      final ord = _orderByDate[dateKey] ?? <String>[];
-      ord.removeWhere(set.contains);
-      ord.insertAll(0, dayIds);
-      _orderByDate[dateKey] = ord;
-      _saveOrderByDate();
-      setState(() {});
-      return;
-    }
-
-    // Cross-block moves are not supported; just ignore to keep blocks separate.
+    final moved = ids.removeAt(oldIndex);
+    ids.insert(newIndex, moved);
+    _orderCombined[dateKey] = ids;
+    _saveOrderCombined();
+    setState(() {});
   }
 
   Future<void> _openTaskActions(
@@ -707,25 +751,36 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                   lastDoneKey: null,
                   done: false,
                 );
+                String dateKeyForCopy = dateKey;
                 if (t.keep) {
                   setState(() {
                     _keepTasks.add(copy);
-                    _orderKeep.add(copy.id);
+                    _orderKeep.add(copy.id); // legacy
                   });
                   await _saveKeepTasks();
                   await _saveOrderKeep();
                 } else {
                   final list =
-                  _oneOffByDate.putIfAbsent(dateKey, () => <DailyTask>[]);
+                  _oneOffByDate.putIfAbsent(dateKeyForCopy, () => <DailyTask>[]);
                   setState(() {
                     list.add(copy);
                     final ord =
-                    _orderByDate.putIfAbsent(dateKey, () => <String>[]);
-                    ord.add(copy.id);
+                    _orderByDate.putIfAbsent(dateKeyForCopy, () => <String>[]);
+                    ord.add(copy.id); // legacy
                   });
                   await _saveOneOffMap();
                   await _saveOrderByDate();
                 }
+                // add into combined next to original
+                _syncCombinedForDate(dateKeyForCopy);
+                final ids = _orderCombined[dateKeyForCopy]!;
+                final pos = ids.indexOf(t.id);
+                if (pos >= 0) {
+                  ids.insert(pos + 1, copy.id);
+                } else {
+                  ids.add(copy.id);
+                }
+                await _saveOrderCombined();
                 if (mounted) Navigator.pop(ctx);
               },
             ),
@@ -734,11 +789,14 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                 leading: const Icon(Icons.vertical_align_top),
                 title: const Text('Move to top'),
                 onTap: () async {
+                  // move to top in combined for this date
+                  _syncCombinedForDate(dateKey);
                   setState(() {
-                    _orderKeep.remove(t.id);
-                    _orderKeep.insert(0, t.id);
+                    _orderCombined[dateKey]!
+                      ..remove(t.id)
+                      ..insert(0, t.id);
                   });
-                  await _saveOrderKeep();
+                  await _saveOrderCombined();
                   if (mounted) Navigator.pop(ctx);
                 },
               ),
@@ -765,8 +823,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
               ),
             ListTile(
               leading: const Icon(Icons.delete_outline, color: Colors.red),
-              title:
-              const Text('Delete', style: TextStyle(color: Colors.red)),
+              title: const Text('Delete', style: TextStyle(color: Colors.red)),
               onTap: () async {
                 await _deleteAt(indexInOrdered, dateKey: dateKey);
                 if (mounted) Navigator.pop(ctx);
@@ -1288,7 +1345,7 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
                       max: 10,
                       divisions: 9,
                       label: '$_points',
-                      onChanged: (v) => setState(() => _points = v.round() ),
+                      onChanged: (v) => setState(() => _points = v.round()),
                     ),
                   ),
                   SizedBox(
