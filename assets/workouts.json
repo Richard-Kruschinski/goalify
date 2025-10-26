@@ -56,11 +56,18 @@
     "muscles": ["Chest"]
   },
   {
-    "id": "calf_raise_seated",
-    "name": "Calf Raises (Seated)",
-    "description": "Seated calf raise. Focus on the soleus muscle.",
+    "id": "cable_rotation",
+    "name": "Cable Rotation",
+    "description": "Standing cable trunk rotation. Focus on obliques and overall core control.",
     "icon": "fitness_center",
-    "muscles": ["Calves (Soleus)"]
+    "muscles": ["Obliques", "Core"]
+  },
+  {
+    "id": "cable_turns",
+    "name": "Cable Turns",
+    "description": "Standing cable trunk rotation. Focus on obliques and overall core control.",
+    "icon": "fitness_center",
+    "muscles": ["Obliques", "Core"]
   },
   {
     "id": "calf_raise_machine",
@@ -70,11 +77,11 @@
     "muscles": ["Calves (Gastrocnemius)"]
   },
   {
-    "id": "concentration_curls",
-    "name": "Concentration Curls",
-    "description": "One-arm biceps curl. Focuses on peak contraction and isolation.",
+    "id": "calf_raise_seated",
+    "name": "Calf Raises (Seated)",
+    "description": "Seated calf raise. Focus on the soleus muscle.",
     "icon": "fitness_center",
-    "muscles": ["Biceps"]
+    "muscles": ["Calves (Soleus)"]
   },
   {
     "id": "concentration_curls",
@@ -147,6 +154,13 @@
     "muscles": ["Upper Chest", "Shoulders", "Triceps"]
   },
   {
+    "id": "lat_pulldown",
+    "name": "Lat Pulldown",
+    "description": "Pull-down movement targeting the lats. Grip variations shift muscle focus.",
+    "icon": "fitness_center",
+    "muscles": ["Back", "Lats", "Biceps"]
+  },
+  {
     "id": "lateral_neck_flexion",
     "name": "Lateral Neck Flexion",
     "description": "Side-to-side neck flexion. Use light resistance and slow tempo.",
@@ -173,13 +187,6 @@
     "description": "Cable lateral raises for constant tension on lateral delts.",
     "icon": "fitness_center",
     "muscles": ["Shoulders (Lateral)"]
-  },
-  {
-    "id": "lat_pulldown",
-    "name": "Lat Pulldown",
-    "description": "Pull-down movement targeting the lats. Grip variations shift muscle focus.",
-    "icon": "fitness_center",
-    "muscles": ["Back", "Lats", "Biceps"]
   },
   {
     "id": "leg_curl",

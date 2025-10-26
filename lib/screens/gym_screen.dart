@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // <-- volle services: rootBundle, SystemChrome, DeviceOrientation
+import 'package:flutter/services.dart'; // rootBundle, SystemChrome, DeviceOrientation
 import 'package:fl_chart/fl_chart.dart';
 import 'dart:math' as math;
 import '../storage/local_storage.dart'; // saveJson/loadJson
@@ -86,8 +86,8 @@ class WorkoutLog {
 }
 
 /// Rückgabewert des Dialogs:
-/// - log != null  -> es soll getrackt werden
-/// - assignDay != null -> nur Zuweisung zur Gruppe (ohne History)
+/// - log != null  -> tracken
+/// - assignDay != null -> nur Plan-Zuweisung (ohne History)
 class LogOutcome {
   final WorkoutLog? log;
   final String? assignDay;
@@ -110,7 +110,10 @@ class _GymScreenState extends State<GymScreen> {
   static const _kOrderActiveKey = 'gym_order_by_exercise_v1';
   static const _kOrderByDayKey = 'gym_order_by_day_v1';
   static const _kAssignmentsKey = 'gym_assignments_by_day_v1';
-  static const _kOrderDaysKey = 'gym_order_days_v1'; // Reihenfolge der Days
+  static const _kOrderDaysKey = 'gym_order_days_v1';
+
+  // Kalender-Storage (Map<yyyy-MM-dd, Set<DayName>>)
+  static const _kCalendarKey = 'gym_calendar_v1';
 
   ViewMode _mode = ViewMode.byExercise;
 
@@ -128,6 +131,9 @@ class _GymScreenState extends State<GymScreen> {
   // Reihenfolge der Workout-Days
   List<String> _orderDays = <String>[];
 
+  // Kalender – pro Datum (yyyy-MM-dd) Liste der erledigten Workout-Days
+  final Map<String, Set<String>> _calendarByDate = <String, Set<String>>{};
+
   @override
   void initState() {
     super.initState();
@@ -136,7 +142,8 @@ class _GymScreenState extends State<GymScreen> {
 
   Future<void> _bootstrap() async {
     await _loadWorkoutsFromAsset();
-    await _loadState(); // view-mode, logs, orders, assignments, day-order
+    await _loadState();
+    await _loadCalendar();
     if (mounted) setState(() {});
   }
 
@@ -151,14 +158,15 @@ class _GymScreenState extends State<GymScreen> {
         ..clear()
         ..addAll(list);
     } catch (_) {
-      // ignore; empty list fallback
+      // ignore
     }
   }
 
   // ----------------------------- Persistenter State -----------------------------
   Future<void> _loadState() async {
     // View mode
-    final vm = await LocalStorage.loadJson(_kGymViewKey, fallback: 'byExercise');
+    final vm =
+    await LocalStorage.loadJson(_kGymViewKey, fallback: 'byExercise');
     _mode = (vm == 'byDay') ? ViewMode.byDay : ViewMode.byExercise;
 
     // Logs
@@ -215,7 +223,6 @@ class _GymScreenState extends State<GymScreen> {
         ? orderDaysRaw.map((e) => e.toString()).toList()
         : <String>[];
 
-    // Beim Laden direkt aufräumen/anreichern
     _syncOrderDaysWithAssignments();
   }
 
@@ -236,6 +243,47 @@ class _GymScreenState extends State<GymScreen> {
   Future<void> _saveOrderDays() async =>
       LocalStorage.saveJson(_kOrderDaysKey, _orderDays);
 
+  // ----------------------------- Kalender: Load/Save -----------------------------
+  Future<void> _loadCalendar() async {
+    final raw = await LocalStorage.loadJson(_kCalendarKey, fallback: {});
+    _calendarByDate.clear();
+    if (raw is Map) {
+      raw.forEach((dateStr, list) {
+        final l =
+            (list as List?)?.map((e) => e.toString()).toSet() ?? <String>{};
+        _calendarByDate[dateStr.toString()] = l;
+      });
+    }
+  }
+
+  Future<void> _saveCalendar() async {
+    final enc = _calendarByDate.map((k, v) => MapEntry(k, v.toList()));
+    await LocalStorage.saveJson(_kCalendarKey, enc);
+  }
+
+  String _dateKey(DateTime dt) =>
+      '${dt.year.toString().padLeft(4, '0')}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+
+  bool _isDayMarkedOn(DateTime date, String dayName) {
+    final key = _dateKey(date);
+    final set = _calendarByDate[key];
+    return set != null && set.contains(dayName);
+  }
+
+  Future<void> _setDayMarkedToday(String dayName, bool value) async {
+    final now = DateTime.now();
+    final key = _dateKey(now);
+    final set = _calendarByDate.putIfAbsent(key, () => <String>{});
+    if (value) {
+      set.add(dayName);
+    } else {
+      set.remove(dayName);
+      if (set.isEmpty) _calendarByDate.remove(key);
+    }
+    await _saveCalendar();
+    if (mounted) setState(() {});
+  }
+
   // ----------------------------- Helpers: Assignments -----------------------------
   void _ensureAssigned(String day, String workoutId) {
     final list = _assignmentsByDay.putIfAbsent(day, () => <String>[]);
@@ -245,14 +293,11 @@ class _GymScreenState extends State<GymScreen> {
       changed = true;
       _saveAssignments();
     }
-    // für Reorder-Liste pro Day ebenfalls sicherstellen
     final order = _orderByDay.putIfAbsent(day, () => <String>[]);
     if (!order.contains(workoutId)) {
       order.add(workoutId);
       _saveOrderByDay();
     }
-
-    // Day in Order aufnehmen, falls neu
     if (!_orderDays.contains(day)) {
       _orderDays.add(day);
       _saveOrderDays();
@@ -266,13 +311,11 @@ class _GymScreenState extends State<GymScreen> {
     list.remove(workoutId);
     if (list.isEmpty) {
       _assignmentsByDay.remove(day);
-      // auch aus der Day-Order entfernen, wenn der Day leer ist
       _orderDays.remove(day);
       _saveOrderDays();
     }
     _saveAssignments();
 
-    // auch aus der Day-Reihenfolge (Workouts) entfernen
     final order = _orderByDay[day];
     if (order != null) {
       order.remove(workoutId);
@@ -298,7 +341,6 @@ class _GymScreenState extends State<GymScreen> {
   }
 
   Set<String> _daysForWorkout(String workoutId) {
-    // aus Logs + Assignments
     final out = <String>{};
     final list = _logs[workoutId];
     if (list != null) {
@@ -323,7 +365,6 @@ class _GymScreenState extends State<GymScreen> {
         day: result.day,
         isDropset: result.isDropset,
       ));
-      // sicherstellen, dass auch zugeordnet ist
       _ensureAssigned(result.day, workoutId);
     });
     _saveLogs();
@@ -345,7 +386,6 @@ class _GymScreenState extends State<GymScreen> {
 
   // ---------- Reihenfolge: Übungs-Ansicht ----------
   List<Workout> _getActiveWorkouts() {
-    // alle mit Logs oder mit Assignment
     final idsWithLogs = _logs.keys.toSet();
     final idsWithAssign = <String>{
       for (final entry in _assignmentsByDay.entries) ...entry.value
@@ -451,15 +491,12 @@ class _GymScreenState extends State<GymScreen> {
     final activeDays = _assignmentsByDay.keys.toList();
 
     bool changed = false;
-
-    // fehlende aktive Days hinten anhängen
     for (final d in activeDays) {
       if (!_orderDays.contains(d)) {
         _orderDays.add(d);
         changed = true;
       }
     }
-    // Days entfernen, die nicht mehr aktiv sind
     final activeSet = activeDays.toSet();
     final beforeLen = _orderDays.length;
     _orderDays.removeWhere((d) => !activeSet.contains(d));
@@ -493,7 +530,6 @@ class _GymScreenState extends State<GymScreen> {
   void _deleteWorkoutLogsAll(String workoutId) {
     setState(() => _logs.remove(workoutId));
     _saveLogs();
-    // Zuweisungen bleiben bestehen
   }
 
   void _deleteExerciseEverywhere(String workoutId) {
@@ -584,7 +620,9 @@ class _GymScreenState extends State<GymScreen> {
         title: Text('Clear history for "${w.name}" on $day?'),
         content: const Text('Only this exercise’s logs for this day will be deleted.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel')),
           FilledButton(
             onPressed: () {
               Navigator.pop(context);
@@ -670,7 +708,6 @@ class _GymScreenState extends State<GymScreen> {
   void _openProgressChartDialog(Workout w) {
     final cs = Theme.of(context).colorScheme;
 
-    // --- Daten vorbereiten ---
     final logs = List<WorkoutLog>.from(_logs[w.id] ?? const <WorkoutLog>[]);
     if (logs.isEmpty) {
       showDialog<void>(
@@ -692,10 +729,10 @@ class _GymScreenState extends State<GymScreen> {
     final double minX = spots.first.x;
     final double maxX = spots.last.x;
 
-    // --- „Nice numbers“ für Y-Achse ---
     double niceNum(double range, {required bool round}) {
       if (range <= 0) return 1;
-      final double exp = math.pow(10, (math.log(range) / math.ln10).floor()).toDouble();
+      final double exp =
+      math.pow(10, (math.log(range) / math.ln10).floor()).toDouble();
       final double f = range / exp; // 1..10
       double nf;
       if (round) {
@@ -725,12 +762,10 @@ class _GymScreenState extends State<GymScreen> {
     final minY = (rawMinY / yInterval).floor() * yInterval;
     final maxY = (rawMaxY / yInterval).ceil() * yInterval;
 
-    // --- Formatierer ---
     String fmtDate(DateTime d) =>
         '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.${d.year}';
     String fmtTooltip(DateTime d) => fmtDate(d);
 
-    // Layout
     const double kLeftAxisSpaceToLine = 4;
     const double kLeftAxisReserved = 38;
     const double kLeftAxisNamePadding = 12;
@@ -747,7 +782,7 @@ class _GymScreenState extends State<GymScreen> {
             tooltip: 'Full screen',
             icon: const Icon(Icons.fullscreen),
             onPressed: () {
-              Navigator.pop(context); // Dialog schließen
+              Navigator.pop(context);
               Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (_) => FullScreenChartPage(
@@ -769,7 +804,6 @@ class _GymScreenState extends State<GymScreen> {
               minY: minY.toDouble(),
               maxY: maxY.toDouble(),
               backgroundColor: Colors.transparent,
-
               gridData: FlGridData(
                 show: true,
                 drawVerticalLine: false,
@@ -784,7 +818,6 @@ class _GymScreenState extends State<GymScreen> {
                 show: true,
                 border: Border.all(color: cs.outlineVariant),
               ),
-
               titlesData: FlTitlesData(
                 leftTitles: AxisTitles(
                   axisNameWidget: const Padding(
@@ -814,7 +847,7 @@ class _GymScreenState extends State<GymScreen> {
                     getTitlesWidget: (value, meta) {
                       const eps = 0.5;
                       final bool isFirst = (value - minX).abs() < eps;
-                      final bool isLast  = (value - maxX).abs() < eps;
+                      final bool isLast = (value - maxX).abs() < eps;
 
                       if ((maxX - minX).abs() < eps) {
                         final dt = DateTime.fromMillisecondsSinceEpoch(value.toInt());
@@ -853,8 +886,6 @@ class _GymScreenState extends State<GymScreen> {
                   sideTitles: SideTitles(showTitles: false),
                 ),
               ),
-
-              // --- Tooltip: 1. Zeile Datum, 2. Zeile Gewicht (ggf. „• Dropset“) ---
               lineTouchData: LineTouchData(
                 enabled: true,
                 handleBuiltInTouches: true,
@@ -865,21 +896,19 @@ class _GymScreenState extends State<GymScreen> {
                   tooltipPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                   getTooltipItems: (touchedSpots) => touchedSpots.map((t) {
                     final idx = t.spotIndex.clamp(0, logs.length - 1);
-                    final dt  = DateTime.fromMillisecondsSinceEpoch(t.x.round());
+                    final dt = DateTime.fromMillisecondsSinceEpoch(t.x.round());
                     final isDrop = logs[idx].isDropset;
 
-                    final dateStr   = fmtTooltip(dt);
-                    final weightStr = '${t.y.toStringAsFixed(1)} kg${isDrop ? ' • Dropset' : ''}';
+                    final dateStr = fmtTooltip(dt);
+                    final weightStr =
+                        '${t.y.toStringAsFixed(1)} kg${isDrop ? ' • Dropset' : ''}';
 
                     return LineTooltipItem(
-                      '$dateStr\n', // Zeile 1
-                      TextStyle(
-                        color: cs.onSurfaceVariant,
-                        fontWeight: FontWeight.w700,
-                      ),
+                      '$dateStr\n',
+                      TextStyle(color: cs.onSurfaceVariant, fontWeight: FontWeight.w700),
                       children: [
                         TextSpan(
-                          text: weightStr, // Zeile 2
+                          text: weightStr,
                           style: TextStyle(
                             color: cs.onSurfaceVariant,
                             fontWeight: FontWeight.w500,
@@ -890,7 +919,6 @@ class _GymScreenState extends State<GymScreen> {
                   }).toList(),
                 ),
               ),
-
               lineBarsData: [
                 LineChartBarData(
                   spots: spots,
@@ -914,7 +942,6 @@ class _GymScreenState extends State<GymScreen> {
             ),
           ),
         ),
-       
       ),
     );
   }
@@ -937,7 +964,22 @@ class _GymScreenState extends State<GymScreen> {
 
   PreferredSizeWidget _buildAppBar() => AppBar(
     title: const Text('Gym'),
-    actions: [_buildViewModeMenu()],
+    actions: [
+      IconButton(
+        tooltip: 'Calendar',
+        icon: const Icon(Icons.calendar_month),
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => WorkoutCalendarPage(
+                calendarByDate: _calendarByDate,
+              ),
+            ),
+          );
+        },
+      ),
+      _buildViewModeMenu(),
+    ],
   );
 
   Widget _buildViewModeMenu() => PopupMenuButton<ViewMode>(
@@ -967,7 +1009,7 @@ class _GymScreenState extends State<GymScreen> {
   Widget _buildEmptyBody() =>
       const Center(child: Text('No workouts added yet'));
 
-  // Übungs-Ansicht mit Reorder (zeigt auch zugewiesene Übungen ohne Logs)
+  // Übungs-Ansicht
   Widget _buildWorkoutListBody() {
     final active = _getActiveWorkouts();
     if (active.isEmpty) return _buildEmptyBody();
@@ -988,8 +1030,7 @@ class _GymScreenState extends State<GymScreen> {
           title: Text(w.name),
           subtitle: latest == null
               ? const Text('No progress yet')
-              : Text(
-              '${latest.day} • ${latest.weightKg} kg • ${latest.sets} Sets'),
+              : Text('${latest.day} • ${latest.weightKg} kg • ${latest.sets} Sets'),
           avatar: Icon(w.icon),
           onHistory: () => _openHistoryDialog(w),
           onLongPress: () => _openProgressChartDialog(w),
@@ -1038,7 +1079,7 @@ class _GymScreenState extends State<GymScreen> {
     );
   }
 
-  // Day-Auswahl (nur zugewiesene Days) – mit Reorder
+  // Day-Ansicht
   Widget _buildDayListBody() {
     final days = _getOrderedDays();
     if (days.isEmpty) {
@@ -1090,12 +1131,15 @@ class _GymScreenState extends State<GymScreen> {
             if (outcome.log != null) _addLog(w.id, outcome.log!);
           },
           onShowHistory: _openHistoryDialog,
-          onShowChart: _openProgressChartDialog, // Long-press -> Chart
+          onShowChart: _openProgressChartDialog,
           onDeleteForDay: (w) => _confirmDeleteForDay(w, day),
           onDeleteAll: _confirmClearHistoryAll,
           onUnassignFromDay: (w) => _removeAssignmentForDay(day, w.id),
           onReorder: (ids) => _reorderDay(day, ids),
           stripeColor: stripe,
+          // Checkbox oben rechts
+          isDoneToday: () => _isDayMarkedOn(DateTime.now(), day),
+          onToggleDoneToday: (v) => _setDayMarkedToday(day, v),
         ),
       ),
     );
@@ -1125,12 +1169,11 @@ class _GymScreenState extends State<GymScreen> {
             return ListTile(
               leading: const Icon(Icons.history),
               title: Text('${log.weightKg} kg  •  ${log.sets} Sets'),
-              subtitle:
-              Text('${log.day}  •  ${_formatDate(log.dateTime)}'),
+              subtitle: Text('${log.day}  •  ${_formatDate(log.dateTime)}'),
               trailing: log.isDropset
                   ? Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 8, vertical: 4),
+                padding:
+                const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: cs.primaryContainer,
                   borderRadius: BorderRadius.circular(12),
@@ -1147,9 +1190,7 @@ class _GymScreenState extends State<GymScreen> {
         ),
       ),
       actions: [
-        TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'))
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK'))
       ],
     );
   }
@@ -1177,7 +1218,7 @@ class _GymScreenState extends State<GymScreen> {
             _addLog(w.id, outcome.log!);
           } else if (outcome.assignDay != null) {
             _ensureAssigned(outcome.assignDay!, w.id);
-            setState(() {}); // UI refresh
+            setState(() {});
           }
         },
       ),
@@ -1343,21 +1384,24 @@ class _WorkoutPickerSheetState extends State<WorkoutPickerSheet> {
 }
 
 // ===============================================================
-// DayDetailScreen mit Reorder + Persist via Callback
+// DayDetailScreen mit Checkbox oben rechts („heute erledigt“)
 // ===============================================================
 class DayDetailScreen extends StatefulWidget {
   final String day;
-  final List<Workout> orderedWorkouts; // bereits sortiert vom Parent
+  final List<Workout> orderedWorkouts;
   final WorkoutLog? Function(String workoutId, String day) latestForDay;
   final Future<void> Function(Workout workout, WorkoutLog? latestForThisDay)
   onEdit;
   final void Function(Workout workout) onShowHistory;
-  final void Function(Workout workout) onShowChart; // <— NEU
+  final void Function(Workout workout) onShowChart;
   final void Function(Workout workout) onDeleteForDay;
   final void Function(Workout workout) onDeleteAll;
   final void Function(Workout workout) onUnassignFromDay;
   final void Function(List<String> newOrder) onReorder;
   final Color stripeColor;
+
+  final bool Function() isDoneToday;
+  final Future<void> Function(bool value) onToggleDoneToday;
 
   const DayDetailScreen({
     super.key,
@@ -1372,6 +1416,8 @@ class DayDetailScreen extends StatefulWidget {
     required this.onUnassignFromDay,
     required this.onReorder,
     required this.stripeColor,
+    required this.isDoneToday,
+    required this.onToggleDoneToday,
   });
 
   @override
@@ -1380,11 +1426,13 @@ class DayDetailScreen extends StatefulWidget {
 
 class _DayDetailScreenState extends State<DayDetailScreen> {
   late List<Workout> _list;
+  late bool _checkedToday;
 
   @override
   void initState() {
     super.initState();
     _list = List<Workout>.from(widget.orderedWorkouts);
+    _checkedToday = widget.isDoneToday();
   }
 
   void _onReorder(int oldIndex, int newIndex) {
@@ -1398,7 +1446,28 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(widget.day)),
+      appBar: AppBar(
+        title: Text(widget.day),
+        actions: [
+          Tooltip(
+            message: 'Mark as done today (adds to calendar)',
+            child: Row(
+              children: [
+                const Text('Done'),
+                Checkbox(
+                  value: _checkedToday,
+                  onChanged: (v) async {
+                    final nv = v ?? false;
+                    await widget.onToggleDoneToday(nv);
+                    setState(() => _checkedToday = nv);
+                  },
+                ),
+                const SizedBox(width: 8),
+              ],
+            ),
+          ),
+        ],
+      ),
       body: _list.isEmpty
           ? const Center(child: Text('No exercises today'))
           : ReorderableListView.builder(
@@ -1416,8 +1485,7 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
             title: Text(workout.name),
             subtitle: latest == null
                 ? const Text('No progress yet')
-                : Text(
-                '${latest.weightKg} kg • ${latest.sets} Sets'),
+                : Text('${latest.weightKg} kg • ${latest.sets} Sets'),
             avatar: Icon(workout.icon),
             onHistory: () => widget.onShowHistory(workout),
             onLongPress: () => widget.onShowChart(workout),
@@ -1462,7 +1530,7 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
 }
 
 // ===============================================================
-// Gemeinsames Tile mit Streifen (Drag-Handle) – NICHT ganz am Rand
+// Gemeinsame Reorder-Tiles
 // ===============================================================
 class _ReorderTile extends StatelessWidget {
   final int index;
@@ -1472,9 +1540,9 @@ class _ReorderTile extends StatelessWidget {
   final Widget? trailingMore;
   final Icon? avatar;
   final VoidCallback onHistory;
-  final VoidCallback? onDelete; // optional: nur in Übungs-Ansicht
+  final VoidCallback? onDelete;
   final VoidCallback? onTap;
-  final VoidCallback? onLongPress; // <— NEU
+  final VoidCallback? onLongPress;
 
   const _ReorderTile({
     super.key,
@@ -1496,13 +1564,11 @@ class _ReorderTile extends StatelessWidget {
       key: key,
       child: Container(
         decoration: const BoxDecoration(
-          border:
-          Border(bottom: BorderSide(width: 0.5, color: Color(0x1F000000))),
+          border: Border(bottom: BorderSide(width: 0.5, color: Color(0x1F000000))),
         ),
         child: Row(
           children: [
             const SizedBox(width: 12),
-            // Drag-Handle
             ReorderableDelayedDragStartListener(
               index: index,
               child: Container(
@@ -1512,7 +1578,6 @@ class _ReorderTile extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-            // Inhalt
             Expanded(
               child: ListTile(
                 leading: CircleAvatar(child: avatar),
@@ -1546,9 +1611,6 @@ class _ReorderTile extends StatelessWidget {
   }
 }
 
-// ===============================================================
-// Day-Tile mit Streifen (nur Titel + optional Subtitle)
-// ===============================================================
 class _ReorderDayTile extends StatelessWidget {
   final int index;
   final Color leadingStripColor;
@@ -1571,8 +1633,7 @@ class _ReorderDayTile extends StatelessWidget {
       key: key,
       child: Container(
         decoration: const BoxDecoration(
-          border:
-          Border(bottom: BorderSide(width: 0.5, color: Color(0x1F000000))),
+          border: Border(bottom: BorderSide(width: 0.5, color: Color(0x1F000000))),
         ),
         child: Row(
           children: [
@@ -1603,7 +1664,7 @@ class _ReorderDayTile extends StatelessWidget {
 }
 
 /// ===============================================================
-/// Dialog: Day selection (kontextsensitiv) + optional/required Felder
+/// Dialog: Day selection + Werte
 /// ===============================================================
 class LogInputDialog extends StatefulWidget {
   const LogInputDialog({
@@ -1611,13 +1672,13 @@ class LogInputDialog extends StatefulWidget {
     this.latest,
     this.contextDay,
     this.availableDays = const [],
-    this.creationMode = false, // Add = optional; Update = required
+    this.creationMode = false,
     super.key,
   });
 
   final Workout workout;
   final WorkoutLog? latest;
-  final String? contextDay; // != null -> Day fix & Feld versteckt
+  final String? contextDay;
   final List<String> availableDays;
   final bool creationMode;
 
@@ -1650,7 +1711,7 @@ class _LogInputDialogState extends State<LogInputDialog> {
     }
 
     if (_dayLocked) {
-      _chipDay = widget.contextDay; // invisible but used
+      _chipDay = widget.contextDay;
     }
   }
 
@@ -1706,7 +1767,6 @@ class _LogInputDialogState extends State<LogInputDialog> {
   }
 
   void _submit() {
-    // CREATE MODE: kein Gewicht/Sets -> Day auswählen -> nur Zuweisung
     if (widget.creationMode && !_anyNumberFilled()) {
       final day = _resolveChosenDay();
       if (day.isEmpty && !_dayLocked) {
@@ -1717,7 +1777,6 @@ class _LogInputDialogState extends State<LogInputDialog> {
       return;
     }
 
-    // Ansonsten wird getrackt (volle Validierung)
     if (!_validateForTracking()) return;
 
     final kg = double.parse(_kgController.text.replaceAll(',', '.'));
@@ -1861,7 +1920,7 @@ class _LogInputDialogState extends State<LogInputDialog> {
 }
 
 /// ===============================================================
-/// Vollbild-Seite für die Chart (Landscape, immersive)
+/// Vollbild-Seite für die Chart
 /// ===============================================================
 class FullScreenChartPage extends StatefulWidget {
   final String title;
@@ -1881,7 +1940,6 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
   @override
   void initState() {
     super.initState();
-    // Landscape + immersive UI aktivieren
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     SystemChrome.setPreferredOrientations(
       [DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight],
@@ -1890,7 +1948,6 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
 
   @override
   void dispose() {
-    // Zurück zu Portrait + normale UI
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     SystemChrome.setPreferredOrientations(
       [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown],
@@ -1902,7 +1959,8 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
-    final logs = List<WorkoutLog>.from(widget.logs)..sort((a, b) => a.dateTime.compareTo(b.dateTime));
+    final logs = List<WorkoutLog>.from(widget.logs)
+      ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
     final spots = List<FlSpot>.generate(
       logs.length,
           (i) => FlSpot(
@@ -1916,7 +1974,8 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
 
     double niceNum(double range, {required bool round}) {
       if (range <= 0) return 1;
-      final double exp = math.pow(10, (math.log(range) / math.ln10).floor()).toDouble();
+      final double exp =
+      math.pow(10, (math.log(range) / math.ln10).floor()).toDouble();
       final double f = range / exp;
       double nf;
       if (round) {
@@ -1961,22 +2020,23 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
           ),
         ],
       ),
-      body: SafeArea( // <— NEU: schützt vor Ecken / Gestenbereich
-        minimum: const EdgeInsets.fromLTRB(12, 12, 18, 12), // etwas Extra rechts
+      body: SafeArea(
+        minimum: const EdgeInsets.fromLTRB(12, 12, 18, 12),
         child: LineChart(
           LineChartData(
-            // ...
             titlesData: FlTitlesData(
-              // ...
+              topTitles: const AxisTitles(
+                sideTitles: SideTitles(showTitles: false),
+              ),
               bottomTitles: AxisTitles(
                 sideTitles: SideTitles(
                   showTitles: true,
-                  reservedSize: 36, // <— vorher 32
+                  reservedSize: 36,
                   interval: (maxX - minX) == 0 ? 1 : (maxX - minX),
                   getTitlesWidget: (value, meta) {
                     const eps = 0.5;
                     final bool isFirst = (value - minX).abs() < eps;
-                    final bool isLast  = (value - maxX).abs() < eps;
+                    final bool isLast = (value - maxX).abs() < eps;
 
                     if ((maxX - minX).abs() < eps) {
                       final dt = DateTime.fromMillisecondsSinceEpoch(value.toInt());
@@ -1996,7 +2056,6 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
                       axisSide: meta.axisSide,
                       space: 6,
                       child: Padding(
-                        // rechts etwas mehr Platz für die Ecke/Gesten
                         padding: EdgeInsets.only(left: isFirst ? 8 : 0, right: isLast ? 24 : 0),
                         child: Text(
                           fmtDate(dt),
@@ -2008,9 +2067,6 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
                   },
                 ),
               ),
-              topTitles: const AxisTitles(
-                sideTitles: SideTitles(showTitles: false),
-              ),
             ),
             lineTouchData: LineTouchData(
               enabled: true,
@@ -2019,21 +2075,21 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
                 fitInsideHorizontally: true,
                 fitInsideVertically: true,
                 getTooltipColor: (_) => cs.surfaceVariant,
-                tooltipPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                tooltipPadding:
+                const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 getTooltipItems: (touchedSpots) => touchedSpots.map((t) {
                   final idx = t.spotIndex.clamp(0, logs.length - 1);
-                  final dt  = DateTime.fromMillisecondsSinceEpoch(t.x.round());
+                  final dt = DateTime.fromMillisecondsSinceEpoch(t.x.round());
                   final isDrop = logs[idx].isDropset;
 
-                  final dateStr   = fmtTooltip(dt);
-                  final weightStr = '${t.y.toStringAsFixed(1)} kg${isDrop ? ' • Dropset' : ''}';
+                  final dateStr = fmtTooltip(dt);
+                  final weightStr =
+                      '${t.y.toStringAsFixed(1)} kg${isDrop ? ' • Dropset' : ''}';
 
                   return LineTooltipItem(
                     '$dateStr\n',
                     TextStyle(
-                      color: cs.onSurfaceVariant,
-                      fontWeight: FontWeight.w700,
-                    ),
+                        color: cs.onSurfaceVariant, fontWeight: FontWeight.w700),
                     children: [
                       TextSpan(
                         text: weightStr,
@@ -2047,6 +2103,10 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
                 }).toList(),
               ),
             ),
+            minX: minX,
+            maxX: maxX,
+            minY: minY.toDouble(),
+            maxY: maxY.toDouble(),
             lineBarsData: [
               LineChartBarData(
                 spots: spots,
@@ -2069,6 +2129,216 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// ===============================================================
+/// KOMPAKTER MONATSKALENDER – lokalisiert (z. B. „Oktober 2025“)
+/// ===============================================================
+class WorkoutCalendarPage extends StatefulWidget {
+  final Map<String, Set<String>> calendarByDate;
+  const WorkoutCalendarPage({super.key, required this.calendarByDate});
+
+  @override
+  State<WorkoutCalendarPage> createState() => _WorkoutCalendarPageState();
+}
+
+class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
+  late DateTime _currentMonth;
+
+  @override
+  void initState() {
+    super.initState();
+    final now = DateTime.now();
+    _currentMonth = DateTime(now.year, now.month, 1);
+  }
+
+  String _dateKey(DateTime dt) =>
+      '${dt.year.toString().padLeft(4, '0')}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+
+  int _daysInMonth(DateTime month) {
+    final next = DateTime(month.year, month.month + 1, 1);
+    return next.subtract(const Duration(days: 1)).day;
+  }
+
+  void _prevMonth() {
+    setState(() {
+      _currentMonth = DateTime(_currentMonth.year, _currentMonth.month - 1, 1);
+    });
+  }
+
+  void _nextMonth() {
+    setState(() {
+      _currentMonth = DateTime(_currentMonth.year, _currentMonth.month + 1, 1);
+    });
+  }
+
+  List<Widget> _buildDayNameChips(List<String> names, ColorScheme cs) {
+    final display = names.take(3).toList();
+    final hasMore = names.length > 3;
+
+    final chips = display
+        .map((n) => Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: cs.primaryContainer,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(n,
+          style: TextStyle(
+            color: cs.onPrimaryContainer,
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+          )),
+    ))
+        .toList();
+
+    if (hasMore) {
+      chips.add(Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          color: cs.secondaryContainer,
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Text('…',
+            style: TextStyle(
+              color: cs.onSecondaryContainer,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            )),
+      ));
+    }
+    return chips;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    final firstWeekday =
+        DateTime(_currentMonth.year, _currentMonth.month, 1).weekday; // 1..7
+    final leadingEmpty = (firstWeekday + 6) % 7; // Start bei Montag
+    final days = _daysInMonth(_currentMonth);
+    final cells = leadingEmpty + days;
+    final rows = (cells / 7).ceil();
+
+    final localizations = MaterialLocalizations.of(context);
+    final prevLabel = localizations.formatMonthYear(
+      DateTime(_currentMonth.year, _currentMonth.month - 1, 1),
+    );
+    final nextLabel = localizations.formatMonthYear(
+      DateTime(_currentMonth.year, _currentMonth.month + 1, 1),
+    );
+    final titleLabel = localizations.formatMonthYear(_currentMonth);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(titleLabel),
+        actions: [
+          TextButton.icon(
+            onPressed: _prevMonth,
+            icon: const Icon(Icons.chevron_left),
+            label: Text(prevLabel),
+          ),
+          TextButton.icon(
+            onPressed: _nextMonth,
+            icon: const Icon(Icons.chevron_right),
+            label: Text(nextLabel),
+          ),
+        ],
+      ),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 560),
+          child: Column(
+            children: [
+              const SizedBox(height: 8),
+              Row(
+                children: const [
+                  _Dow('Mon'), _Dow('Tue'), _Dow('Wed'),
+                  _Dow('Thu'), _Dow('Fri'), _Dow('Sat'), _Dow('Sun'),
+                ],
+              ),
+              const Divider(height: 0),
+              Expanded(
+                child: GridView.builder(
+                  padding: const EdgeInsets.all(8),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 7,
+                    mainAxisSpacing: 6,
+                    crossAxisSpacing: 6,
+                    childAspectRatio: 0.9, // kompakter
+                  ),
+                  itemCount: rows * 7,
+                  itemBuilder: (_, idx) {
+                    if (idx < leadingEmpty || idx >= leadingEmpty + days) {
+                      return const SizedBox.shrink();
+                    }
+                    final dayNum = idx - leadingEmpty + 1;
+                    final date =
+                    DateTime(_currentMonth.year, _currentMonth.month, dayNum);
+                    final key = _dateKey(date);
+                    final names = widget.calendarByDate[key]?.toList() ?? const <String>[];
+
+                    return Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(color: cs.outlineVariant),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: const EdgeInsets.all(8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('$dayNum',
+                              style:
+                              const TextStyle(fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 4),
+                          if (names.isNotEmpty)
+                            Expanded(
+                              child: Align(
+                                alignment: Alignment.bottomLeft,
+                                child: Wrap(
+                                  spacing: 4,
+                                  runSpacing: 4,
+                                  children: _buildDayNameChips(names, cs),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 6),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Text(
+                  'Anzeige: Namen der absolvierten Workout-Days pro Datum',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _Dow extends StatelessWidget {
+  final String label;
+  const _Dow(this.label);
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Center(
+            child:
+            Text(label, style: const TextStyle(fontWeight: FontWeight.w600))),
       ),
     );
   }
