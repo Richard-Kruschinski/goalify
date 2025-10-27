@@ -63,8 +63,8 @@
     "muscles": ["Obliques", "Core"]
   },
   {
-    "id": "cable_turns",
-    "name": "Cable Turns",
+    "id": "cable_twist",
+    "name": "Cable Twist",
     "description": "Standing cable trunk rotation. Focus on obliques and overall core control.",
     "icon": "fitness_center",
     "muscles": ["Obliques", "Core"]
@@ -320,5 +320,12 @@
     "description": "Seated wrist curls with dumbbells to target forearm flexors.",
     "icon": "fitness_center",
     "muscles": ["Forearms (Flexors)"]
+  },
+  {
+    "id": "wrist_extensions_dumbbell",
+    "name": "Wrist Extensions (Dumbbell)",
+    "description": "Seated wrist extensions with dumbbells to strengthen the forearm extensors. Keep the movement slow and controlled.",
+    "icon": "fitness_center",
+    "muscles": ["Forearms (Extensors)"]
   }
 ]
