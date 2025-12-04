@@ -1,16 +1,16 @@
-# 📱 Goalify
+#Goalify
 
 **Goalify** is a habit and gym tracking app that helps you stay productive and motivated. You can manage your daily to-do list, visualize your overall progress, and log your training weights at the gym. Weight progression can also be tracked and visualized per workout exercise, giving you a clear picture of when it’s time to increase the load.
 
 ---
 
-## 💡 Motivation
+## Motivation
 
-I started building Goalify because I realized I was losing track of my weight progression in the gym. At the same time, I had been keeping a daily to-do list on a simple whiteboard. To make my everyday life easier and bring both worlds together — productivity and fitness — I decided to create this project and turn it into an app.
+I started building Goalify because I realized I was losing track of my weight progression in the gym. At the same time, I had been keeping a daily to-do list on a simple whiteboard. To make my everyday life easier and bring both worlds together, productivity and fitness.I decided to create this project and turn it into an app.
 
 ---
 
-## 🚀 Features
+## Features
 
 ### Daily Tasks
 - Reorder tasks via drag & drop
@@ -47,7 +47,7 @@ It’s **under consideration** to return in the future.
 
 ---
 
-## 📸 Screenshots
+## Screenshots
 
 | Daily | Gym | Progress | Leaderboard |
 |------|-----|----------|-------------|
@@ -55,22 +55,33 @@ It’s **under consideration** to return in the future.
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 - **Flutter** (Dart)
 - Charts: **fl_chart**
-- Location (optional presence): **geolocator**
 - Storage: local JSON via a small `LocalStorage` helper (no backend required)
 - State: straightforward `setState` + services
 
-> Previously listed: Riverpod, Firebase/Auth/Firestore, Syncfusion — those are **not required** in the current app and are **planned/optional**.
+> Previously listed: Riverpod, Firebase/Auth/Firestore, Syncfusion,those are **not required** in the current app and are **planned/optional**.
 
 ---
 
-## 📦 Installation
+## Installation
 
-### 1) Clone
+### Requirements
+
+**Flutter** installed
+(see https://flutter.dev/docs/get-started/install)
+
+### Clone
+
 ```bash
 git clone https://github.com/Richard-Kruschinski/goalify.git
 cd goalify
 flutter pub get
+```
+
+### Run the app
+```bash
+flutter run
+```
