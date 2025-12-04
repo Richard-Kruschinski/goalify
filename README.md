@@ -1,4 +1,4 @@
-#Goalify
+# Goalify
 
 **Goalify** is a habit and gym tracking app that helps you stay productive and motivated. You can manage your daily to-do list, visualize your overall progress, and log your training weights at the gym. Weight progression can also be tracked and visualized per workout exercise, giving you a clear picture of when it’s time to increase the load.
 
