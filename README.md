@@ -51,7 +51,7 @@ It’s **under consideration** to return in the future.
 
 | Daily | Gym | Progress | Leaderboard |
 |------|-----|----------|-------------|
-| *(coming soon)* | *(coming soon)* | *(coming soon)* | *(coming soon)* |
+| ![Daily Tasks_Screen](assets/images/screenshot/screenshots/daily_tasks_screen.png)| *(coming soon)* | *(coming soon)* | *(coming soon)* |
 
 ---
 
