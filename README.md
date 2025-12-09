@@ -49,9 +49,9 @@ It’s **under consideration** to return in the future.
 
 ## Screenshots
 
-| Daily | Gym | Progress | Leaderboard |
+| Daily | Gym | Progress | Profile |
 |------|-----|----------|-------------|
-| ![Daily Tasks_Screen](assets/images/screenshots/daily_tasks_screen.png)| *(coming soon)* | *(coming soon)* | *(coming soon)* |
+| ![Daily Tasks_Screen](assets/images/screenshots/daily_tasks_screen.png){: width="300px" }| ![Gym_Screen](assets/images/screenshots/gym_screen1.png) | ![Progress_Screen](assets/images/screenshots/progress_screen.png) | ![Profile_Screen](assets/images/screenshots/profile_screen.png)|
 
 ---
 
