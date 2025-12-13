@@ -59,6 +59,7 @@ class WorkoutLog {
   final int sets;
   final String day;
   final bool isDropset;
+  final List<double> extraSetWeights;
 
   const WorkoutLog({
     required this.dateTime,
@@ -66,6 +67,7 @@ class WorkoutLog {
     required this.sets,
     required this.day,
     this.isDropset = false,
+    this.extraSetWeights = const [],
   });
 
   Map<String, dynamic> toMap() => {
@@ -74,6 +76,7 @@ class WorkoutLog {
     'sets': sets,
     'day': day,
     'isDropset': isDropset,
+    'extraSetWeights': extraSetWeights,
   };
 
   factory WorkoutLog.fromMap(Map<String, dynamic> m) => WorkoutLog(
@@ -82,6 +85,7 @@ class WorkoutLog {
     sets: (m['sets'] as num).toInt(),
     day: m['day'] as String,
     isDropset: (m['isDropset'] as bool?) ?? false,
+    extraSetWeights: ((m['extraSetWeights'] as List?)?.map((e) => (e as num).toDouble()).toList()) ?? const [],
   );
 }
 
@@ -1018,10 +1022,10 @@ class _GymScreenState extends State<GymScreen> {
                     getDotPainter: (spot, percent, bar, index) {
                       final isDrop = logs[index].isDropset;
                       return FlDotCirclePainter(
-                        radius: isDrop ? 4.5 : 3.2,
+                        radius: isDrop ? 5.2 : 3.0,
                         color: isDrop ? cs.error : cs.primary,
-                        strokeWidth: isDrop ? 2 : 1.5,
-                        strokeColor: cs.onPrimaryContainer.withOpacity(.35),
+                        strokeWidth: isDrop ? 2.4 : 1.2,
+                        strokeColor: isDrop ? cs.errorContainer : cs.onPrimaryContainer.withOpacity(.35),
                       );
                     },
                   ),
@@ -1261,7 +1265,26 @@ class _GymScreenState extends State<GymScreen> {
             return ListTile(
               leading: const Icon(Icons.history),
               title: Text('${log.weightKg} kg  •  ${log.sets} Sets'),
-              subtitle: Text('${log.day}  •  ${_formatDate(log.dateTime)}'),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('${log.day}  •  ${_formatDate(log.dateTime)}'),
+                  if (log.isDropset && log.extraSetWeights.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      children: log.extraSetWeights
+                          .map((w) => Chip(
+                                label: Text('${w.toStringAsFixed(1)} kg'),
+                                visualDensity: VisualDensity.compact,
+                                padding: EdgeInsets.zero,
+                              ))
+                          .toList(),
+                    ),
+                  ],
+                ],
+              ),
               trailing: log.isDropset
                   ? Container(
                 padding:
@@ -1363,7 +1386,9 @@ class _WorkoutPickerSheetState extends State<WorkoutPickerSheet> {
     final String lower = _query.toLowerCase();
     final List<Workout> filtered = <Workout>[];
     for (final Workout workout in widget.workouts) {
-      if (workout.name.toLowerCase().contains(lower)) {
+      final byName = workout.name.toLowerCase().contains(lower);
+      final byMuscle = workout.muscles.any((m) => m.toLowerCase().contains(lower));
+      if (byName || byMuscle) {
         filtered.add(workout);
       }
     }
@@ -1803,6 +1828,7 @@ class _LogInputDialogState extends State<LogInputDialog> {
 
   String? _chipDay;
   bool _isDropset = false;
+  final TextEditingController _extraWeightsController = TextEditingController();
 
   bool get _dayLocked => widget.contextDay != null;
 
@@ -1830,6 +1856,7 @@ class _LogInputDialogState extends State<LogInputDialog> {
     _kgController.dispose();
     _setsController.dispose();
     _dayController.dispose();
+    _extraWeightsController.dispose();
     super.dispose();
   }
 
@@ -1902,9 +1929,20 @@ class _LogInputDialogState extends State<LogInputDialog> {
           sets: sets,
           day: day,
           isDropset: _isDropset,
+          extraSetWeights: _parseExtraWeights(_extraWeightsController.text),
         ),
       ),
     );
+  }
+
+  List<double> _parseExtraWeights(String text) {
+    final raw = text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty);
+    final out = <double>[];
+    for (final s in raw) {
+      final v = double.tryParse(s.replaceAll(',', '.'));
+      if (v != null) out.add(v);
+    }
+    return out;
   }
 
   Widget _buildDayInput(BuildContext context) {
@@ -1997,6 +2035,16 @@ class _LogInputDialogState extends State<LogInputDialog> {
           secondary: Icon(Icons.bolt, color: cs.primary),
           contentPadding: EdgeInsets.zero,
         ),
+        if (_isDropset) ...[
+          const SizedBox(height: 8),
+          TextField(
+            controller: _extraWeightsController,
+            decoration: const InputDecoration(
+              labelText: 'Zusätzliche Gewichte (kommagetrennt)',
+              hintText: 'z. B. 60, 50, 40',
+            ),
+          ),
+        ],
       ],
     );
   }
