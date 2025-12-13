@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'screens/group_list_screen.dart';
 import 'screens/progress_screen.dart';
 import 'screens/daily_tasks_screen.dart';
 import 'screens/gym_screen.dart';
-import 'screens/login_screen.dart';
 import 'screens/profile_screen.dart';
 
 void main() {

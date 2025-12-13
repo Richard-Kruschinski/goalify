@@ -479,15 +479,32 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
       _freezeTokens += 1;
     }
 
+    // --- Reset combined order to original state (active first) ---
+    _resetCombinedOrderToOriginal(yesterday);
+    _resetCombinedOrderToOriginal(today);
+
     _recalcTodayPoints();
     await _markRolloverDoneForToday();
     await _saveProgressToday();
     await _saveFreezeState();
+    await _saveOrderCombined();
 
     if (changedKeep) {
       await _saveKeepTasks();
       if (mounted) setState(() {});
     }
+  }
+
+  /// Reset combined order by date to original structure (no completion-based sorting)
+  void _resetCombinedOrderToOriginal(String dateKey) {
+    final keepIds = _orderKeep.where((id) {
+      return _keepTasks.any((x) => x.id == id);
+    }).toList();
+
+    final oneOffIds = _orderByDate[dateKey] ?? <String>[];
+
+    // Rebuild: keep first, then one-offs
+    _orderCombined[dateKey] = keepIds + oneOffIds;
   }
 
   // ===============================================================
@@ -580,6 +597,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     setState(() {
       t.done = !t.done;
       _recalcTodayPoints();
+      _sortCompletedToBottom(dateKey);
     });
     if (t.keep) {
       await _saveKeepTasks();
@@ -591,6 +609,33 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
       await _checkAndMaybeShowCongrats();
     }
   }
+
+  /// Sort tasks in combined order: active/incomplete first, completed last
+  void _sortCompletedToBottom(String dateKey) {
+    final ids = _orderCombined[dateKey] ?? <String>[];
+    final map = <String, DailyTask>{
+      for (final t in _keepTasks) t.id: t,
+      for (final t in (_oneOffByDate[dateKey] ?? const <DailyTask>[])) t.id: t,
+    };
+
+    final active = <String>[];
+    final completed = <String>[];
+
+    for (final id in ids) {
+      final t = map[id];
+      if (t != null) {
+        if (t.done) {
+          completed.add(id);
+        } else {
+          active.add(id);
+        }
+      }
+    }
+
+    _orderCombined[dateKey] = active + completed;
+    _saveOrderCombined();
+  }
+
 
   Future<void> _deleteAt(int indexInOrdered, {required String dateKey}) async {
     final list = _orderedTasksFor(dateKey);
@@ -635,6 +680,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
       final list = _freezeUsageByDate.putIfAbsent(today, () => <String>[]);
       list.add(t.id);
     });
+    _sortCompletedToBottom(today);
     await _saveFreezeState();
   }
 

@@ -78,7 +78,7 @@ class _CongratsScreenState extends State<CongratsScreen>
                   borderRadius: BorderRadius.circular(28),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.25),
+                      color: Colors.black.withValues(alpha: 0.25),
                       blurRadius: 24,
                       offset: const Offset(0, 12),
                     ),
@@ -204,7 +204,7 @@ class _GoldTrophy extends StatelessWidget {
             shape: BoxShape.circle,
             gradient: RadialGradient(
               colors: [
-                const Color(0xFFFFF3E0).withOpacity(0.8),
+                const Color(0xFFFFF3E0).withValues(alpha: 0.8),
                 const Color(0x00FFF3E0),
               ],
               stops: const [0.0, 1.0],
@@ -232,7 +232,7 @@ class _GoldTrophy extends StatelessWidget {
               child: Icon(
                 Icons.star_rounded,
                 size: size * 0.18,
-                color: Colors.white.withOpacity(0.85),
+                color: Colors.white.withValues(alpha: 0.85),
               ),
             );
           },

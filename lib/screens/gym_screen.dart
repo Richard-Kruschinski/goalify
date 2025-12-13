@@ -354,7 +354,7 @@ class _GymScreenState extends State<GymScreen> {
                 decoration: BoxDecoration(
                   color: c.shade400,
                   shape: BoxShape.circle,
-                  border: Border.all(color: cs.onSurface.withOpacity(0.1)),
+                  border: Border.all(color: cs.onSurface.withValues(alpha: 0.1)),
                 ),
               ),
             ))
@@ -901,7 +901,7 @@ class _GymScreenState extends State<GymScreen> {
                 drawVerticalLine: false,
                 horizontalInterval: yInterval,
                 getDrawingHorizontalLine: (v) => FlLine(
-                  color: cs.onSurface.withOpacity(.15),
+                  color: cs.onSurface.withValues(alpha: 0.15),
                   strokeWidth: 1,
                   dashArray: const [6, 6],
                 ),
@@ -984,7 +984,7 @@ class _GymScreenState extends State<GymScreen> {
                 touchTooltipData: LineTouchTooltipData(
                   fitInsideHorizontally: true,
                   fitInsideVertically: true,
-                  getTooltipColor: (_) => cs.surfaceVariant,
+                  getTooltipColor: (_) => cs.surfaceContainerHighest,
                   tooltipPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                   getTooltipItems: (touchedSpots) => touchedSpots.map((t) {
                     final idx = t.spotIndex.clamp(0, logs.length - 1);
@@ -997,12 +997,12 @@ class _GymScreenState extends State<GymScreen> {
 
                     return LineTooltipItem(
                       '$dateStr\n',
-                      TextStyle(color: cs.onSurfaceVariant, fontWeight: FontWeight.w700),
+                      TextStyle(color: cs.onSurface, fontWeight: FontWeight.w700),
                       children: [
                         TextSpan(
                           text: weightStr,
                           style: TextStyle(
-                            color: cs.onSurfaceVariant,
+                            color: cs.onSurface,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -1025,7 +1025,7 @@ class _GymScreenState extends State<GymScreen> {
                         radius: isDrop ? 5.2 : 3.0,
                         color: isDrop ? cs.error : cs.primary,
                         strokeWidth: isDrop ? 2.4 : 1.2,
-                        strokeColor: isDrop ? cs.errorContainer : cs.onPrimaryContainer.withOpacity(.35),
+                        strokeColor: isDrop ? cs.errorContainer : cs.onPrimaryContainer.withValues(alpha: 0.35),
                       );
                     },
                   ),
@@ -2232,7 +2232,7 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
               touchTooltipData: LineTouchTooltipData(
                 fitInsideHorizontally: true,
                 fitInsideVertically: true,
-                getTooltipColor: (_) => cs.surfaceVariant,
+getTooltipColor: (_) => cs.surfaceContainerHighest,
                 tooltipPadding:
                 const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 getTooltipItems: (touchedSpots) => touchedSpots.map((t) {
@@ -2247,12 +2247,12 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
                   return LineTooltipItem(
                     '$dateStr\n',
                     TextStyle(
-                        color: cs.onSurfaceVariant, fontWeight: FontWeight.w700),
+                        color: cs.onSurface, fontWeight: FontWeight.w700),
                     children: [
                       TextSpan(
                         text: weightStr,
                         style: TextStyle(
-                          color: cs.onSurfaceVariant,
+                          color: cs.onSurface,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -2279,7 +2279,7 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
                       radius: isDrop ? 4.5 : 3.2,
                       color: isDrop ? cs.error : cs.primary,
                       strokeWidth: isDrop ? 2 : 1.5,
-                      strokeColor: cs.onPrimaryContainer.withOpacity(.35),
+                      strokeColor: cs.onPrimaryContainer.withValues(alpha: 0.35),
                     );
                   },
                 ),
@@ -2368,7 +2368,7 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
       chips.add(Container(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
         decoration: BoxDecoration(
-          color: cs.surfaceVariant,
+          color: cs.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Text('+$overflow',
