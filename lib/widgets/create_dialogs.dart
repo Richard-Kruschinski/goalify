@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../store/app_store.dart';
 
 class CreateGroupDialog extends StatefulWidget {
@@ -30,7 +31,7 @@ class _CreateGroupDialogState extends State<CreateGroupDialog> {
             children: [
               const Text('Deadline:'),
               const SizedBox(width: 8),
-              Expanded(child: Text('${deadline.toLocal()}')),
+              Expanded(child: Text(DateFormat('dd.MM.yyyy HH:mm').format(deadline))),
               TextButton(
                 onPressed: () async {
                   final d = await showDatePicker(
@@ -43,6 +44,13 @@ class _CreateGroupDialogState extends State<CreateGroupDialog> {
                     final t = await showTimePicker(
                       context: context,
                       initialTime: TimeOfDay.fromDateTime(deadline),
+                      builder: (context, child) {
+                        final mq = MediaQuery.of(context);
+                        return MediaQuery(
+                          data: mq.copyWith(alwaysUse24HourFormat: true),
+                          child: child ?? const SizedBox.shrink(),
+                        );
+                      },
                     );
                     final time = t ?? const TimeOfDay(hour: 23, minute: 59);
                     setState(() {

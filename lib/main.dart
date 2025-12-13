@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'screens/group_list_screen.dart';
 import 'screens/progress_screen.dart';
 import 'screens/daily_tasks_screen.dart';
@@ -21,6 +22,14 @@ class GoalifyApp extends StatelessWidget {
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.pink),
       ),
+      // German localization to start weeks on Monday and format dates accordingly
+      locale: const Locale('de', 'DE'),
+      supportedLocales: const [Locale('de', 'DE')],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       home: const MainNav(), //LoginScreen() Wenn login screen
     );
   }

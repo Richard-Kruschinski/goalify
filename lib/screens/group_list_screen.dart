@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../store/app_store.dart';
 import '../widgets/create_dialogs.dart';
 import 'group_detail_screen.dart';
@@ -48,7 +49,7 @@ class _GroupListScreenState extends State<GroupListScreen> {
             ),
             title: Text(g.name, style: const TextStyle(fontWeight: FontWeight.w600)),
             subtitle: Text(
-              'Deadline: ${g.deadline.toLocal()}  •  ${remaining.isNegative ? "abgelaufen" : "${remaining.inDays} days"}',
+                'Deadline: ${DateFormat('dd.MM.yyyy HH:mm').format(g.deadline)}  •  ${remaining.isNegative ? "abgelaufen" : "${remaining.inDays} days"}',
             ),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => Navigator.push(
