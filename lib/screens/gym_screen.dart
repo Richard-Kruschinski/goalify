@@ -114,6 +114,7 @@ class _GymScreenState extends State<GymScreen> {
 
   // Kalender-Storage (Map<yyyy-MM-dd, Set<DayName>>)
   static const _kCalendarKey = 'gym_calendar_v1';
+  static const _kDayColorsKey = 'gym_day_colors_v1';
 
   ViewMode _mode = ViewMode.byExercise;
 
@@ -133,6 +134,8 @@ class _GymScreenState extends State<GymScreen> {
 
   // Kalender – pro Datum (yyyy-MM-dd) Liste der erledigten Workout-Days
   final Map<String, Set<String>> _calendarByDate = <String, Set<String>>{};
+  // Farbe je Workout-Tag
+  final Map<String, int> _dayColors = <String, int>{};
 
   @override
   void initState() {
@@ -216,6 +219,15 @@ class _GymScreenState extends State<GymScreen> {
       });
     }
 
+    // Day colors
+    final colorsRaw = await LocalStorage.loadJson(_kDayColorsKey, fallback: {});
+    _dayColors.clear();
+    if (colorsRaw is Map) {
+      colorsRaw.forEach((k, v) {
+        if (v is num) _dayColors[k.toString()] = v.toInt();
+      });
+    }
+
     // Order der Days
     final orderDaysRaw =
     await LocalStorage.loadJson(_kOrderDaysKey, fallback: []);
@@ -242,6 +254,8 @@ class _GymScreenState extends State<GymScreen> {
       LocalStorage.saveJson(_kAssignmentsKey, _assignmentsByDay);
   Future<void> _saveOrderDays() async =>
       LocalStorage.saveJson(_kOrderDaysKey, _orderDays);
+    Future<void> _saveDayColors() async =>
+      LocalStorage.saveJson(_kDayColorsKey, _dayColors);
 
   // ----------------------------- Kalender: Load/Save -----------------------------
   Future<void> _loadCalendar() async {
@@ -276,12 +290,86 @@ class _GymScreenState extends State<GymScreen> {
     final set = _calendarByDate.putIfAbsent(key, () => <String>{});
     if (value) {
       set.add(dayName);
+      // Ensure the day has a color for calendar display
+      if (!_dayColors.containsKey(dayName)) {
+        final cs = Theme.of(context).colorScheme;
+        _dayColors[dayName] = _resolveDayColor(dayName, cs).value;
+        await _saveDayColors();
+      }
     } else {
       set.remove(dayName);
       if (set.isEmpty) _calendarByDate.remove(key);
     }
     await _saveCalendar();
     if (mounted) setState(() {});
+  }
+
+  Color _resolveDayColor(String day, ColorScheme cs) {
+    final stored = _dayColors[day];
+    if (stored != null) return Color(stored);
+    final palette = Colors.primaries;
+    final base = palette[day.hashCode.abs() % palette.length];
+    return base.shade400;
+  }
+
+  Future<void> _setDayColor(String day, Color color) async {
+    _dayColors[day] = color.value;
+    await _saveDayColors();
+    if (mounted) setState(() {});
+  }
+
+  Future<Color?> _pickColorForDay(String day) async {
+    final cs = Theme.of(context).colorScheme;
+    final selected = await showDialog<Color>(
+      context: context,
+      builder: (_) {
+        const List<MaterialColor> options = <MaterialColor>[
+          Colors.blue,
+          Colors.green,
+          Colors.pink,
+          Colors.orange,
+          Colors.purple,
+          Colors.teal,
+          Colors.amber,
+          Colors.red,
+          Colors.indigo,
+          Colors.cyan,
+        ];
+
+        return AlertDialog(
+          title: Text('Farbe für "$day"'),
+          content: Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: options
+                .map((c) => GestureDetector(
+              onTap: () => Navigator.pop(context, c.shade400),
+              child: Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: c.shade400,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: cs.onSurface.withOpacity(0.1)),
+                ),
+              ),
+            ))
+                .toList(),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Abbrechen'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (selected != null) {
+      await _setDayColor(day, selected);
+    }
+    return selected;
   }
 
   // ----------------------------- Helpers: Assignments -----------------------------
@@ -973,6 +1061,7 @@ class _GymScreenState extends State<GymScreen> {
             MaterialPageRoute(
               builder: (_) => WorkoutCalendarPage(
                 calendarByDate: _calendarByDate,
+                dayColors: _dayColors,
               ),
             ),
           );
@@ -1111,6 +1200,7 @@ class _GymScreenState extends State<GymScreen> {
   void _openDayDetail(String day) {
     final ordered = _getAssignedWorkoutsForDayOrdered(day);
     final stripe = Theme.of(context).colorScheme.primary;
+    final cs = Theme.of(context).colorScheme;
 
     Navigator.push(
       context,
@@ -1140,6 +1230,8 @@ class _GymScreenState extends State<GymScreen> {
           // Checkbox oben rechts
           isDoneToday: () => _isDayMarkedOn(DateTime.now(), day),
           onToggleDoneToday: (v) => _setDayMarkedToday(day, v),
+          dayColor: _resolveDayColor(day, cs),
+          onPickColor: () => _pickColorForDay(day),
         ),
       ),
     );
@@ -1402,6 +1494,8 @@ class DayDetailScreen extends StatefulWidget {
 
   final bool Function() isDoneToday;
   final Future<void> Function(bool value) onToggleDoneToday;
+  final Color dayColor;
+  final Future<Color?> Function() onPickColor;
 
   const DayDetailScreen({
     super.key,
@@ -1418,6 +1512,8 @@ class DayDetailScreen extends StatefulWidget {
     required this.stripeColor,
     required this.isDoneToday,
     required this.onToggleDoneToday,
+    required this.dayColor,
+    required this.onPickColor,
   });
 
   @override
@@ -1427,12 +1523,14 @@ class DayDetailScreen extends StatefulWidget {
 class _DayDetailScreenState extends State<DayDetailScreen> {
   late List<Workout> _list;
   late bool _checkedToday;
+  late Color _currentColor;
 
   @override
   void initState() {
     super.initState();
     _list = List<Workout>.from(widget.orderedWorkouts);
     _checkedToday = widget.isDoneToday();
+    _currentColor = widget.dayColor;
   }
 
   void _onReorder(int oldIndex, int newIndex) {
@@ -1449,6 +1547,18 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
       appBar: AppBar(
         title: Text(widget.day),
         actions: [
+          IconButton(
+            tooltip: 'Farbe für diesen Tag festlegen',
+            icon: CircleAvatar(
+              radius: 12,
+              backgroundColor: _currentColor,
+              child: const Icon(Icons.palette, size: 16, color: Colors.white),
+            ),
+            onPressed: () async {
+              final chosen = await widget.onPickColor();
+              if (chosen != null) setState(() => _currentColor = chosen);
+            },
+          ),
           Tooltip(
             message: 'Mark as done today (adds to calendar)',
             child: Row(
@@ -2139,7 +2249,8 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
 /// ===============================================================
 class WorkoutCalendarPage extends StatefulWidget {
   final Map<String, Set<String>> calendarByDate;
-  const WorkoutCalendarPage({super.key, required this.calendarByDate});
+  final Map<String, int> dayColors;
+  const WorkoutCalendarPage({super.key, required this.calendarByDate, required this.dayColors});
 
   @override
   State<WorkoutCalendarPage> createState() => _WorkoutCalendarPageState();
@@ -2176,41 +2287,90 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
   }
 
   List<Widget> _buildDayNameChips(List<String> names, ColorScheme cs) {
-    final display = names.take(3).toList();
-    final hasMore = names.length > 3;
+    const maxVisible = 4;
+    final visible = names.take(maxVisible).toList();
+    final overflow = names.length - visible.length;
 
-    final chips = display
+    Color colorFor(String day) {
+      final stored = widget.dayColors[day];
+      if (stored != null) return Color(stored);
+      final palette = Colors.primaries;
+      final base = palette[day.hashCode.abs() % palette.length];
+      return base.shade400;
+    }
+
+    final chips = visible
         .map((n) => Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: cs.primaryContainer,
-        borderRadius: BorderRadius.circular(999),
+        color: colorFor(n),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Text(n,
-          style: TextStyle(
-            color: cs.onPrimaryContainer,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            color: Colors.white,
             fontSize: 11,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
           )),
     ))
         .toList();
 
-    if (hasMore) {
+    if (overflow > 0) {
       chips.add(Container(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
         decoration: BoxDecoration(
-          color: cs.secondaryContainer,
-          borderRadius: BorderRadius.circular(999),
+          color: cs.surfaceVariant,
+          borderRadius: BorderRadius.circular(12),
         ),
-        child: Text('…',
+        child: Text('+$overflow',
             style: TextStyle(
-              color: cs.onSecondaryContainer,
+              color: cs.onSurfaceVariant,
               fontSize: 11,
               fontWeight: FontWeight.w700,
             )),
       ));
     }
     return chips;
+  }
+
+  void _showFullList(BuildContext context, DateTime date, List<String> names, ColorScheme cs) {
+    if (names.isEmpty) return;
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (_) {
+        final dateLabel = MaterialLocalizations.of(context).formatFullDate(date);
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Workouts am $dateLabel', style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 12),
+                ...names.map((n) => ListTile(
+                  dense: true,
+                  leading: CircleAvatar(backgroundColor: (widget.dayColors[n] != null)
+                      ? Color(widget.dayColors[n]!)
+                      : _fallbackColor(n),
+                    child: const Icon(Icons.fitness_center, color: Colors.white, size: 16),
+                  ),
+                  title: Text(n),
+                )),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Color _fallbackColor(String day) {
+    final palette = Colors.primaries;
+    final base = palette[day.hashCode.abs() % palette.length];
+    return base.shade400;
   }
 
   @override
@@ -2282,31 +2442,34 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
                     final key = _dateKey(date);
                     final names = widget.calendarByDate[key]?.toList() ?? const <String>[];
 
-                    return Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(color: cs.outlineVariant),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      padding: const EdgeInsets.all(8),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('$dayNum',
-                              style:
-                              const TextStyle(fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 4),
-                          if (names.isNotEmpty)
-                            Expanded(
-                              child: Align(
-                                alignment: Alignment.bottomLeft,
-                                child: Wrap(
-                                  spacing: 4,
-                                  runSpacing: 4,
-                                  children: _buildDayNameChips(names, cs),
+                    return GestureDetector(
+                      onLongPress: () => _showFullList(context, date, names, cs),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(color: cs.outlineVariant),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        padding: const EdgeInsets.all(8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('$dayNum',
+                                style:
+                                const TextStyle(fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 4),
+                            if (names.isNotEmpty)
+                              Expanded(
+                                child: Align(
+                                  alignment: Alignment.bottomLeft,
+                                  child: Wrap(
+                                    spacing: 4,
+                                    runSpacing: 4,
+                                    children: _buildDayNameChips(names, cs),
+                                  ),
                                 ),
                               ),
-                            ),
-                        ],
+                          ],
+                        ),
                       ),
                     );
                   },
