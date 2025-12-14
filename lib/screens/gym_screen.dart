@@ -2306,6 +2306,8 @@ class WorkoutCalendarPage extends StatefulWidget {
 
 class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
   late DateTime _currentMonth;
+  double? _dragStartX;
+  bool _dragHandled = false;
 
   @override
   void initState() {
@@ -2332,6 +2334,30 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
     setState(() {
       _currentMonth = DateTime(_currentMonth.year, _currentMonth.month + 1, 1);
     });
+  }
+
+  void _handleHorizontalDragStart(DragStartDetails details) {
+    _dragStartX = details.globalPosition.dx;
+    _dragHandled = false;
+  }
+
+  void _handleHorizontalDragUpdate(DragUpdateDetails details) {
+    if (_dragHandled || _dragStartX == null) return;
+    final delta = details.globalPosition.dx - _dragStartX!;
+    const threshold = 60; // simple swipe threshold
+    if (delta.abs() > threshold) {
+      if (delta > 0) {
+        _prevMonth();
+      } else {
+        _nextMonth();
+      }
+      _dragHandled = true; // avoid multiple triggers in one swipe
+    }
+  }
+
+  void _handleHorizontalDragEnd(DragEndDetails details) {
+    _dragStartX = null;
+    _dragHandled = false;
   }
 
   List<Widget> _buildDayNameChips(List<String> names, ColorScheme cs) {
@@ -2457,81 +2483,87 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
           ),
         ],
       ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 560),
-          child: Column(
-            children: [
-              const SizedBox(height: 8),
-              Row(
-                children: const [
-                  _Dow('Mon'), _Dow('Tue'), _Dow('Wed'),
-                  _Dow('Thu'), _Dow('Fri'), _Dow('Sat'), _Dow('Sun'),
-                ],
-              ),
-              const Divider(height: 0),
-              Expanded(
-                child: GridView.builder(
-                  padding: const EdgeInsets.all(8),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 7,
-                    mainAxisSpacing: 6,
-                    crossAxisSpacing: 6,
-                    childAspectRatio: 0.9, // kompakter
-                  ),
-                  itemCount: rows * 7,
-                  itemBuilder: (_, idx) {
-                    if (idx < leadingEmpty || idx >= leadingEmpty + days) {
-                      return const SizedBox.shrink();
-                    }
-                    final dayNum = idx - leadingEmpty + 1;
-                    final date =
-                    DateTime(_currentMonth.year, _currentMonth.month, dayNum);
-                    final key = _dateKey(date);
-                    final names = widget.calendarByDate[key]?.toList() ?? const <String>[];
+      body: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onHorizontalDragStart: _handleHorizontalDragStart,
+        onHorizontalDragUpdate: _handleHorizontalDragUpdate,
+        onHorizontalDragEnd: _handleHorizontalDragEnd,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 560),
+            child: Column(
+              children: [
+                const SizedBox(height: 8),
+                Row(
+                  children: const [
+                    _Dow('Mon'), _Dow('Tue'), _Dow('Wed'),
+                    _Dow('Thu'), _Dow('Fri'), _Dow('Sat'), _Dow('Sun'),
+                  ],
+                ),
+                const Divider(height: 0),
+                Expanded(
+                  child: GridView.builder(
+                    padding: const EdgeInsets.all(8),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 7,
+                      mainAxisSpacing: 6,
+                      crossAxisSpacing: 6,
+                      childAspectRatio: 0.9, // kompakter
+                    ),
+                    itemCount: rows * 7,
+                    itemBuilder: (_, idx) {
+                      if (idx < leadingEmpty || idx >= leadingEmpty + days) {
+                        return const SizedBox.shrink();
+                      }
+                      final dayNum = idx - leadingEmpty + 1;
+                      final date =
+                      DateTime(_currentMonth.year, _currentMonth.month, dayNum);
+                      final key = _dateKey(date);
+                      final names = widget.calendarByDate[key]?.toList() ?? const <String>[];
 
-                    return GestureDetector(
-                      onLongPress: () => _showFullList(context, date, names, cs),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          border: Border.all(color: cs.outlineVariant),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        padding: const EdgeInsets.all(8),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('$dayNum',
-                                style:
-                                const TextStyle(fontWeight: FontWeight.bold)),
-                            const SizedBox(height: 4),
-                            if (names.isNotEmpty)
-                              Expanded(
-                                child: Align(
-                                  alignment: Alignment.bottomLeft,
-                                  child: Wrap(
-                                    spacing: 4,
-                                    runSpacing: 4,
-                                    children: _buildDayNameChips(names, cs),
+                      return GestureDetector(
+                        onLongPress: () => _showFullList(context, date, names, cs),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            border: Border.all(color: cs.outlineVariant),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          padding: const EdgeInsets.all(8),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('$dayNum',
+                                  style:
+                                  const TextStyle(fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 4),
+                              if (names.isNotEmpty)
+                                Expanded(
+                                  child: Align(
+                                    alignment: Alignment.bottomLeft,
+                                    child: Wrap(
+                                      spacing: 4,
+                                      runSpacing: 4,
+                                      children: _buildDayNameChips(names, cs),
+                                    ),
                                   ),
                                 ),
-                              ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
-              ),
-              const SizedBox(height: 6),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Text(
-                  'Anzeige: Namen der absolvierten Workout-Days pro Datum',
-                  style: Theme.of(context).textTheme.bodySmall,
+                const SizedBox(height: 6),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Text(
+                    'Anzeige: Namen der absolvierten Workout-Days pro Datum',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
