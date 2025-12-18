@@ -41,12 +41,12 @@ class MainNav extends StatefulWidget {
 
 class _MainNavState extends State<MainNav> {
   // 0:Groups, 1:Daily, 2:Progress, 3:Gym, 4:Profile
-  int currentIndex = 1;
+  int currentIndex = 2;
 
   final _screens = const [
     //GroupListScreen(),
-    DailyTasksScreen(),
     ProgressScreen(),
+    DailyTasksScreen(),
     GymScreen(),
     ProfileScreen(),
   ];
@@ -62,8 +62,8 @@ class _MainNavState extends State<MainNav> {
         selectedItemColor: Colors.pink,
         items: const [
          //BottomNavigationBarItem(icon: Icon(Icons.group),          label: 'Groups'),
-          BottomNavigationBarItem(icon: Icon(Icons.check_circle),   label: 'Daily'),
           BottomNavigationBarItem(icon: Icon(Icons.show_chart),     label: 'Progress'),
+          BottomNavigationBarItem(icon: Icon(Icons.check_circle),   label: 'Daily'),
           BottomNavigationBarItem(icon: Icon(Icons.fitness_center), label: 'Gym'),
           BottomNavigationBarItem(icon: Icon(Icons.person),         label: 'Profile'),
         ],
