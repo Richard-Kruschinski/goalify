@@ -1016,7 +1016,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                   Text(t.description!),
                 Wrap(
                   crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 8,
+                  spacing: 6,
                   children: [
                     if (t.category != null && t.category!.isNotEmpty)
                       Chip(
@@ -1027,20 +1027,12 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                       ),
                     Text('${t.points} pts'),
                     if (isKeep)
-                      const Chip(
-                        label: Text('keeps'),
-                        visualDensity: VisualDensity.compact,
-                        materialTapTargetSize:
-                        MaterialTapTargetSize.shrinkWrap,
-                      ),
+                      const _MiniTag('keep'),
                     if (!isKeep)
-                      Chip(
-                        label: Text(_mode == DailyViewMode.today
-                            ? 'today only'
-                            : dateKey),
-                        visualDensity: VisualDensity.compact,
-                        materialTapTargetSize:
-                        MaterialTapTargetSize.shrinkWrap,
+                      _MiniTag(
+                        (_mode == DailyViewMode.today || dateKey == _todayKey())
+                            ? 'today'
+                            : dateKey,
                       ),
                   ],
                 ),
@@ -1149,6 +1141,7 @@ class _ReorderDailyTile extends StatelessWidget {
                   value: leadingCheckboxValue,
                   onChanged: onLeadingCheckboxChanged,
                 ),
+                dense: true,
                 title: title,
                 subtitle: subtitle,
                 trailing: trailing,
@@ -1156,6 +1149,28 @@ class _ReorderDailyTile extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// A compact pill-style tag used for small status labels like "keep"/"today".
+class _MiniTag extends StatelessWidget {
+  final String text;
+  const _MiniTag(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: cs.surfaceVariant.withOpacity(0.6),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        text,
+        style: Theme.of(context).textTheme.labelSmall,
       ),
     );
   }
