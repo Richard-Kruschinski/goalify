@@ -3,6 +3,7 @@ import 'package:syncfusion_flutter_charts/charts.dart';
 import '../storage/local_storage.dart';
 
 enum Range { day, week, year }
+enum DisplayMode { points, ratio }
 
 class ActivityPoint {
   final DateTime t;
@@ -20,9 +21,13 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
   static const _kHistoryKey = 'progress_history_v1';
   static const _kDailyTasksKey = 'daily_tasks_v1';
   static const _kRangeKey = 'progress_range_v1';
+  static const _kRatioHistoryKey = 'progress_ratio_history_v1';
+  static const _kDisplayModeKey = 'progress_display_mode_v1';
 
   Range range = Range.week;                 // wird beim Laden aus Prefs überschrieben
+  DisplayMode _mode = DisplayMode.ratio;    // Punkte- vs Verhältnis-Kurve
   Map<DateTime, int> _history = {};         // Mitternacht -> Punkte
+  Map<DateTime, int> _ratioHistory = {};    // Mitternacht -> Verhältnis in %
 
   late ZoomPanBehavior _zoom;
   late TrackballBehavior _trackball;
@@ -53,6 +58,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _loadHistory(); // neu einlesen, falls der Tag gewechselt hat
+      _loadRatioHistory();
     }
   }
 
@@ -71,12 +77,25 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
       default:
         range = Range.week;
     }
+    // Modus aus Prefs
+    final savedMode = await LocalStorage.loadJson(_kDisplayModeKey, fallback: 'ratio');
+    switch (savedMode) {
+      case 'points':
+        _mode = DisplayMode.points;
+        break;
+      default:
+        _mode = DisplayMode.ratio;
+    }
     await _loadHistory();
+    await _loadRatioHistory();
     if (mounted) setState(() {});
   }
 
   Future<void> _saveRange() async {
     await LocalStorage.saveJson(_kRangeKey, range.name); // "day" | "week" | "year"
+  }
+  Future<void> _saveMode() async {
+    await LocalStorage.saveJson(_kDisplayModeKey, _mode.name); // "points" | "ratio"
   }
 
   Future<void> _loadHistory() async {
@@ -121,6 +140,57 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
     if (mounted) setState(() {});
   }
 
+  Future<void> _loadRatioHistory() async {
+    final raw = await LocalStorage.loadJson(_kRatioHistoryKey, fallback: {});
+    final map = <DateTime, int>{};
+    if (raw is Map) {
+      raw.forEach((k, v) {
+        if (k is String) {
+          final parts = k.split('-');
+          if (parts.length == 3) {
+            final y = int.tryParse(parts[0]);
+            final m = int.tryParse(parts[1]);
+            final d = int.tryParse(parts[2]);
+            if (y != null && m != null && d != null) {
+              map[DateTime(y, m, d)] = (v as num).toInt();
+            }
+          }
+        }
+      });
+    }
+
+    // Heutiges Verhältnis (nur keep-Tasks): donePts / totalPts in Prozent
+    final today = _midnight(DateTime.now());
+    final tasksRaw = await LocalStorage.loadJson(_kDailyTasksKey, fallback: []);
+    int donePts = 0;
+    int totalPts = 0;
+    if (tasksRaw is List) {
+      for (final e in tasksRaw) {
+        final m = Map<String, dynamic>.from(e as Map);
+        final done = (m['done'] ?? false) as bool;
+        final keep = (m['keep'] ?? false) as bool;
+        final pts = (m['points'] ?? 1) as int;
+        if (keep) {
+          totalPts += pts;
+          if (done) donePts += pts;
+        }
+      }
+    }
+    final ratioPct = totalPts > 0 ? ((donePts * 100.0) / totalPts).round() : 0;
+    map[today] = ratioPct;
+    await LocalStorage.saveJson(
+      _kRatioHistoryKey,
+      // Speichern als yyyy-MM-dd -> Prozent
+      {
+        for (final entry in map.entries)
+          "${entry.key.year.toString().padLeft(4, '0')}-${entry.key.month.toString().padLeft(2, '0')}-${entry.key.day.toString().padLeft(2, '0')}": entry.value,
+      },
+    );
+
+    _ratioHistory = map;
+    if (mounted) setState(() {});
+  }
+
   /// Lückenlose Tagespunkte zwischen [start]..[end] (inkl.)
   List<ActivityPoint> _sequence(DateTime start, DateTime end) {
     final res = <ActivityPoint>[];
@@ -155,6 +225,35 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
     }
   }
 
+  List<ActivityPoint> _ratioSequence(DateTime start, DateTime end) {
+    final res = <ActivityPoint>[];
+    DateTime d = _midnight(start);
+    final last = _midnight(end);
+    while (!d.isAfter(last)) {
+      res.add(ActivityPoint(d, _ratioHistory[d] ?? 0));
+      d = d.add(const Duration(days: 1));
+    }
+    return res;
+  }
+
+  List<ActivityPoint> _ratioDataForRange() {
+    final now = DateTime.now();
+    final today = _midnight(now);
+
+    switch (range) {
+      case Range.day:
+        final value = _ratioHistory[today] ?? 0;
+        final start = DateTime(now.year, now.month, now.day, 0);
+        return List.generate(24, (h) => ActivityPoint(start.add(Duration(hours: h)), value));
+      case Range.week:
+        final start = today.subtract(const Duration(days: 6));
+        return _ratioSequence(start, today);
+      case Range.year:
+        final start = today.subtract(const Duration(days: 364));
+        return _ratioSequence(start, today);
+    }
+  }
+
   String _rangeLabel(Range r) => r == Range.day ? 'Tag' : r == Range.week ? 'Woche' : 'Jahr';
 
   /// KPIs korrekt berechnen (bei Range.day NICHT 24x zählen)
@@ -177,6 +276,25 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
     return avg.toStringAsFixed(1);
   }
 
+  int _todayRatio() {
+    final today = _midnight(DateTime.now());
+    return _ratioHistory[today] ?? 0;
+  }
+
+  String _currentRatioLabel() {
+    final v = _todayRatio();
+    return '$v%';
+  }
+
+  String _avgRatioLabel(List<ActivityPoint> data) {
+    if (data.isEmpty) return '-';
+    if (range == Range.day) {
+      return _currentRatioLabel();
+    }
+    final avg = data.fold<int>(0, (s, p) => s + p.value) / data.length;
+    return '${avg.toStringAsFixed(1)}%';
+  }
+
   Future<void> _confirmClearHistory() async {
     final ok = await showDialog<bool>(
       context: context,
@@ -191,16 +309,18 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
     );
     if (ok == true) {
       await LocalStorage.saveJson(_kHistoryKey, <String, dynamic>{});
+      await LocalStorage.saveJson(_kRatioHistoryKey, <String, dynamic>{});
       _history.clear();
+      _ratioHistory.clear();
       if (mounted) setState(() {});
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final data = _dataForRange();
-    final sum = _sumForRange(data);
-    final avg = _avgLabel(data);
+    final data = _mode == DisplayMode.ratio ? _ratioDataForRange() : _dataForRange();
+    final currentRatio = _currentRatioLabel();
+    final avgRatio = _avgRatioLabel(_ratioDataForRange());
 
     return Scaffold(
       appBar: AppBar(
@@ -208,7 +328,10 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
         actions: [
           IconButton(
             tooltip: 'Neu laden',
-            onPressed: _loadHistory,
+            onPressed: () async {
+              await _loadHistory();
+              await _loadRatioHistory();
+            },
             icon: const Icon(Icons.refresh),
           ),
           PopupMenuButton<String>(
@@ -239,6 +362,20 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
             ),
             const SizedBox(height: 12),
 
+            // Modus-Umschalter: Punkte vs Verhältnis
+            SegmentedButton<DisplayMode>(
+              segments: const [
+                ButtonSegment(value: DisplayMode.points, label: Text('Punkte')),
+                ButtonSegment(value: DisplayMode.ratio, label: Text('Verhältnis')),
+              ],
+              selected: {_mode},
+              onSelectionChanged: (s) async {
+                setState(() => _mode = s.first);
+                await _saveMode();
+              },
+            ),
+            const SizedBox(height: 12),
+
             Expanded(
               child: Card(
                 elevation: 1,
@@ -257,9 +394,9 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
                           : DateTimeIntervalType.hours,
                       majorGridLines: const MajorGridLines(width: 0),
                     ),
-                    primaryYAxis: const NumericAxis(
-                      title: AxisTitle(text: 'Punkte'),
-                      majorGridLines: MajorGridLines(width: 0.5),
+                    primaryYAxis: NumericAxis(
+                      title: AxisTitle(text: _mode == DisplayMode.ratio ? 'Verhältnis (%)' : 'Punkte'),
+                      majorGridLines: const MajorGridLines(width: 0.5),
                     ),
                     legend: const Legend(isVisible: false),
                     series: <CartesianSeries<ActivityPoint, DateTime>>[
@@ -267,7 +404,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
                         dataSource: data,
                         xValueMapper: (p, _) => p.t,
                         yValueMapper: (p, _) => p.value,
-                        name: 'Punkte',
+                        name: _mode == DisplayMode.ratio ? 'Verhältnis' : 'Punkte',
                         width: 2,
                         markerSettings: const MarkerSettings(isVisible: true, height: 6, width: 6),
                       ),
@@ -281,9 +418,17 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
 
             Row(
               children: [
-                Expanded(child: _metricCard('Aktuelle ${_rangeLabel(range)}', '$sum Pkt')),
+                if (_mode == DisplayMode.ratio) ...[
+                  Expanded(child: _metricCard('Aktuelles Verhältnis', currentRatio)),
+                ] else ...[
+                  Expanded(child: _metricCard('Aktuelle ${_rangeLabel(range)}', '${_sumForRange(_dataForRange())} Pkt')),
+                ],
                 const SizedBox(width: 12),
-                Expanded(child: _metricCard('Ø pro Tag', avg)),
+                if (_mode == DisplayMode.ratio) ...[
+                  Expanded(child: _metricCard('Ø Verhältnis', avgRatio)),
+                ] else ...[
+                  Expanded(child: _metricCard('Ø pro Tag', _avgLabel(_dataForRange()))),
+                ],
               ],
             ),
           ],
