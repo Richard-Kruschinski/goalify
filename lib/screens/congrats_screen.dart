@@ -53,38 +53,35 @@ class _CongratsScreenState extends State<CongratsScreen>
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
     final scaleAnim = CurvedAnimation(
       parent: _scale,
       curve: Curves.easeOutBack, // pop!
     );
 
     return Scaffold(
-      backgroundColor: Colors.black54, // dimmer, damit es “vorne” wirkt
+      backgroundColor: const Color(0xCC000000), // darker dimmed background
       body: Stack(
-        alignment: Alignment.center,
         children: [
-          // Zentrale Karte
-          ScaleTransition(
-            scale: scaleAnim,
-            child: Center(
+          // Zentrale Karte - mittig positioniert
+          Center(
+            child: ScaleTransition(
+              scale: scaleAnim,
               child: Container(
                 // groß & mittig
-                margin: const EdgeInsets.symmetric(horizontal: 20),
-                padding: const EdgeInsets.fromLTRB(28, 32, 28, 24),
+                margin: const EdgeInsets.symmetric(horizontal: 24),
+                padding: const EdgeInsets.fromLTRB(32, 40, 32, 32),
                 decoration: BoxDecoration(
-                  color: cs.surface,
-                  borderRadius: BorderRadius.circular(28),
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.25),
-                      blurRadius: 24,
-                      offset: const Offset(0, 12),
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 30,
+                      offset: const Offset(0, 15),
                     ),
                   ],
                 ),
-                constraints: const BoxConstraints(maxWidth: 520),
+                constraints: const BoxConstraints(maxWidth: 460),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -93,56 +90,94 @@ class _CongratsScreenState extends State<CongratsScreen>
                       size: 140,
                       twinkle: _twinkle,
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
                     // Banner
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 7,
+                        horizontal: 20,
+                        vertical: 10,
                       ),
                       decoration: BoxDecoration(
-                        color: cs.primaryContainer,
-                        borderRadius: BorderRadius.circular(18),
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFE53935), Color(0xFFEF5350)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFE53935).withOpacity(0.3),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
                       child: Text(
                         widget.title,
-                        style: TextStyle(
-                          color: cs.onPrimaryContainer,
+                        style: const TextStyle(
+                          color: Colors.white,
                           fontWeight: FontWeight.w800,
-                          letterSpacing: 1,
+                          fontSize: 16,
+                          letterSpacing: 1.2,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 20),
                     Text(
                       widget.subtitle,
                       textAlign: TextAlign.center,
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleMedium
-                          ?.copyWith(fontWeight: FontWeight.w700),
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1A1D1F),
+                      ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 8),
                     Text(
                       widget.detail,
                       textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyMedium,
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: Colors.grey.shade600,
+                      ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 28),
                     Row(
-                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        OutlinedButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text('Close'),
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.pop(context),
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: Color(0xFFE0E0E0)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                            ),
+                            child: const Text('Close'),
+                          ),
                         ),
                         const SizedBox(width: 12),
-                        FilledButton(
-                          onPressed: () {
-                            Navigator.pop(context);
-                            widget.onSeeProgress?.call();
-                          },
-                          child: const Text('See progress'),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                              widget.onSeeProgress?.call();
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFE53935),
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                            ),
+                            child: const Text(
+                              'See progress',
+                              style: TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                          ),
                         ),
                       ],
                     ),
