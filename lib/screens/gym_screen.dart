@@ -868,24 +868,44 @@ class _GymScreenState extends State<GymScreen> {
     showDialog<void>(
       context: context,
       builder: (_) => AlertDialog(
-        title: Text('Progress – ${w.name}'),
-        actions: [
-          IconButton(
-            tooltip: 'Full screen',
-            icon: const Icon(Icons.fullscreen),
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => FullScreenChartPage(
-                    title: w.name,
-                    logs: logs,
+        backgroundColor: const Color(0xFFF5F7FA),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        titlePadding: const EdgeInsets.fromLTRB(20, 20, 16, 0),
+        contentPadding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFEBEE),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.show_chart, color: Color(0xFFE53935)),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Progress – ${w.name}',
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+            ),
+            IconButton(
+              tooltip: 'Full screen',
+              icon: const Icon(Icons.fullscreen),
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => FullScreenChartPage(
+                      title: w.name,
+                      logs: logs,
+                    ),
                   ),
-                ),
-              );
-            },
-          ),
-        ],
+                );
+              },
+            ),
+          ],
+        ),
         content: SizedBox(
           width: 560,
           height: 300,
@@ -901,14 +921,14 @@ class _GymScreenState extends State<GymScreen> {
                 drawVerticalLine: false,
                 horizontalInterval: yInterval,
                 getDrawingHorizontalLine: (v) => FlLine(
-                  color: cs.onSurface.withValues(alpha: 0.15),
+                  color: const Color(0x22000000),
                   strokeWidth: 1,
                   dashArray: const [6, 6],
                 ),
               ),
               borderData: FlBorderData(
                 show: true,
-                border: Border.all(color: cs.outlineVariant),
+                border: Border.all(color: const Color(0xFFE0E0E0)),
               ),
               titlesData: FlTitlesData(
                 leftTitles: AxisTitles(
@@ -984,7 +1004,7 @@ class _GymScreenState extends State<GymScreen> {
                 touchTooltipData: LineTouchTooltipData(
                   fitInsideHorizontally: true,
                   fitInsideVertically: true,
-                  getTooltipColor: (_) => cs.surfaceContainerHighest,
+                  getTooltipColor: (_) => Colors.white,
                   tooltipPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                   getTooltipItems: (touchedSpots) => touchedSpots.map((t) {
                     final idx = t.spotIndex.clamp(0, logs.length - 1);
@@ -997,12 +1017,12 @@ class _GymScreenState extends State<GymScreen> {
 
                     return LineTooltipItem(
                       '$dateStr\n',
-                      TextStyle(color: cs.onSurface, fontWeight: FontWeight.w700),
+                      const TextStyle(color: Color(0xFF1A1D1F), fontWeight: FontWeight.w700),
                       children: [
                         TextSpan(
                           text: weightStr,
                           style: TextStyle(
-                            color: cs.onSurface,
+                            color: const Color(0xFF1A1D1F),
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -1016,16 +1036,16 @@ class _GymScreenState extends State<GymScreen> {
                   spots: spots,
                   isCurved: false,
                   barWidth: 3,
-                  color: cs.primary,
+                  color: const Color(0xFFE53935),
                   dotData: FlDotData(
                     show: true,
                     getDotPainter: (spot, percent, bar, index) {
                       final isDrop = logs[index].isDropset;
                       return FlDotCirclePainter(
                         radius: isDrop ? 5.2 : 3.0,
-                        color: isDrop ? cs.error : cs.primary,
+                        color: isDrop ? const Color(0xFFB71C1C) : const Color(0xFFE53935),
                         strokeWidth: isDrop ? 2.4 : 1.2,
-                        strokeColor: isDrop ? cs.errorContainer : cs.onPrimaryContainer.withValues(alpha: 0.35),
+                        strokeColor: isDrop ? const Color(0xFFFFCDD2) : const Color(0x66E53935),
                       );
                     },
                   ),
@@ -1042,119 +1062,328 @@ class _GymScreenState extends State<GymScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: _buildAppBar(),
-      body: _mode == ViewMode.byExercise
-          ? _buildWorkoutListBody()
-          : _buildDayListBody(),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _onAddPressed,
-        icon: const Icon(Icons.add),
-        label: const Text('Add'),
+      backgroundColor: const Color(0xFFF5F7FA),
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildModernHeader(context),
+            Expanded(
+              child: _mode == ViewMode.byExercise
+                  ? _buildWorkoutListBody()
+                  : _buildDayListBody(),
+            ),
+          ],
+        ),
+      ),
+      floatingActionButton: _buildModernFAB(),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+    );
+  }
+
+  Widget _buildModernHeader(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFEBEE),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.fitness_center,
+                      color: Color(0xFFE53935),
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Gym',
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1A1D1F),
+                    ),
+                  ),
+                ],
+              ),
+              Row(
+                children: [
+                  IconButton(
+                    tooltip: 'Calendar',
+                    icon: const Icon(Icons.calendar_month, color: Color(0xFF6F7789)),
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => WorkoutCalendarPage(
+                            calendarByDate: _calendarByDate,
+                            dayColors: _dayColors,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildViewModeMenu(),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _buildViewToggle(),
+        ],
       ),
     );
   }
 
-  PreferredSizeWidget _buildAppBar() => AppBar(
-    title: const Text('Gym'),
-    actions: [
-      IconButton(
-        tooltip: 'Calendar',
-        icon: const Icon(Icons.calendar_month),
-        onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => WorkoutCalendarPage(
-                calendarByDate: _calendarByDate,
-                dayColors: _dayColors,
+  Widget _buildViewToggle() {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0F4F8),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: GestureDetector(
+              onTap: () {
+                setState(() => _mode = ViewMode.byExercise);
+                _saveViewMode();
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: _mode == ViewMode.byExercise
+                      ? Colors.white
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: _mode == ViewMode.byExercise
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.list,
+                      size: 18,
+                      color: _mode == ViewMode.byExercise
+                          ? const Color(0xFFE53935)
+                          : const Color(0xFF6F7789),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Exercises',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: _mode == ViewMode.byExercise
+                            ? const Color(0xFF1A1D1F)
+                            : const Color(0xFF6F7789),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          );
-        },
+          ),
+          Expanded(
+            child: GestureDetector(
+              onTap: () {
+                setState(() => _mode = ViewMode.byDay);
+                _saveViewMode();
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: _mode == ViewMode.byDay
+                      ? Colors.white
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: _mode == ViewMode.byDay
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.view_day,
+                      size: 18,
+                      color: _mode == ViewMode.byDay
+                          ? const Color(0xFFE53935)
+                          : const Color(0xFF6F7789),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Workout Days',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: _mode == ViewMode.byDay
+                            ? const Color(0xFF1A1D1F)
+                            : const Color(0xFF6F7789),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
-      _buildViewModeMenu(),
-    ],
-  );
+    );
+  }
 
-  Widget _buildViewModeMenu() => PopupMenuButton<ViewMode>(
-    tooltip: 'Select view',
+  Widget _buildViewModeMenu() => PopupMenuButton<int>(
+    tooltip: 'More options',
+    icon: const Icon(Icons.more_horiz, color: Color(0xFF6F7789)),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(12),
+    ),
     onSelected: (v) {
-      setState(() => _mode = v);
-      _saveViewMode();
+      // Kann für zusätzliche Optionen verwendet werden
     },
-    itemBuilder: (_) => [
-      _buildViewModeMenuItem(ViewMode.byExercise, 'By Exercise'),
-      _buildViewModeMenuItem(ViewMode.byDay, 'By Workout Day'),
-    ],
+    itemBuilder: (_) => const [],
   );
 
-  PopupMenuItem<ViewMode> _buildViewModeMenuItem(ViewMode m, String label) =>
-      PopupMenuItem<ViewMode>(
-        value: m,
-        child: Row(children: [
-          Icon(_mode == m
-              ? Icons.radio_button_checked
-              : Icons.radio_button_unchecked),
-          const SizedBox(width: 8),
-          Text(label),
-        ]),
-      );
+  Widget _buildModernFAB() {
+    return Container(
+      width: 60,
+      height: 60,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFE53935), Color(0xFFEF5350)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFE53935).withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(30),
+          onTap: _onAddPressed,
+          child: const Icon(
+            Icons.add,
+            color: Colors.white,
+            size: 28,
+          ),
+        ),
+      ),
+    );
+  }
 
-  Widget _buildEmptyBody() =>
-      const Center(child: Text('No workouts added yet'));
+  Widget _buildEmptyBody() => Center(
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(24),
+          decoration: const BoxDecoration(
+            color: Color(0xFFF0F4F8),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(
+            Icons.fitness_center,
+            size: 64,
+            color: Color(0xFF9CA3AF),
+          ),
+        ),
+        const SizedBox(height: 16),
+        const Text(
+          'No workouts yet',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF1A1D1F),
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'Add your first exercise to get started',
+          style: TextStyle(
+            fontSize: 14,
+            color: Color(0xFF9CA3AF),
+          ),
+        ),
+      ],
+    ),
+  );
 
   // Übungs-Ansicht
   Widget _buildWorkoutListBody() {
     final active = _getActiveWorkouts();
     if (active.isEmpty) return _buildEmptyBody();
-    final stripe = Theme.of(context).colorScheme.primary;
 
     return ReorderableListView.builder(
-      padding: const EdgeInsets.only(bottom: 96, top: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       itemCount: active.length,
       onReorder: _reorderActive,
       buildDefaultDragHandles: false,
       itemBuilder: (_, i) {
         final w = active[i];
         final latest = _getLatestLogFor(w.id);
-        return _ReorderTile(
-          key: ValueKey('ex_${w.id}'),
-          index: i,
-          leadingStripColor: stripe,
-          title: Text(w.name),
-          subtitle: latest == null
-              ? const Text('No progress yet')
-              : Text('${latest.day} • ${latest.weightKg} kg • ${latest.sets} Sets'),
-          avatar: Icon(w.icon),
-          onHistory: () => _openHistoryDialog(w),
-          onLongPress: () => _openProgressChartDialog(w),
-          onDelete: () => _confirmDeleteExercise(w),
-          trailingMore: PopupMenuButton<String>(
-            tooltip: 'more',
-            onSelected: (value) async {
-              if (value == 'remove_plan') {
-                await _openUnassignDialog(w);
-              } else if (value == 'clear_history') {
-                _confirmClearHistoryAll(w);
-              } else if (value == 'delete_everywhere') {
-                _confirmDeleteExercise(w);
-              }
-            },
-            itemBuilder: (_) => const [
-              PopupMenuItem(
-                value: 'remove_plan',
-                child: Text('Remove from plan…'),
-              ),
-              PopupMenuItem(
-                value: 'clear_history',
-                child: Text('Clear all history'),
-              ),
-              PopupMenuItem(
-                value: 'delete_everywhere',
-                child: Text('Delete exercise…'),
-              ),
-            ],
-            icon: const Icon(Icons.more_vert),
+        return _buildModernWorkoutCard(w, i, latest);
+      },
+    );
+  }
+
+  Widget _buildModernWorkoutCard(Workout w, int index, WorkoutLog? latest) {
+    return Container(
+      key: ValueKey('ex_${w.id}'),
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
           onTap: () async {
             final days = _daysForWorkout(w.id).toList()..sort();
             final outcome = await _openLogDialog(
@@ -1167,8 +1396,97 @@ class _GymScreenState extends State<GymScreen> {
             if (outcome == null) return;
             if (outcome.log != null) _addLog(w.id, outcome.log!);
           },
-        );
-      },
+          onLongPress: () => _openProgressChartDialog(w),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                ReorderableDragStartListener(
+                  index: index,
+                  child: const Icon(
+                    Icons.drag_indicator,
+                    color: Color(0xFFD1D5DB),
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFEBEE),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    w.icon,
+                    color: const Color(0xFFE53935),
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        w.name,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1A1D1F),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        latest == null
+                            ? 'No progress yet'
+                            : '${latest.day} • ${latest.weightKg} kg • ${latest.sets} Sets',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF6F7789),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.history, color: Color(0xFF6F7789)),
+                  onPressed: () => _openHistoryDialog(w),
+                ),
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert, color: Color(0xFF6F7789)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  onSelected: (value) async {
+                    if (value == 'remove_plan') {
+                      await _openUnassignDialog(w);
+                    } else if (value == 'clear_history') {
+                      _confirmClearHistoryAll(w);
+                    } else if (value == 'delete_everywhere') {
+                      _confirmDeleteExercise(w);
+                    }
+                  },
+                  itemBuilder: (_) => const [
+                    PopupMenuItem(
+                      value: 'remove_plan',
+                      child: Text('Remove from plan…'),
+                    ),
+                    PopupMenuItem(
+                      value: 'clear_history',
+                      child: Text('Clear all history'),
+                    ),
+                    PopupMenuItem(
+                      value: 'delete_everywhere',
+                      child: Text('Delete exercise…'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -1176,28 +1494,136 @@ class _GymScreenState extends State<GymScreen> {
   Widget _buildDayListBody() {
     final days = _getOrderedDays();
     if (days.isEmpty) {
-      return const Center(child: Text('No workout days available yet'));
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: const BoxDecoration(
+                color: Color(0xFFF0F4F8),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.calendar_today,
+                size: 64,
+                color: Color(0xFF9CA3AF),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'No workout days yet',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF1A1D1F),
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Add exercises to create workout days',
+              style: TextStyle(
+                fontSize: 14,
+                color: Color(0xFF9CA3AF),
+              ),
+            ),
+          ],
+        ),
+      );
     }
 
-    final stripe = Theme.of(context).colorScheme.primary;
-
     return ReorderableListView.builder(
-      padding: const EdgeInsets.only(bottom: 24, top: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       itemCount: days.length,
       onReorder: _reorderDays,
       buildDefaultDragHandles: false,
       itemBuilder: (_, i) {
         final day = days[i];
         final count = _assignmentsByDay[day]?.length ?? 0;
-        return _ReorderDayTile(
-          key: ValueKey('day_$day'),
-          index: i,
-          leadingStripColor: stripe,
-          title: Text(day),
-          subtitle: Text('$count exercise${count == 1 ? '' : 's'}'),
-          onTap: () => _openDayDetail(day),
-        );
+        return _buildModernDayCard(day, i, count);
       },
+    );
+  }
+
+  Widget _buildModernDayCard(String day, int index, int count) {
+    return Container(
+      key: ValueKey('day_$day'),
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () => _openDayDetail(day),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                ReorderableDragStartListener(
+                  index: index,
+                  child: const Icon(
+                    Icons.drag_indicator,
+                    color: Color(0xFFD1D5DB),
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFEBEE),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.event_note,
+                    color: Color(0xFFE53935),
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        day,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1A1D1F),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '$count exercise${count == 1 ? '' : 's'}',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF6F7789),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(
+                  Icons.chevron_right,
+                  color: Color(0xFF9CA3AF),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -1408,13 +1834,26 @@ class _WorkoutPickerSheetState extends State<WorkoutPickerSheet> {
 
   Widget _buildSearchField() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: TextField(
-        decoration: const InputDecoration(
-          hintText: 'Search workout...',
-          prefixIcon: Icon(Icons.search),
-          border: OutlineInputBorder(),
-          isDense: true,
+        decoration: InputDecoration(
+          hintText: 'Search workout... (name or muscle)',
+          filled: true,
+          fillColor: Colors.white,
+          prefixIcon: const Icon(Icons.search, color: Color(0xFF6F7789)),
+          contentPadding: const EdgeInsets.symmetric(vertical: 14),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xFFE53935), width: 2),
+          ),
         ),
         onChanged: (String value) => setState(() => _query = value),
       ),
@@ -1427,39 +1866,83 @@ class _WorkoutPickerSheetState extends State<WorkoutPickerSheet> {
         ? 'No progress yet'
         : 'Update: ${latest.weightKg} kg • ${latest.sets} Sets';
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: ExpansionTile(
-        leading: CircleAvatar(child: Icon(workout.icon)),
-        title: Text(workout.name),
-        subtitle: Text(subtitle),
+        tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        leading: Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFEBEE),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(workout.icon, color: const Color(0xFFE53935)),
+        ),
+        title: Text(
+          workout.name,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF1A1D1F),
+          ),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: const TextStyle(fontSize: 13, color: Color(0xFF6F7789)),
+        ),
         children: <Widget>[
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                workout.description,
-                style: const TextStyle(color: Colors.black87),
-              ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              workout.description,
+              style: const TextStyle(color: Color(0xFF6F7789)),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: Row(
-              children: <Widget>[
-                FilledButton.icon(
+          const SizedBox(height: 12),
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: ElevatedButton.icon(
                   onPressed: () => widget.onAddOrUpdate(workout),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFE53935),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
                   icon: const Icon(Icons.add),
                   label: Text(latest == null ? 'Add' : 'Update'),
                 ),
-                const SizedBox(width: 12),
-                TextButton(
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: OutlinedButton(
                   onPressed: () => Navigator.of(context).maybePop(),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Color(0xFFE0E0E0)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
                   child: const Text('Close'),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
       ),
@@ -1477,22 +1960,28 @@ class _WorkoutPickerSheetState extends State<WorkoutPickerSheet> {
         minChildSize: 0.5,
         maxChildSize: 0.95,
         builder: (BuildContext context, ScrollController controller) {
-          return Column(
-            children: <Widget>[
-              const SizedBox(height: 8),
-              _buildGrabber(),
-              const SizedBox(height: 8),
-              _buildSearchField(),
-              const SizedBox(height: 8),
-              Expanded(
-                child: ListView.builder(
-                  controller: controller,
-                  itemCount: filtered.length,
-                  itemBuilder: (_, int index) =>
-                      _buildWorkoutCard(filtered[index]),
+          return Container(
+            decoration: const BoxDecoration(
+              color: Color(0xFFF5F7FA),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: Column(
+              children: <Widget>[
+                const SizedBox(height: 8),
+                _buildGrabber(),
+                const SizedBox(height: 12),
+                _buildSearchField(),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: ListView.builder(
+                    controller: controller,
+                    itemCount: filtered.length,
+                    itemBuilder: (_, int index) =>
+                        _buildWorkoutCard(filtered[index]),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           );
         },
       ),
@@ -1569,13 +2058,89 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.day),
-        actions: [
+      backgroundColor: const Color(0xFFF5F7FA),
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildModernDayHeader(context),
+            Expanded(
+              child: _list.isEmpty
+                  ? _buildModernEmptyDay()
+                  : ReorderableListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      onReorder: _onReorder,
+                      buildDefaultDragHandles: false,
+                      itemCount: _list.length,
+                      itemBuilder: (_, i) {
+                        final workout = _list[i];
+                        final latest = widget.latestForDay(workout.id, widget.day);
+                        return _buildModernDayExerciseCard(workout, i, latest);
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModernEmptyDay() {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: const [
+          SizedBox(height: 8),
+          Icon(Icons.fitness_center, size: 64, color: Color(0xFF9CA3AF)),
+          SizedBox(height: 16),
+          Text(
+            'No exercises today',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Color(0xFF1A1D1F)),
+          ),
+          SizedBox(height: 8),
+          Text(
+            'Add or assign exercises to this day',
+            style: TextStyle(fontSize: 14, color: Color(0xFF9CA3AF)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModernDayHeader(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: const Icon(Icons.arrow_back, color: Color(0xFF6F7789)),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              widget.day,
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1A1D1F),
+              ),
+            ),
+          ),
+          // Color picker button
           IconButton(
-            tooltip: 'Farbe für diesen Tag festlegen',
+            tooltip: 'Pick color for this day',
             icon: CircleAvatar(
-              radius: 12,
+              radius: 14,
               backgroundColor: _currentColor,
               child: const Icon(Icons.palette, size: 16, color: Colors.white),
             ),
@@ -1584,81 +2149,152 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
               if (chosen != null) setState(() => _currentColor = chosen);
             },
           ),
-          Tooltip(
-            message: 'Mark as done today (adds to calendar)',
-            child: Row(
-              children: [
-                const Text('Done'),
-                Checkbox(
-                  value: _checkedToday,
-                  onChanged: (v) async {
-                    final nv = v ?? false;
-                    await widget.onToggleDoneToday(nv);
-                    setState(() => _checkedToday = nv);
-                  },
-                ),
-                const SizedBox(width: 8),
-              ],
+          const SizedBox(width: 4),
+          // Done today pill
+          GestureDetector(
+            onTap: () async {
+              final nv = !_checkedToday;
+              await widget.onToggleDoneToday(nv);
+              setState(() => _checkedToday = nv);
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: _checkedToday ? const Color(0xFFE8F5E9) : const Color(0xFFF0F4F8),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    _checkedToday ? Icons.check_circle : Icons.radio_button_unchecked,
+                    size: 16,
+                    color: _checkedToday ? const Color(0xFF4CAF50) : const Color(0xFF6F7789),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Done today',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: _checkedToday ? const Color(0xFF4CAF50) : const Color(0xFF6F7789),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
       ),
-      body: _list.isEmpty
-          ? const Center(child: Text('No exercises today'))
-          : ReorderableListView.builder(
-        onReorder: _onReorder,
-        buildDefaultDragHandles: false,
-        itemCount: _list.length,
-        itemBuilder: (_, i) {
-          final workout = _list[i];
-          final latest = widget.latestForDay(workout.id, widget.day);
+    );
+  }
 
-          return _ReorderTile(
-            key: ValueKey('day_${workout.id}'),
-            index: i,
-            leadingStripColor: widget.stripeColor,
-            title: Text(workout.name),
-            subtitle: latest == null
-                ? const Text('No progress yet')
-                : Text('${latest.weightKg} kg • ${latest.sets} Sets'),
-            avatar: Icon(workout.icon),
-            onHistory: () => widget.onShowHistory(workout),
-            onLongPress: () => widget.onShowChart(workout),
-            onTap: () => widget.onEdit(workout, latest),
-            trailingMore: PopupMenuButton<String>(
-              tooltip: 'more',
-              onSelected: (value) {
-                if (value == 'delete_day') {
-                  widget.onDeleteForDay(workout);
-                }
-                if (value == 'remove_plan') {
-                  widget.onUnassignFromDay(workout);
-                  setState(() {
-                    _list.removeWhere((w) => w.id == workout.id);
-                  });
-                }
-                if (value == 'delete_all') {
-                  widget.onDeleteAll(workout);
-                }
-              },
-              itemBuilder: (_) => const [
-                PopupMenuItem(
-                  value: 'delete_day',
-                  child: Text('Delete today’s logs only'),
+  Widget _buildModernDayExerciseCard(Workout w, int index, WorkoutLog? latest) {
+    return Container(
+      key: ValueKey('day_${w.id}'),
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () => widget.onEdit(w, latest),
+          onLongPress: () => widget.onShowChart(w),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                ReorderableDragStartListener(
+                  index: index,
+                  child: const Icon(
+                    Icons.drag_indicator,
+                    color: Color(0xFFD1D5DB),
+                    size: 20,
+                  ),
                 ),
-                PopupMenuItem(
-                  value: 'remove_plan',
-                  child: Text('Remove from this plan (keep history)'),
+                const SizedBox(width: 12),
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFEBEE),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(w.icon, color: const Color(0xFFE53935), size: 24),
                 ),
-                PopupMenuItem(
-                  value: 'delete_all',
-                  child: Text('Delete all logs for this exercise'),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        w.name,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1A1D1F),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        latest == null
+                            ? 'No progress yet'
+                            : '${latest.weightKg} kg • ${latest.sets} Sets',
+                        style: const TextStyle(fontSize: 13, color: Color(0xFF6F7789)),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'History',
+                  onPressed: () => widget.onShowHistory(w),
+                  icon: const Icon(Icons.history, color: Color(0xFF6F7789)),
+                ),
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert, color: Color(0xFF6F7789)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  onSelected: (value) {
+                    if (value == 'delete_day') {
+                      widget.onDeleteForDay(w);
+                    }
+                    if (value == 'remove_plan') {
+                      widget.onUnassignFromDay(w);
+                      setState(() {
+                        _list.removeWhere((x) => x.id == w.id);
+                      });
+                    }
+                    if (value == 'delete_all') {
+                      widget.onDeleteAll(w);
+                    }
+                  },
+                  itemBuilder: (_) => const [
+                    PopupMenuItem(
+                      value: 'delete_day',
+                      child: Text('Delete today’s logs only'),
+                    ),
+                    PopupMenuItem(
+                      value: 'remove_plan',
+                      child: Text('Remove from this plan (keep history)'),
+                    ),
+                    PopupMenuItem(
+                      value: 'delete_all',
+                      child: Text('Delete all logs for this exercise'),
+                    ),
+                  ],
                 ),
               ],
-              icon: const Icon(Icons.more_vert),
             ),
-          );
-        },
+          ),
+        ),
       ),
     );
   }
@@ -1954,7 +2590,10 @@ class _LogInputDialogState extends State<LogInputDialog> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         if (hasKnownDays) ...[
-          Text('Workout Day', style: Theme.of(context).textTheme.titleSmall),
+          const Text(
+            'Workout Day',
+            style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF6F7789)),
+          ),
           const SizedBox(height: 6),
           Wrap(
             spacing: 8,
@@ -1979,6 +2618,20 @@ class _LogInputDialogState extends State<LogInputDialog> {
                 ? 'Workout Day (optional)'
                 : 'Workout Day (required)'),
             hintText: hasKnownDays ? 'e.g. Push3' : 'e.g. Push / Pull / Leg …',
+            filled: true,
+            fillColor: Colors.white,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFE53935), width: 2),
+            ),
           ),
         ),
         const SizedBox(height: 8),
@@ -2014,6 +2667,20 @@ class _LogInputDialogState extends State<LogInputDialog> {
             labelText:
             widget.creationMode ? 'Weight (kg) – optional' : 'Weight (kg)',
             hintText: 'e.g. 80',
+            filled: true,
+            fillColor: Colors.white,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFE53935), width: 2),
+            ),
           ),
         ),
         const SizedBox(height: 12),
@@ -2023,6 +2690,20 @@ class _LogInputDialogState extends State<LogInputDialog> {
           decoration: InputDecoration(
             labelText: widget.creationMode ? 'Sets – optional' : 'Sets',
             hintText: 'e.g. 3',
+            filled: true,
+            fillColor: Colors.white,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFE53935), width: 2),
+            ),
           ),
         ),
         const SizedBox(height: 12),
@@ -2039,9 +2720,23 @@ class _LogInputDialogState extends State<LogInputDialog> {
           const SizedBox(height: 8),
           TextField(
             controller: _extraWeightsController,
-            decoration: const InputDecoration(
-              labelText: 'Zusätzliche Gewichte (kommagetrennt)',
-              hintText: 'z. B. 60, 50, 40',
+            decoration: InputDecoration(
+              labelText: 'Additional weights (comma separated)',
+              hintText: 'e.g. 60, 50, 40',
+              filled: true,
+              fillColor: Colors.white,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Color(0xFFE53935), width: 2),
+              ),
             ),
           ),
         ],
@@ -2052,7 +2747,30 @@ class _LogInputDialogState extends State<LogInputDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.workout.name),
+      backgroundColor: const Color(0xFFF5F7FA),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      titlePadding: const EdgeInsets.fromLTRB(20, 20, 16, 0),
+      contentPadding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+      actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+      title: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFEBEE),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.fitness_center, color: Color(0xFFE53935)),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              widget.workout.name,
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -2064,13 +2782,39 @@ class _LogInputDialogState extends State<LogInputDialog> {
         ),
       ),
       actions: <Widget>[
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: _submit,
-          child: Text(widget.creationMode ? 'Save' : 'Update'),
+        SizedBox(
+          width: double.infinity,
+          child: Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Color(0xFFE0E0E0)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text('Cancel'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _submit,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFE53935),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Text(widget.creationMode ? 'Save' : 'Update'),
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -2168,8 +2912,12 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
     String fmtTooltip(DateTime d) => fmtDate(d);
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: Text(widget.title),
+        backgroundColor: Colors.white,
+        foregroundColor: const Color(0xFF1A1D1F),
+        elevation: 0.5,
+        title: Text(widget.title, style: const TextStyle(fontWeight: FontWeight.bold)),
         actions: [
           IconButton(
             tooltip: 'Exit full screen',
@@ -2232,7 +2980,7 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
               touchTooltipData: LineTouchTooltipData(
                 fitInsideHorizontally: true,
                 fitInsideVertically: true,
-getTooltipColor: (_) => cs.surfaceContainerHighest,
+                getTooltipColor: (_) => Colors.white,
                 tooltipPadding:
                 const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 getTooltipItems: (touchedSpots) => touchedSpots.map((t) {
@@ -2246,13 +2994,12 @@ getTooltipColor: (_) => cs.surfaceContainerHighest,
 
                   return LineTooltipItem(
                     '$dateStr\n',
-                    TextStyle(
-                        color: cs.onSurface, fontWeight: FontWeight.w700),
+                    const TextStyle(color: Color(0xFF1A1D1F), fontWeight: FontWeight.w700),
                     children: [
                       TextSpan(
                         text: weightStr,
-                        style: TextStyle(
-                          color: cs.onSurface,
+                        style: const TextStyle(
+                          color: Color(0xFF1A1D1F),
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -2270,16 +3017,16 @@ getTooltipColor: (_) => cs.surfaceContainerHighest,
                 spots: spots,
                 isCurved: false,
                 barWidth: 3,
-                color: cs.primary,
+                color: const Color(0xFFE53935),
                 dotData: FlDotData(
                   show: true,
                   getDotPainter: (spot, percent, bar, index) {
                     final isDrop = logs[index].isDropset;
                     return FlDotCirclePainter(
                       radius: isDrop ? 4.5 : 3.2,
-                      color: isDrop ? cs.error : cs.primary,
+                      color: isDrop ? Color(0xFFB71C1C) : Color(0xFFE53935),
                       strokeWidth: isDrop ? 2 : 1.5,
-                      strokeColor: cs.onPrimaryContainer.withValues(alpha: 0.35),
+                      strokeColor: const Color(0x66E53935),
                     );
                   },
                 ),
@@ -2308,6 +3055,7 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
   late DateTime _currentMonth;
   double? _dragStartX;
   bool _dragHandled = false;
+  bool _showChips = true; // toggle between chips and count badge
 
   @override
   void initState() {
@@ -2360,78 +3108,181 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
     _dragHandled = false;
   }
 
-  List<Widget> _buildDayNameChips(List<String> names, ColorScheme cs) {
-    const maxVisible = 4;
-    final visible = names.take(maxVisible).toList();
-    final overflow = names.length - visible.length;
+  Widget _buildDayContent(List<String> names) {
+    if (names.isEmpty) return const SizedBox.shrink();
 
-    Color colorFor(String day) {
-      final stored = widget.dayColors[day];
-      if (stored != null) return Color(stored);
-      final palette = Colors.primaries;
-      final base = palette[day.hashCode.abs() % palette.length];
-      return base.shade400;
-    }
+    if (_showChips) {
+      // Show abbreviated chips
+      const maxVisible = 4;
+      final visible = names.take(maxVisible).toList();
+      final overflow = names.length - visible.length;
 
-    final chips = visible
-        .map((n) => Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: colorFor(n),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(n,
-          overflow: TextOverflow.ellipsis,
+      Color colorFor(String day) {
+        final stored = widget.dayColors[day];
+        if (stored != null) return Color(stored);
+        final palette = Colors.primaries;
+        final base = palette[day.hashCode.abs() % palette.length];
+        return base.shade400;
+      }
+
+      String shortLabel(String n) {
+        if (n.trim().isEmpty) return n;
+        final parts = n.split(RegExp(r"\s+"));
+        if (parts.length > 1) {
+          final ac = parts.map((p) => p.isEmpty ? '' : p[0]).join();
+          return ac.substring(0, ac.length.clamp(0, 3));
+        }
+        return n.length <= 3 ? n : n.substring(0, 3);
+      }
+
+      final List<Widget> chips = visible
+          .map((n) => Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: colorFor(n),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  shortLabel(n),
+                  maxLines: 1,
+                  softWrap: false,
+                  overflow: TextOverflow.clip,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ))
+          .toList();
+
+      if (overflow > 0) {
+        chips.add(Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade300,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text('+$overflow',
+              style: TextStyle(
+                color: Colors.grey.shade700,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+              )),
+        ));
+      }
+
+      return Wrap(
+        spacing: 4,
+        runSpacing: 4,
+        children: chips,
+      );
+    } else {
+      // Show count badge
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: const Color(0xFFE53935),
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Text(
+          '${names.length}',
           style: const TextStyle(
             color: Colors.white,
-            fontSize: 11,
+            fontSize: 12,
             fontWeight: FontWeight.w700,
-          )),
-    ))
-        .toList();
-
-    if (overflow > 0) {
-      chips.add(Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-        decoration: BoxDecoration(
-          color: cs.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(12),
+          ),
         ),
-        child: Text('+$overflow',
-            style: TextStyle(
-              color: cs.onSurfaceVariant,
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-            )),
-      ));
+      );
     }
-    return chips;
   }
 
-  void _showFullList(BuildContext context, DateTime date, List<String> names, ColorScheme cs) {
+  void _showFullList(BuildContext context, DateTime date, List<String> names) {
     if (names.isEmpty) return;
     showModalBottomSheet<void>(
       context: context,
-      showDragHandle: true,
+      backgroundColor: const Color(0xFFF5F7FA),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (_) {
         final dateLabel = MaterialLocalizations.of(context).formatFullDate(date);
         return SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('Workouts am $dateLabel', style: Theme.of(context).textTheme.titleMedium),
-                const SizedBox(height: 12),
-                ...names.map((n) => ListTile(
-                  dense: true,
-                  leading: CircleAvatar(backgroundColor: (widget.dayColors[n] != null)
-                      ? Color(widget.dayColors[n]!)
-                      : _fallbackColor(n),
-                    child: const Icon(Icons.fitness_center, color: Colors.white, size: 16),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFEBEE),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.calendar_today, color: Color(0xFFE53935), size: 20),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Workouts',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            dateLabel,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                ...names.map((n) => Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x0A000000),
+                        blurRadius: 8,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
                   ),
-                  title: Text(n),
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    leading: Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: (widget.dayColors[n] != null)
+                            ? Color(widget.dayColors[n]!)
+                            : _fallbackColor(n),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.fitness_center, color: Colors.white, size: 20),
+                    ),
+                    title: Text(
+                      n,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
                 )),
               ],
             ),
@@ -2449,8 +3300,6 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
     final firstWeekday =
         DateTime(_currentMonth.year, _currentMonth.month, 1).weekday; // 1..7
     final leadingEmpty = (firstWeekday + 6) % 7; // Start bei Montag
@@ -2459,43 +3308,88 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
     final rows = (cells / 7).ceil();
 
     final localizations = MaterialLocalizations.of(context);
-    final prevLabel = localizations.formatMonthYear(
-      DateTime(_currentMonth.year, _currentMonth.month - 1, 1),
-    );
-    final nextLabel = localizations.formatMonthYear(
-      DateTime(_currentMonth.year, _currentMonth.month + 1, 1),
-    );
     final titleLabel = localizations.formatMonthYear(_currentMonth);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(titleLabel),
-        actions: [
-          TextButton.icon(
-            onPressed: _prevMonth,
-            icon: const Icon(Icons.chevron_left),
-            label: Text(prevLabel),
-          ),
-          TextButton.icon(
-            onPressed: _nextMonth,
-            icon: const Icon(Icons.chevron_right),
-            label: Text(nextLabel),
-          ),
-        ],
-      ),
-      body: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onHorizontalDragStart: _handleHorizontalDragStart,
-        onHorizontalDragUpdate: _handleHorizontalDragUpdate,
-        onHorizontalDragEnd: _handleHorizontalDragEnd,
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 560),
-            child: Column(
-              children: [
+      backgroundColor: const Color(0xFFF5F7FA),
+      body: SafeArea(
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onHorizontalDragStart: _handleHorizontalDragStart,
+          onHorizontalDragUpdate: _handleHorizontalDragUpdate,
+          onHorizontalDragEnd: _handleHorizontalDragEnd,
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 560),
+              child: Column(
+                children: [
+                  const SizedBox(height: 8),
+                  // Modern header
+                  Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                  child: Row(
+                    children: [
+                      // Back button
+                      InkWell(
+                        onTap: () => Navigator.of(context).pop(),
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Color(0x14000000),
+                                blurRadius: 10,
+                                offset: Offset(0, 3),
+                              )
+                            ],
+                          ),
+                          child: const Icon(Icons.arrow_back, color: Color(0xFF374151)),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              titleLabel,
+                              style: const TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: -0.2,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Swipe or use arrows to switch month',
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      // View toggle
+                      _ToggleButton(
+                        icon: _showChips ? Icons.grid_view : Icons.filter_list,
+                        onTap: () => setState(() => _showChips = !_showChips),
+                      ),
+                      const SizedBox(width: 8),
+                      // Prev / Next
+                      _MonthIconButton(icon: Icons.chevron_left, onTap: _prevMonth),
+                      const SizedBox(width: 8),
+                      _MonthIconButton(icon: Icons.chevron_right, onTap: _nextMonth, isPrimary: true),
+                    ],
+                  ),
+                ),
                 const SizedBox(height: 8),
                 Row(
-                  children: const [
+                  children: [
                     _Dow('Mon'), _Dow('Tue'), _Dow('Wed'),
                     _Dow('Thu'), _Dow('Fri'), _Dow('Sat'), _Dow('Sun'),
                   ],
@@ -2520,31 +3414,62 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
                       DateTime(_currentMonth.year, _currentMonth.month, dayNum);
                       final key = _dateKey(date);
                       final names = widget.calendarByDate[key]?.toList() ?? const <String>[];
+                      final isToday = _dateKey(date) == _dateKey(DateTime.now());
 
                       return GestureDetector(
-                        onLongPress: () => _showFullList(context, date, names, cs),
+                        onTap: () => _showFullList(context, date, names),
+                        onLongPress: () => _showFullList(context, date, names),
                         child: Container(
                           decoration: BoxDecoration(
-                            border: Border.all(color: cs.outlineVariant),
-                            borderRadius: BorderRadius.circular(8),
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: isToday
+                                ? Border.all(color: const Color(0xFFE53935), width: 1.5)
+                                : Border.all(color: const Color(0xFFE6E8EC)),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Color(0x0F000000),
+                                blurRadius: 8,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
                           ),
-                          padding: const EdgeInsets.all(8),
+                          padding: const EdgeInsets.all(10),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('$dayNum',
-                                  style:
-                                  const TextStyle(fontWeight: FontWeight.bold)),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text('$dayNum',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 14,
+                                      )),
+                                  if (names.isNotEmpty)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFFFEBEE),
+                                        borderRadius: BorderRadius.circular(999),
+                                      ),
+                                      child: const Text(
+                                        'Workouts',
+                                        style: TextStyle(
+                                          color: Color(0xFFE53935),
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
                               const SizedBox(height: 4),
                               if (names.isNotEmpty)
                                 Expanded(
                                   child: Align(
                                     alignment: Alignment.bottomLeft,
-                                    child: Wrap(
-                                      spacing: 4,
-                                      runSpacing: 4,
-                                      children: _buildDayNameChips(names, cs),
-                                    ),
+                                    child: _buildDayContent(names),
                                   ),
                                 ),
                             ],
@@ -2567,6 +3492,7 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
           ),
         ),
       ),
+      ),
     );
   }
 }
@@ -2580,8 +3506,72 @@ class _Dow extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: Center(
-            child:
-            Text(label, style: const TextStyle(fontWeight: FontWeight.w600))),
+            child: Text(
+          label,
+          style: TextStyle(
+            fontWeight: FontWeight.w700,
+            color: Colors.grey.shade700,
+          ),
+        )),
+      ),
+    );
+  }
+}
+
+class _MonthIconButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool isPrimary;
+  const _MonthIconButton({required this.icon, required this.onTap, this.isPrimary = false});
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: isPrimary ? const Color(0xFFE53935) : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x14000000),
+              blurRadius: 10,
+              offset: Offset(0, 3),
+            )
+          ],
+        ),
+        child: Icon(icon, color: isPrimary ? Colors.white : const Color(0xFF374151)),
+      ),
+    );
+  }
+}
+
+class _ToggleButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  const _ToggleButton({required this.icon, required this.onTap});
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x14000000),
+              blurRadius: 10,
+              offset: Offset(0, 3),
+            )
+          ],
+        ),
+        child: Icon(icon, color: const Color(0xFF374151), size: 20),
       ),
     );
   }
