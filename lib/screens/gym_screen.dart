@@ -451,13 +451,25 @@ class _GymScreenState extends State<GymScreen> {
     setState(() {
       final list = _logs.putIfAbsent(workoutId, () => <WorkoutLog>[]);
       list.add(WorkoutLog(
-        dateTime: DateTime.now(),
+        dateTime: result.dateTime,
         weightKg: result.weightKg,
         sets: result.sets,
         day: result.day,
         isDropset: result.isDropset,
       ));
       _ensureAssigned(result.day, workoutId);
+      
+      // Aktualisiere Kalender mit dem Log-Datum
+      final key = _dateKey(result.dateTime);
+      final set = _calendarByDate.putIfAbsent(key, () => <String>{});
+      set.add(result.day);
+      // Ensure the day has a color for calendar display
+      if (!_dayColors.containsKey(result.day)) {
+        final cs = Theme.of(context).colorScheme;
+        _dayColors[result.day] = _resolveDayColor(result.day, cs).value;
+        _saveDayColors();
+      }
+      _saveCalendar();
     });
     _saveLogs();
   }
@@ -3172,10 +3184,17 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
         ));
       }
 
-      return Wrap(
-        spacing: 4,
-        runSpacing: 4,
-        children: chips,
+      return SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: chips
+              .map((chip) => Padding(
+                    padding: const EdgeInsets.only(right: 4),
+                    child: chip,
+                  ))
+              .toList(),
+        ),
       );
     } else {
       // Show count badge
@@ -3446,22 +3465,6 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
                                         fontWeight: FontWeight.w700,
                                         fontSize: 14,
                                       )),
-                                  if (names.isNotEmpty)
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFFFEBEE),
-                                        borderRadius: BorderRadius.circular(999),
-                                      ),
-                                      child: const Text(
-                                        'Workouts',
-                                        style: TextStyle(
-                                          color: Color(0xFFE53935),
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                    ),
                                 ],
                               ),
                               const SizedBox(height: 4),
@@ -3477,14 +3480,6 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
                         ),
                       );
                     },
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Text(
-                    'Anzeige: Namen der absolvierten Workout-Days pro Datum',
-                    style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ),
               ],
