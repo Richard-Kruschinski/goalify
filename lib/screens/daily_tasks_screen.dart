@@ -742,178 +742,315 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     await showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
-      builder: (ctx) => SafeArea(
-        child: Wrap(
-          children: [
-            if (t.keep)
-              ListTile(
-                leading: const Icon(Icons.ac_unit),
-                title: const Text('Freeze for today'),
-                subtitle: Text(frozenToday
-                    ? 'Already frozen'
-                    : (_freezeTokens > 0
-                    ? 'Protect your streak'
-                    : 'No tokens left')),
-                enabled: !frozenToday && _freezeTokens > 0,
-                onTap: (!frozenToday && _freezeTokens > 0)
-                    ? () async {
-                  await _freezeToday(t);
-                  if (mounted) Navigator.pop(ctx);
-                }
-                    : null,
+      backgroundColor: const Color(0xFFF5F7FA),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        Widget actionTile({
+          required IconData icon,
+          required String title,
+          String? subtitle,
+          Color iconColor = const Color(0xFF1A1D1F),
+          VoidCallback? onTap,
+          bool danger = false,
+          bool enabled = true,
+        }) {
+          final effectiveIconColor = enabled
+              ? (danger ? const Color(0xFFE53935) : iconColor)
+              : const Color(0xFFBFC5D2);
+          final effectiveTextColor = enabled
+              ? (danger ? const Color(0xFFE53935) : const Color(0xFF1A1D1F))
+              : const Color(0xFFBFC5D2);
+          return Opacity(
+            opacity: enabled ? 1 : 0.6,
+            child: InkWell(
+              onTap: enabled ? onTap : null,
+              borderRadius: BorderRadius.circular(14),
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x0A000000),
+                      blurRadius: 8,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: (danger
+                                ? const Color(0xFFFFEBEE)
+                                : iconColor.withOpacity(0.12))
+                            .withOpacity(enabled ? 1 : 0.6),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(icon, color: effectiveIconColor),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: effectiveTextColor,
+                            ),
+                          ),
+                          if (subtitle != null) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              subtitle,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: enabled
+                                    ? const Color(0xFF6F7789)
+                                    : const Color(0xFFBFC5D2),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    if (danger)
+                      const Icon(Icons.delete_outline, color: Color(0xFFE53935))
+                    else
+                      const Icon(Icons.chevron_right, color: Color(0xFFCDD2D8)),
+                  ],
+                ),
               ),
-            if (t.keep) const Divider(height: 0),
+            ),
+          );
+        }
 
-            // Edit (for simplicity, keep flag is not changed in edit here)
-            ListTile(
-              leading: const Icon(Icons.edit),
-              title: const Text('Edit'),
-              onTap: () async {
-                final data = await showModalBottomSheet<_TaskFormData>(
-                  context: context,
-                  isScrollControlled: true,
-                  useSafeArea: true,
-                  builder: (_) => _EditDailyTaskSheet(task: t),
-                );
-                if (data != null) {
-                  if (t.keep) {
-                    final idx = _keepTasks.indexWhere((x) => x.id == t.id);
-                    if (idx >= 0) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFEBEE),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.settings, color: Color(0xFFE53935)),
+                    ),
+                    const SizedBox(width: 12),
+                    const Text(
+                      'Task actions',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF1A1D1F),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                actionTile(
+                  icon: Icons.edit,
+                  title: 'Edit',
+                  subtitle: 'Update title, description or category',
+                  iconColor: const Color(0xFF3F51B5),
+                  onTap: () async {
+                    final data = await showModalBottomSheet<_TaskFormData>(
+                      context: context,
+                      isScrollControlled: true,
+                      useSafeArea: true,
+                      backgroundColor: const Color(0xFFF5F7FA),
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                      ),
+                      builder: (_) => _EditDailyTaskSheet(task: t),
+                    );
+                    if (data != null) {
+                      if (t.keep) {
+                        final idx = _keepTasks.indexWhere((x) => x.id == t.id);
+                        if (idx >= 0) {
+                          setState(() {
+                            _keepTasks[idx] = DailyTask(
+                              id: t.id,
+                              title: data.title,
+                              description: data.description,
+                              category: data.category,
+                              points: data.points,
+                              keep: true,
+                              streak: _keepTasks[idx].streak,
+                              bestStreak: _keepTasks[idx].bestStreak,
+                              lastDoneKey: _keepTasks[idx].lastDoneKey,
+                              done: _keepTasks[idx].done,
+                            );
+                          });
+                          await _saveKeepTasks();
+                        }
+                      } else {
+                        final list = _oneOffByDate[dateKey];
+                        final idx = list?.indexWhere((x) => x.id == t.id) ?? -1;
+                        if (list != null && idx >= 0) {
+                          setState(() {
+                            list[idx] = DailyTask(
+                              id: t.id,
+                              title: data.title,
+                              description: data.description,
+                              category: data.category,
+                              points: data.points,
+                              keep: false,
+                              done: list[idx].done,
+                            );
+                          });
+                          await _saveOneOffMap();
+                        }
+                      }
+                    }
+                    if (mounted) Navigator.pop(ctx);
+                  },
+                ),
+                const SizedBox(height: 10),
+                actionTile(
+                  icon: Icons.copy_all,
+                  title: 'Duplicate',
+                  subtitle: 'Copy this task right below',
+                  iconColor: const Color(0xFF009688),
+                  onTap: () async {
+                    final copy = DailyTask(
+                      id: DateTime.now().microsecondsSinceEpoch.toString(),
+                      title: t.title,
+                      description: t.description,
+                      category: t.category,
+                      points: t.points,
+                      keep: t.keep,
+                      streak: t.keep ? 0 : 0,
+                      bestStreak: t.keep ? 0 : 0,
+                      lastDoneKey: null,
+                      done: false,
+                    );
+                    String dateKeyForCopy = dateKey;
+                    if (t.keep) {
                       setState(() {
-                        _keepTasks[idx] = DailyTask(
-                          id: t.id,
-                          title: data.title,
-                          description: data.description,
-                          category: data.category,
-                          points: data.points,
-                          keep: true,
-                          streak: _keepTasks[idx].streak,
-                          bestStreak: _keepTasks[idx].bestStreak,
-                          lastDoneKey: _keepTasks[idx].lastDoneKey,
-                          done: _keepTasks[idx].done,
-                        );
+                        _keepTasks.add(copy);
+                        _orderKeep.add(copy.id); // legacy
                       });
                       await _saveKeepTasks();
-                    }
-                  } else {
-                    final list = _oneOffByDate[dateKey];
-                    final idx = list?.indexWhere((x) => x.id == t.id) ?? -1;
-                    if (list != null && idx >= 0) {
+                      await _saveOrderKeep();
+                    } else {
+                      final list =
+                      _oneOffByDate.putIfAbsent(dateKeyForCopy, () => <DailyTask>[]);
                       setState(() {
-                        list[idx] = DailyTask(
-                          id: t.id,
-                          title: data.title,
-                          description: data.description,
-                          category: data.category,
-                          points: data.points,
-                          keep: false,
-                          done: list[idx].done,
-                        );
+                        list.add(copy);
+                        final ord =
+                        _orderByDate.putIfAbsent(dateKeyForCopy, () => <String>[]);
+                        ord.add(copy.id); // legacy
                       });
                       await _saveOneOffMap();
+                      await _saveOrderByDate();
                     }
-                  }
-                }
-                if (mounted) Navigator.pop(ctx);
-              },
+                    // add into combined next to original
+                    _syncCombinedForDate(dateKeyForCopy);
+                    final ids = _orderCombined[dateKeyForCopy]!;
+                    final pos = ids.indexOf(t.id);
+                    if (pos >= 0) {
+                      ids.insert(pos + 1, copy.id);
+                    } else {
+                      ids.add(copy.id);
+                    }
+                    await _saveOrderCombined();
+                    if (mounted) Navigator.pop(ctx);
+                  },
+                ),
+                const SizedBox(height: 10),
+                if (t.keep)
+                  actionTile(
+                    icon: Icons.ac_unit,
+                    title: 'Freeze for today',
+                    subtitle: frozenToday
+                        ? 'Already frozen'
+                        : (_freezeTokens > 0
+                        ? 'Protect your streak'
+                        : 'No tokens left'),
+                    iconColor: const Color(0xFF2196F3),
+                    enabled: !frozenToday && _freezeTokens > 0,
+                    onTap: (!frozenToday && _freezeTokens > 0)
+                        ? () async {
+                      await _freezeToday(t);
+                      if (mounted) Navigator.pop(ctx);
+                    }
+                        : null,
+                  ),
+                if (t.keep) const SizedBox(height: 10),
+                if (t.keep)
+                  actionTile(
+                    icon: Icons.vertical_align_top,
+                    title: 'Move to top',
+                    subtitle: 'Pin this recurring task to the top',
+                    iconColor: const Color(0xFF7B1FA2),
+                    onTap: () async {
+                      _syncCombinedForDate(dateKey);
+                      setState(() {
+                        _orderCombined[dateKey]!
+                          ..remove(t.id)
+                          ..insert(0, t.id);
+                      });
+                      await _saveOrderCombined();
+                      if (mounted) Navigator.pop(ctx);
+                    },
+                  ),
+                if (t.keep) const SizedBox(height: 10),
+                if (t.keep)
+                  actionTile(
+                    icon: Icons.local_fire_department_outlined,
+                    title: 'Reset current streak',
+                    subtitle: 'Clear today’s streak progress',
+                    iconColor: const Color(0xFFFF5722),
+                    onTap: () async {
+                      setState(() => t.streak = 0);
+                      await _saveKeepTasks();
+                      if (mounted) Navigator.pop(ctx);
+                    },
+                  ),
+                if (t.keep) const SizedBox(height: 10),
+                if (t.keep)
+                  actionTile(
+                    icon: Icons.emoji_events_outlined,
+                    title: 'Reset best streak',
+                    subtitle: 'Remove your all-time best streak',
+                    iconColor: const Color(0xFF795548),
+                    onTap: () async {
+                      setState(() => t.bestStreak = 0);
+                      await _saveKeepTasks();
+                      if (mounted) Navigator.pop(ctx);
+                    },
+                  ),
+                const SizedBox(height: 10),
+                actionTile(
+                  icon: Icons.delete_outline,
+                  title: 'Delete',
+                  subtitle: 'Remove this task permanently',
+                  danger: true,
+                  onTap: () async {
+                    await _deleteAt(indexInOrdered, dateKey: dateKey);
+                    if (mounted) Navigator.pop(ctx);
+                  },
+                ),
+              ],
             ),
-            ListTile(
-              leading: const Icon(Icons.copy_all),
-              title: const Text('Duplicate'),
-              onTap: () async {
-                final copy = DailyTask(
-                  id: DateTime.now().microsecondsSinceEpoch.toString(),
-                  title: t.title,
-                  description: t.description,
-                  category: t.category,
-                  points: t.points,
-                  keep: t.keep,
-                  streak: t.keep ? 0 : 0,
-                  bestStreak: t.keep ? 0 : 0,
-                  lastDoneKey: null,
-                  done: false,
-                );
-                String dateKeyForCopy = dateKey;
-                if (t.keep) {
-                  setState(() {
-                    _keepTasks.add(copy);
-                    _orderKeep.add(copy.id); // legacy
-                  });
-                  await _saveKeepTasks();
-                  await _saveOrderKeep();
-                } else {
-                  final list =
-                  _oneOffByDate.putIfAbsent(dateKeyForCopy, () => <DailyTask>[]);
-                  setState(() {
-                    list.add(copy);
-                    final ord =
-                    _orderByDate.putIfAbsent(dateKeyForCopy, () => <String>[]);
-                    ord.add(copy.id); // legacy
-                  });
-                  await _saveOneOffMap();
-                  await _saveOrderByDate();
-                }
-                // add into combined next to original
-                _syncCombinedForDate(dateKeyForCopy);
-                final ids = _orderCombined[dateKeyForCopy]!;
-                final pos = ids.indexOf(t.id);
-                if (pos >= 0) {
-                  ids.insert(pos + 1, copy.id);
-                } else {
-                  ids.add(copy.id);
-                }
-                await _saveOrderCombined();
-                if (mounted) Navigator.pop(ctx);
-              },
-            ),
-            if (t.keep)
-              ListTile(
-                leading: const Icon(Icons.vertical_align_top),
-                title: const Text('Move to top'),
-                onTap: () async {
-                  // move to top in combined for this date
-                  _syncCombinedForDate(dateKey);
-                  setState(() {
-                    _orderCombined[dateKey]!
-                      ..remove(t.id)
-                      ..insert(0, t.id);
-                  });
-                  await _saveOrderCombined();
-                  if (mounted) Navigator.pop(ctx);
-                },
-              ),
-            if (t.keep) const Divider(height: 0),
-            if (t.keep)
-              ListTile(
-                leading: const Icon(Icons.local_fire_department_outlined),
-                title: const Text('Reset current streak'),
-                onTap: () async {
-                  setState(() => t.streak = 0);
-                  await _saveKeepTasks();
-                  if (mounted) Navigator.pop(ctx);
-                },
-              ),
-            if (t.keep)
-              ListTile(
-                leading: const Icon(Icons.emoji_events_outlined),
-                title: const Text('Reset best streak'),
-                onTap: () async {
-                  setState(() => t.bestStreak = 0);
-                  await _saveKeepTasks();
-                  if (mounted) Navigator.pop(ctx);
-                },
-              ),
-            ListTile(
-              leading: const Icon(Icons.delete_outline, color: Colors.red),
-              title: const Text('Delete', style: TextStyle(color: Colors.red)),
-              onTap: () async {
-                await _deleteAt(indexInOrdered, dateKey: dateKey);
-                if (mounted) Navigator.pop(ctx);
-              },
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -2212,10 +2349,14 @@ class _EditDailyTaskSheetState extends State<_EditDailyTaskSheet> {
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.of(context).viewInsets.bottom;
-    return Padding(
+    return Container(
+      decoration: const BoxDecoration(
+        color: Color(0xFFF5F7FA),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       padding: EdgeInsets.only(bottom: bottom),
       child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+        padding: const EdgeInsets.all(24),
         child: Form(
           key: _formKey,
           child: Column(
@@ -2224,9 +2365,23 @@ class _EditDailyTaskSheetState extends State<_EditDailyTaskSheet> {
             children: [
               Row(
                 children: [
-                  const Text('Edit Task',
-                      style:
-                      TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFEBEE),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.edit, color: Color(0xFFE53935), size: 22),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Edit Task',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF1A1D1F),
+                    ),
+                  ),
                   const Spacer(),
                   IconButton(
                     onPressed: () => Navigator.pop(context),
@@ -2234,91 +2389,219 @@ class _EditDailyTaskSheetState extends State<_EditDailyTaskSheet> {
                   )
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _titleCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Name',
+                style: const TextStyle(fontSize: 16),
+                decoration: InputDecoration(
+                  labelText: 'Task Name',
+                  filled: true,
+                  fillColor: Colors.white,
+                  prefixIcon: const Icon(Icons.check_circle_outline, color: Color(0xFF6F7789)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFFE53935), width: 2),
+                  ),
                 ),
-                validator: (v) =>
-                (v == null || v.trim().isEmpty) ? 'Required' : null,
+                validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
                 textInputAction: TextInputAction.next,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _descCtrl,
-                decoration: const InputDecoration(
+                style: const TextStyle(fontSize: 16),
+                decoration: InputDecoration(
                   labelText: 'Description (optional)',
+                  filled: true,
+                  fillColor: Colors.white,
+                  prefixIcon: const Icon(Icons.notes, color: Color(0xFF6F7789)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFFE53935), width: 2),
+                  ),
                 ),
                 maxLines: 2,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 20),
+              const Text(
+                'Category',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF6F7789),
+                ),
+              ),
+              const SizedBox(height: 8),
               TextFormField(
                 initialValue: _category,
-                decoration: const InputDecoration(
-                  labelText: 'Category (optional)',
+                decoration: InputDecoration(
+                  hintText: 'Category (optional)',
+                  filled: true,
+                  fillColor: Colors.white,
+                  prefixIcon: const Icon(Icons.category_outlined, color: Color(0xFF6F7789)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFFE53935), width: 2),
+                  ),
                 ),
                 onChanged: (v) => _category = v,
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               Wrap(
                 spacing: 8,
+                runSpacing: 8,
                 children: _suggestedCategories.map((c) {
                   final selected = _category == c;
-                  return ChoiceChip(
-                    label: Text(c),
-                    selected: selected,
-                    onSelected: (_) => setState(() => _category = c),
+                  return GestureDetector(
+                    onTap: () => setState(() => _category = selected ? null : c),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: selected ? const Color(0xFFE53935) : Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: selected ? const Color(0xFFE53935) : const Color(0xFFE0E0E0),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Text(
+                        c,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: selected ? Colors.white : const Color(0xFF6F7789),
+                        ),
+                      ),
+                    ),
                   );
                 }).toList(),
               ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  const Text('Points'),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Slider(
+              const SizedBox(height: 20),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.star, size: 20, color: Color(0xFFFF9800)),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Points',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF1A1D1F),
+                          ),
+                        ),
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFF3E0),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            '$_points',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFFFF9800),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Slider(
                       value: 1.0 * _points,
                       min: 1,
                       max: 10,
                       divisions: 9,
-                      label: '$_points',
+                      activeColor: const Color(0xFFE53935),
+                      inactiveColor: const Color(0xFFFFEBEE),
                       onChanged: (v) => setState(() => _points = v.round()),
                     ),
-                  ),
-                  SizedBox(
-                    width: 48,
-                    child: Text(
-                      '$_points',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                  )
-                ],
+                  ],
+                ),
               ),
               const SizedBox(height: 12),
-              CheckboxListTile(
-                value: _keep,
-                onChanged: (v) => setState(() => _keep = v ?? false),
-                title: const Text('Keep for future days'),
-                controlAffinity: ListTileControlAffinity.leading,
-                contentPadding: EdgeInsets.zero,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: SwitchListTile.adaptive(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Keep for future days'),
+                  subtitle: const Text('Turn into a recurring task'),
+                  activeColor: const Color(0xFFE53935),
+                  value: _keep,
+                  onChanged: (v) => setState(() => _keep = v),
+                ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 20),
               Row(
                 children: [
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Color(0xFFE0E0E0)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
                       child: const Text('Cancel'),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: FilledButton(
+                    child: ElevatedButton(
                       onPressed: _submit,
-                      child: const Text('Save'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFE53935),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'Save',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   ),
                 ],
