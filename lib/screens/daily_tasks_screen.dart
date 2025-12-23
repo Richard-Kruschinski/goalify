@@ -843,32 +843,33 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFEBEE),
-                        borderRadius: BorderRadius.circular(12),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFEBEE),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(Icons.settings, color: Color(0xFFE53935)),
                       ),
-                      child: const Icon(Icons.settings, color: Color(0xFFE53935)),
-                    ),
-                    const SizedBox(width: 12),
-                    const Text(
-                      'Task actions',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF1A1D1F),
+                      const SizedBox(width: 12),
+                      const Text(
+                        'Task actions',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF1A1D1F),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
                 actionTile(
                   icon: Icons.edit,
                   title: 'Edit',
@@ -1055,6 +1056,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                 ),
               ],
             ),
+          ),
           ),
         );
       },
