@@ -119,6 +119,7 @@ class _GymScreenState extends State<GymScreen> {
   // Kalender-Storage (Map<yyyy-MM-dd, Set<DayName>>)
   static const _kCalendarKey = 'gym_calendar_v1';
   static const _kDayColorsKey = 'gym_day_colors_v1';
+  static const _kCreatineKey = 'gym_creatine_intake_v1';
 
   ViewMode _mode = ViewMode.byExercise;
 
@@ -140,6 +141,8 @@ class _GymScreenState extends State<GymScreen> {
   final Map<String, Set<String>> _calendarByDate = <String, Set<String>>{};
   // Farbe je Workout-Tag
   final Map<String, int> _dayColors = <String, int>{};
+  // Creatine intake per date (yyyy-MM-dd)
+  final Set<String> _creatineDates = <String>{};
 
   @override
   void initState() {
@@ -151,6 +154,7 @@ class _GymScreenState extends State<GymScreen> {
     await _loadWorkoutsFromAsset();
     await _loadState();
     await _loadCalendar();
+    await _loadCreatineIntake();
     if (mounted) setState(() {});
   }
 
@@ -279,8 +283,107 @@ class _GymScreenState extends State<GymScreen> {
     await LocalStorage.saveJson(_kCalendarKey, enc);
   }
 
+  Future<void> _loadCreatineIntake() async {
+    final raw = await LocalStorage.loadJson(_kCreatineKey, fallback: []);
+    _creatineDates
+      ..clear()
+      ..addAll((raw is List)
+          ? raw.map((e) => e.toString())
+          : const <String>[]);
+  }
+
+  Future<void> _saveCreatineIntake() async {
+    await LocalStorage.saveJson(_kCreatineKey, _creatineDates.toList());
+  }
+
   String _dateKey(DateTime dt) =>
       '${dt.year.toString().padLeft(4, '0')}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+
+  bool _isCreatineTakenOn(DateTime date) => _creatineDates.contains(_dateKey(date));
+
+  Future<void> _setCreatineTaken(DateTime date, bool value) async {
+    final key = _dateKey(date);
+    if (value) {
+      _creatineDates.add(key);
+    } else {
+      _creatineDates.remove(key);
+    }
+    await _saveCreatineIntake();
+    await _syncDailyCreatineIfToday(date, value);
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _syncDailyCreatineIfToday(DateTime date, bool value) async {
+    final todayKey = _dateKey(DateTime.now());
+    final dateKey = _dateKey(date);
+    if (dateKey != todayKey) return; // only adjust today's daily tasks
+
+    bool changedKeep = false;
+    bool changedOneOff = false;
+
+    // Update keep tasks (daily_tasks_v1)
+    final rawKeep = await LocalStorage.loadJson('daily_tasks_v1', fallback: []);
+    if (rawKeep is List) {
+      final updated = <Map<String, dynamic>>[];
+      for (final e in rawKeep) {
+        final m = Map<String, dynamic>.from(e as Map);
+        final cat = (m['category'] as String?)?.toLowerCase().trim();
+        if (cat == 'creatin' || cat == 'creatine') {
+          if ((m['done'] ?? false) != value) {
+            m['done'] = value;
+            changedKeep = true;
+          }
+        }
+        updated.add(m);
+      }
+      if (changedKeep) {
+        await LocalStorage.saveJson('daily_tasks_v1', updated);
+      }
+    }
+
+    // Update one-off tasks for today (daily_oneoff_by_date_v1)
+    final rawOneOff = await LocalStorage.loadJson('daily_oneoff_by_date_v1', fallback: {});
+    if (rawOneOff is Map && rawOneOff.containsKey(dateKey)) {
+      final list = rawOneOff[dateKey];
+      if (list is List) {
+        final updatedList = <Map<String, dynamic>>[];
+        for (final e in list) {
+          final m = Map<String, dynamic>.from(e as Map);
+          final cat = (m['category'] as String?)?.toLowerCase().trim();
+          if (cat == 'creatin' || cat == 'creatine') {
+            if ((m['done'] ?? false) != value) {
+              m['done'] = value;
+              changedOneOff = true;
+            }
+          }
+          updatedList.add(m);
+        }
+        if (changedOneOff) {
+          rawOneOff[dateKey] = updatedList;
+          await LocalStorage.saveJson('daily_oneoff_by_date_v1', rawOneOff);
+        }
+      }
+    }
+
+    // Keep progress_history in sync when we changed any keep task
+    if (changedKeep) {
+      final rawProgress = await LocalStorage.loadJson('progress_history_v1', fallback: {});
+      final map = (rawProgress is Map) ? Map<String, dynamic>.from(rawProgress) : <String, dynamic>{};
+      int todayPts = 0;
+      final keepRaw = await LocalStorage.loadJson('daily_tasks_v1', fallback: []);
+      if (keepRaw is List) {
+        for (final e in keepRaw) {
+          final m = Map<String, dynamic>.from(e as Map);
+          final keep = (m['keep'] ?? false) as bool;
+          final done = (m['done'] ?? false) as bool;
+          final pts = (m['points'] ?? 1) as int;
+          if (keep && done) todayPts += pts;
+        }
+      }
+      map[todayKey] = todayPts;
+      await LocalStorage.saveJson('progress_history_v1', map);
+    }
+  }
 
   bool _isDayMarkedOn(DateTime date, String dayName) {
     final key = _dateKey(date);
@@ -1147,6 +1250,8 @@ class _GymScreenState extends State<GymScreen> {
                           builder: (_) => WorkoutCalendarPage(
                             calendarByDate: _calendarByDate,
                             dayColors: _dayColors,
+                            isCreatineTaken: _isCreatineTakenOn,
+                            onToggleCreatine: _setCreatineTaken,
                           ),
                         ),
                       );
@@ -3057,7 +3162,15 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
 class WorkoutCalendarPage extends StatefulWidget {
   final Map<String, Set<String>> calendarByDate;
   final Map<String, int> dayColors;
-  const WorkoutCalendarPage({super.key, required this.calendarByDate, required this.dayColors});
+  final bool Function(DateTime date) isCreatineTaken;
+  final Future<void> Function(DateTime date, bool value) onToggleCreatine;
+  const WorkoutCalendarPage({
+    super.key,
+    required this.calendarByDate,
+    required this.dayColors,
+    required this.isCreatineTaken,
+    required this.onToggleCreatine,
+  });
 
   @override
   State<WorkoutCalendarPage> createState() => _WorkoutCalendarPageState();
@@ -3217,7 +3330,6 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
   }
 
   void _showFullList(BuildContext context, DateTime date, List<String> names) {
-    if (names.isEmpty) return;
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: const Color(0xFFF5F7FA),
@@ -3226,86 +3338,119 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
       ),
       builder: (_) {
         final dateLabel = MaterialLocalizations.of(context).formatFullDate(date);
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
+        bool tookCreatine = widget.isCreatineTaken(date);
+
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFEBEE),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(Icons.calendar_today, color: Color(0xFFE53935), size: 20),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Workouts',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFEBEE),
+                            borderRadius: BorderRadius.circular(10),
                           ),
-                          Text(
-                            dateLabel,
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey.shade600,
-                            ),
+                          child: const Icon(Icons.calendar_today, color: Color(0xFFE53935), size: 20),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Workouts',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                dateLabel,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
+                    const SizedBox(height: 12),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Creatine taken'),
+                      subtitle: const Text('Show red dot in calendar'),
+                      activeColor: const Color(0xFFE53935),
+                      value: tookCreatine,
+                      onChanged: (v) async {
+                        setSheetState(() => tookCreatine = v);
+                        await widget.onToggleCreatine(date, v);
+                        if (mounted) setState(() {});
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    if (names.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Text(
+                          'No workouts marked',
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 13,
+                          ),
+                        ),
+                      )
+                    else
+                      ...names
+                          .map((n) => Container(
+                                margin: const EdgeInsets.only(bottom: 8),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: const [
+                                    BoxShadow(
+                                      color: Color(0x0A000000),
+                                      blurRadius: 8,
+                                      offset: Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: ListTile(
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                                  leading: Container(
+                                    width: 44,
+                                    height: 44,
+                                    decoration: BoxDecoration(
+                                      color: (widget.dayColors[n] != null)
+                                          ? Color(widget.dayColors[n]!)
+                                          : _fallbackColor(n),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: const Icon(Icons.fitness_center, color: Colors.white, size: 20),
+                                  ),
+                                  title: Text(
+                                    n,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                ),
+                              ))
+                          .toList(),
                   ],
                 ),
-                const SizedBox(height: 16),
-                ...names.map((n) => Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x0A000000),
-                        blurRadius: 8,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                    leading: Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: (widget.dayColors[n] != null)
-                            ? Color(widget.dayColors[n]!)
-                            : _fallbackColor(n),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(Icons.fitness_center, color: Colors.white, size: 20),
-                    ),
-                    title: Text(
-                      n,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
-                      ),
-                    ),
-                  ),
-                )),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );
@@ -3434,49 +3579,73 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
                       final key = _dateKey(date);
                       final names = widget.calendarByDate[key]?.toList() ?? const <String>[];
                       final isToday = _dateKey(date) == _dateKey(DateTime.now());
+                      final tookCreatine = widget.isCreatineTaken(date);
 
                       return GestureDetector(
                         onTap: () => _showFullList(context, date, names),
                         onLongPress: () => _showFullList(context, date, names),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            border: isToday
-                                ? Border.all(color: const Color(0xFFE53935), width: 1.5)
-                                : Border.all(color: const Color(0xFFE6E8EC)),
-                            boxShadow: const [
-                              BoxShadow(
-                                color: Color(0x0F000000),
-                                blurRadius: 8,
-                                offset: Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          padding: const EdgeInsets.all(10),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text('$dayNum',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 14,
-                                      )),
+                        child: Stack(
+                          children: [
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                border: isToday
+                                    ? Border.all(color: const Color(0xFFE53935), width: 1.5)
+                                    : Border.all(color: const Color(0xFFE6E8EC)),
+                                boxShadow: const [
+                                  BoxShadow(
+                                    color: Color(0x0F000000),
+                                    blurRadius: 8,
+                                    offset: Offset(0, 2),
+                                  ),
                                 ],
                               ),
-                              const SizedBox(height: 4),
-                              if (names.isNotEmpty)
-                                Expanded(
-                                  child: Align(
-                                    alignment: Alignment.bottomLeft,
-                                    child: _buildDayContent(names),
+                              padding: const EdgeInsets.all(10),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text('$dayNum',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 14,
+                                          )),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  if (names.isNotEmpty)
+                                    Expanded(
+                                      child: Align(
+                                        alignment: Alignment.bottomLeft,
+                                        child: _buildDayContent(names),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            if (tookCreatine)
+                              Positioned(
+                                right: 8,
+                                top: 8,
+                                child: Container(
+                                  width: 12,
+                                  height: 12,
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFFE53935),
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Color(0x33000000),
+                                        blurRadius: 4,
+                                      ),
+                                    ],
                                   ),
                                 ),
-                            ],
-                          ),
+                              ),
+                          ],
                         ),
                       );
                     },

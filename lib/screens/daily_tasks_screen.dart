@@ -103,6 +103,9 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   static const _kOneOffByDateKey =
       'daily_oneoff_by_date_v1'; // Map<dateKey, List<task>>
 
+  // Shared with gym_screen: creatine intake per date
+  static const _kCreatineKey = 'gym_creatine_intake_v1';
+
   // State
   final List<DailyTask> _keepTasks = []; // keep=true
   final Map<String, List<DailyTask>> _oneOffByDate = {}; // keep=false by date
@@ -113,6 +116,9 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
 
   // combined per date
   final Map<String, List<String>> _orderCombined = {};
+
+  // Creatine intake cache (yyyy-MM-dd)
+  final Set<String> _creatineDates = <String>{};
 
   int _todayPoints = 0;
 
@@ -184,6 +190,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   // Load & Save
   // ===============================================================
   Future<void> _load() async {
+    await _loadCreatine();
     // Keep-tasks (legacy list)
     final rawKeep = await LocalStorage.loadJson(_kDailyTasksKey, fallback: []);
     if (rawKeep is List) {
@@ -308,6 +315,26 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     await LocalStorage.saveJson(_kFreezeTokensKey, _freezeTokens);
     await LocalStorage.saveJson(_kFreezeDaysCounterKey, _freezeDaysCounter);
     await LocalStorage.saveJson(_kFreezeUsageKey, _freezeUsageByDate);
+  }
+
+  Future<void> _loadCreatine() async {
+    final raw = await LocalStorage.loadJson(_kCreatineKey, fallback: []);
+    _creatineDates
+      ..clear()
+      ..addAll((raw is List) ? raw.map((e) => e.toString()) : const <String>[]);
+  }
+
+  Future<void> _saveCreatine() async {
+    await LocalStorage.saveJson(_kCreatineKey, _creatineDates.toList());
+  }
+
+  Future<void> _setCreatineForDate(String dateKey, bool value) async {
+    if (value) {
+      _creatineDates.add(dateKey);
+    } else {
+      _creatineDates.remove(dateKey);
+    }
+    await _saveCreatine();
   }
 
   // Keep order sync (legacy - still used to seed combined)
@@ -599,6 +626,9 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
       _recalcTodayPoints();
       _sortCompletedToBottom(dateKey);
     });
+
+    await _maybeToggleCreatine(t, dateKey: dateKey);
+
     if (t.keep) {
       await _saveKeepTasks();
     } else {
@@ -608,6 +638,12 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
       await _saveProgressToday();
       await _checkAndMaybeShowCongrats();
     }
+  }
+
+  Future<void> _maybeToggleCreatine(DailyTask t, {required String dateKey}) async {
+    final cat = t.category?.toLowerCase().trim();
+    if (cat != 'creatin' && cat != 'creatine') return;
+    await _setCreatineForDate(dateKey, t.done);
   }
 
   /// Sort tasks in combined order: active/incomplete first, completed last
@@ -1391,6 +1427,12 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
       case 'food':
       case 'meal':
         return Icons.restaurant;
+      case 'chores':
+      case 'chore':
+        return Icons.cleaning_services;
+      case 'creatin':
+      case 'creatine':
+        return Icons.medication_liquid;
       default:
         return Icons.task_alt;
     }
@@ -1425,6 +1467,12 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
       case 'food':
       case 'meal':
         return const Color(0xFF4CAF50);
+      case 'chores':
+      case 'chore':
+        return const Color(0xFF607D8B);
+      case 'creatin':
+      case 'creatine':
+        return const Color(0xFFE53935);
       default:
         return const Color(0xFF9C27B0);
     }
@@ -1693,7 +1741,15 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
 
   late DateTime _scheduledDate;
 
-  static const _suggestedCategories = ['Gym', 'Work', 'Study', 'Leisure', 'Skill'];
+  static const _suggestedCategories = [
+    'Gym',
+    'Work',
+    'Study',
+    'Leisure',
+    'Skill',
+    'Chores',
+    'Creatine',
+  ];
 
   @override
   void initState() {
@@ -2111,7 +2167,15 @@ class _EditDailyTaskSheetState extends State<_EditDailyTaskSheet> {
   int _points = 1;
   bool _keep = false;
 
-  static const _suggestedCategories = ['Gym', 'Work', 'Study', 'Leisure', 'Skill'];
+  static const _suggestedCategories = [
+    'Gym',
+    'Work',
+    'Study',
+    'Leisure',
+    'Skill',
+    'Chores',
+    'Creatine',
+  ];
 
   @override
   void initState() {
