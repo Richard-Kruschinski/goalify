@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:confetti/confetti.dart';
 import '../storage/local_storage.dart';
+import 'progress_screen.dart';
 
 /// ===============================================================
 /// Model
@@ -566,7 +567,13 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
         opaque: false,
         barrierDismissible: true,
         barrierColor: Colors.black54,
-        pageBuilder: (_, __, ___) => const CongratsScreen(),
+        pageBuilder: (_, __, ___) => CongratsScreen(
+          onSeeProgress: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const ProgressScreen()),
+            );
+          },
+        ),
         transitionsBuilder: (_, anim, __, child) =>
             FadeTransition(opacity: anim, child: child),
       ),
@@ -2663,72 +2670,93 @@ class _CongratsScreenState extends State<CongratsScreen>
     return Scaffold(
       backgroundColor: Colors.black54,
       body: Stack(
-        alignment: Alignment.center,
         children: [
-          ScaleTransition(
-            scale: CurvedAnimation(parent: _scale, curve: Curves.easeOutBack),
-            child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 24),
-              padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
-              decoration: BoxDecoration(
-                color: cs.surface,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              constraints: const BoxConstraints(maxWidth: 380),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.emoji_events, size: 72, color: cs.primary),
-                  const SizedBox(height: 10),
-                  Container(
-                    padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: cs.primaryContainer,
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    child: Text(
-                      widget.title,
-                      style: TextStyle(
-                        color: cs.onPrimaryContainer,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    widget.subtitle,
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(widget.detail, textAlign: TextAlign.center),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      OutlinedButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text('Close'),
-                      ),
-                      const SizedBox(width: 12),
-                      FilledButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                          widget.onSeeProgress?.call();
-                        },
-                        child: const Text('See progress'),
+          // Centered card
+          Positioned.fill(
+            child: Center(
+              child: ScaleTransition(
+                scale: CurvedAnimation(parent: _scale, curve: Curves.easeOutBack),
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 24),
+                  padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
+                  decoration: BoxDecoration(
+                    color: cs.surface,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x33000000),
+                        blurRadius: 20,
+                        offset: Offset(0, 10),
                       ),
                     ],
                   ),
-                ],
+                  constraints: const BoxConstraints(maxWidth: 380),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.emoji_events, size: 72, color: cs.primary),
+                      const SizedBox(height: 10),
+                      Container(
+                        padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: cs.primaryContainer,
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        child: Text(
+                          widget.title,
+                          style: TextStyle(
+                            color: cs.onPrimaryContainer,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        widget.subtitle,
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(widget.detail, textAlign: TextAlign.center),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          OutlinedButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('Close'),
+                          ),
+                          const SizedBox(width: 12),
+                          FilledButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                              if (widget.onSeeProgress != null) {
+                                widget.onSeeProgress!.call();
+                              } else {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => const ProgressScreen(),
+                                  ),
+                                );
+                              }
+                            },
+                            child: const Text('See progress'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
+
+          // Confetti overlay
           Positioned.fill(
             child: IgnorePointer(
               child: ConfettiWidget(
