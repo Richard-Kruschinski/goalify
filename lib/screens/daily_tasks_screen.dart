@@ -103,6 +103,9 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   static const _kOneOffByDateKey =
       'daily_oneoff_by_date_v1'; // Map<dateKey, List<task>>
 
+  // Shared with gym_screen: creatine intake per date
+  static const _kCreatineKey = 'gym_creatine_intake_v1';
+
   // State
   final List<DailyTask> _keepTasks = []; // keep=true
   final Map<String, List<DailyTask>> _oneOffByDate = {}; // keep=false by date
@@ -113,6 +116,9 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
 
   // combined per date
   final Map<String, List<String>> _orderCombined = {};
+
+  // Creatine intake cache (yyyy-MM-dd)
+  final Set<String> _creatineDates = <String>{};
 
   int _todayPoints = 0;
 
@@ -184,6 +190,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   // Load & Save
   // ===============================================================
   Future<void> _load() async {
+    await _loadCreatine();
     // Keep-tasks (legacy list)
     final rawKeep = await LocalStorage.loadJson(_kDailyTasksKey, fallback: []);
     if (rawKeep is List) {
@@ -308,6 +315,26 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     await LocalStorage.saveJson(_kFreezeTokensKey, _freezeTokens);
     await LocalStorage.saveJson(_kFreezeDaysCounterKey, _freezeDaysCounter);
     await LocalStorage.saveJson(_kFreezeUsageKey, _freezeUsageByDate);
+  }
+
+  Future<void> _loadCreatine() async {
+    final raw = await LocalStorage.loadJson(_kCreatineKey, fallback: []);
+    _creatineDates
+      ..clear()
+      ..addAll((raw is List) ? raw.map((e) => e.toString()) : const <String>[]);
+  }
+
+  Future<void> _saveCreatine() async {
+    await LocalStorage.saveJson(_kCreatineKey, _creatineDates.toList());
+  }
+
+  Future<void> _setCreatineForDate(String dateKey, bool value) async {
+    if (value) {
+      _creatineDates.add(dateKey);
+    } else {
+      _creatineDates.remove(dateKey);
+    }
+    await _saveCreatine();
   }
 
   // Keep order sync (legacy - still used to seed combined)
@@ -599,6 +626,9 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
       _recalcTodayPoints();
       _sortCompletedToBottom(dateKey);
     });
+
+    await _maybeToggleCreatine(t, dateKey: dateKey);
+
     if (t.keep) {
       await _saveKeepTasks();
     } else {
@@ -608,6 +638,12 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
       await _saveProgressToday();
       await _checkAndMaybeShowCongrats();
     }
+  }
+
+  Future<void> _maybeToggleCreatine(DailyTask t, {required String dateKey}) async {
+    final cat = t.category?.toLowerCase().trim();
+    if (cat != 'creatin' && cat != 'creatine') return;
+    await _setCreatineForDate(dateKey, t.done);
   }
 
   /// Sort tasks in combined order: active/incomplete first, completed last
@@ -882,197 +918,610 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   }
 
   // ===============================================================
-  // UI
+  // UI - Modern Design
   // ===============================================================
   @override
   Widget build(BuildContext context) {
     final dateKey = _mode == DailyViewMode.today ? _todayKey() : _selectedKey();
     final ordered = _orderedTasksFor(dateKey);
+    final now = DateTime.now();
+    final isToday = _selectedDate.day == now.day &&
+        _selectedDate.month == now.month &&
+        _selectedDate.year == now.year;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Daily Tasks'),
-        actions: [
-          // View switch
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: ToggleButtons(
-              isSelected: [
-                _mode == DailyViewMode.today,
-                _mode == DailyViewMode.byDate
-              ],
-              onPressed: (i) {
-                setState(() {
-                  _mode = i == 0 ? DailyViewMode.today : DailyViewMode.byDate;
-                });
-              },
-              borderRadius: BorderRadius.circular(8),
-              constraints:
-              const BoxConstraints(minHeight: 36, minWidth: 64),
-              children: const [
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 8),
-                  child: Text('Today'),
-                ),
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 8),
-                  child: Text('By date'),
-                ),
-              ],
+      backgroundColor: const Color(0xFFF5F7FA),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Modern Header with Calendar
+            _buildModernHeader(context, isToday),
+            
+            // Task List
+            Expanded(
+              child: ordered.isEmpty
+                  ? _buildEmptyState()
+                  : ReorderableListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      itemCount: ordered.length,
+                      onReorder: (old, newI) => _onReorder(old, newI, dateKey: dateKey),
+                      buildDefaultDragHandles: false,
+                      itemBuilder: (ctx, i) {
+                        final task = ordered[i];
+                        return _buildModernTaskCard(task, i, dateKey);
+                      },
+                    ),
             ),
-          ),
+          ],
+        ),
+      ),
+      floatingActionButton: _buildModernFAB(dateKey),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+    );
+  }
 
-          if (_mode == DailyViewMode.byDate)
-            IconButton(
-              tooltip: 'Pick date',
-              onPressed: () async {
-                final picked = await showDatePicker(
-                  context: context,
-                  initialDate: _selectedDate,
-                  firstDate: DateTime.now()
-                      .subtract(const Duration(days: 0)), // no past planning
-                  lastDate: DateTime.now().add(const Duration(days: 365)),
-                );
-                if (picked != null) {
-                  setState(() => _selectedDate = picked);
-                }
-              },
-              icon: const Icon(Icons.event),
-            ),
-
-          // Freeze tokens (keep at top)
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: GestureDetector(
-              onLongPress: _showFreezeHelp,
-              child: Tooltip(
-                message:
-                'Prevents your keep-task streak from breaking today. You earn one token each week.',
-                preferBelow: false,
-                child: Row(
-                  children: [
-                    Icon(Icons.ac_unit,
-                        size: 18,
-                        color: Theme.of(context).colorScheme.primary),
-                    const SizedBox(width: 4),
-                    Text('$_freezeTokens'),
-                    const SizedBox(width: 12),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          // Today points (only in Today view)
-          if (_mode == DailyViewMode.today)
-            Padding(
-              padding: const EdgeInsets.only(right: 12),
-              child: Center(
-                child: Text(
-                  'Today: $_todayPoints pts',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-              ),
-            ),
-          IconButton(
-            tooltip: 'Reset all (today)',
-            onPressed: ordered.isEmpty || _mode != DailyViewMode.today
-                ? null
-                : _resetAllToday,
-            icon: const Icon(Icons.refresh),
+  Widget _buildModernHeader(BuildContext context, bool isToday) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
-      body: ordered.isEmpty
-          ? Center(
-        child: Text(_mode == DailyViewMode.today
-            ? 'No tasks for today'
-            : 'No tasks on ${_selectedKey()}'),
-      )
-          : ReorderableListView.builder(
-        padding: const EdgeInsets.only(bottom: 96, top: 8),
-        itemCount: ordered.length,
-        onReorder: (a, b) => _onReorder(a, b, dateKey: dateKey),
-        buildDefaultDragHandles: false,
-        itemBuilder: (_, i) {
-          final t = ordered[i];
-          final isKeep = t.keep;
-
-          return _ReorderDailyTile(
-            key: ValueKey('daily_${dateKey}_${t.id}'),
-            index: i,
-            leadingStripColor: Theme.of(context).colorScheme.primary,
-            title: Text(
-              t.title,
-              style: t.done
-                  ? const TextStyle(
-                  decoration: TextDecoration.lineThrough)
-                  : null,
-            ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (t.description != null && t.description!.isNotEmpty)
-                  Text(t.description!),
-                Wrap(
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 6,
-                  children: [
-                    if (t.category != null && t.category!.isNotEmpty)
-                      Chip(
-                        label: Text(t.category!),
-                        visualDensity: VisualDensity.compact,
-                        materialTapTargetSize:
-                        MaterialTapTargetSize.shrinkWrap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Top Row: Title and Menu
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                isToday ? 'Today' : _formatDate(_selectedDate),
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1A1D1F),
+                ),
+              ),
+              Row(
+                children: [
+                  // Freeze Tokens
+                  if (_freezeTokens > 0 && isToday) ...[
+                    GestureDetector(
+                      onTap: _showFreezeHelp,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE3F2FD),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.ac_unit, size: 16, color: Color(0xFF2196F3)),
+                            const SizedBox(width: 4),
+                            Text(
+                              '$_freezeTokens',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF2196F3),
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    Text('${t.points} pts'),
-                    if (isKeep)
-                      const _MiniTag('keep'),
-                    if (!isKeep)
-                      _MiniTag(
-                        (_mode == DailyViewMode.today || dateKey == _todayKey())
-                            ? 'today'
-                            : dateKey,
-                      ),
+                    ),
+                    const SizedBox(width: 8),
                   ],
-                ),
-              ],
-            ),
-            leadingCheckboxValue: t.done,
-            onLeadingCheckboxChanged: (_) =>
-                _toggleDone(t, dateKey: dateKey),
-            onLongPress: () =>
-                _openTaskActions(t, i, dateKey), // actions sheet
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (isKeep) ...[
-                  _FlameBadge(streak: t.streak),
-                  const SizedBox(width: 4),
-                  _BestBadge(best: t.bestStreak),
-                  const SizedBox(width: 6),
+                  // Points
+                  if (isToday)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF3E0),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.star, size: 16, color: Color(0xFFFF9800)),
+                          const SizedBox(width: 4),
+                          Text(
+                            '$_todayPoints',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFFFF9800),
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  const SizedBox(width: 8),
+                  // Menu
+                  PopupMenuButton<int>(
+                    icon: const Icon(Icons.more_horiz, color: Color(0xFF6F7789)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    onSelected: (val) {
+                      if (val == 1) {
+                        setState(() {
+                          _mode = _mode == DailyViewMode.today
+                              ? DailyViewMode.byDate
+                              : DailyViewMode.today;
+                          if (_mode == DailyViewMode.today) {
+                            _selectedDate = DateTime.now();
+                          }
+                        });
+                      } else if (val == 2) {
+                        _pickDate();
+                      } else if (val == 3) {
+                        _resetAllToday();
+                      }
+                    },
+                    itemBuilder: (_) => [
+                      PopupMenuItem(
+                        value: 1,
+                        child: Text(_mode == DailyViewMode.today
+                            ? 'View by date'
+                            : 'Back to Today'),
+                      ),
+                      if (_mode == DailyViewMode.byDate)
+                        const PopupMenuItem(
+                          value: 2,
+                          child: Text('Pick another date'),
+                        ),
+                      if (_mode == DailyViewMode.today)
+                        const PopupMenuItem(
+                          value: 3,
+                          child: Text('Reset all'),
+                        ),
+                    ],
+                  ),
                 ],
-                IconButton(
-                  tooltip: 'Delete',
-                  onPressed: () => _deleteAt(i, dateKey: dateKey),
-                  icon: const Icon(Icons.delete_outline),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Mini Calendar Week View
+          _buildWeekCalendar(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWeekCalendar() {
+    final now = DateTime.now();
+    final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+    
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: List.generate(7, (index) {
+        final date = startOfWeek.add(Duration(days: index));
+        final isSelected = date.day == _selectedDate.day &&
+            date.month == _selectedDate.month &&
+            date.year == _selectedDate.year;
+        final isToday = date.day == now.day &&
+            date.month == now.month &&
+            date.year == now.year;
+
+        return Expanded(
+          child: GestureDetector(
+            onTap: () {
+              setState(() {
+                _selectedDate = date;
+                _mode = DailyViewMode.byDate;
+              });
+            },
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 2),
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? const Color(0xFFE53935)
+                    : (isToday ? const Color(0xFFFFEBEE) : Colors.transparent),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    _getWeekdayShort(date.weekday),
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: isSelected
+                          ? Colors.white
+                          : (isToday ? const Color(0xFFE53935) : const Color(0xFF9CA3AF)),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${date.day}',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: isSelected
+                          ? Colors.white
+                          : (isToday ? const Color(0xFFE53935) : const Color(0xFF1A1D1F)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }),
+    );
+  }
+
+  String _getWeekdayShort(int weekday) {
+    const days = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+    return days[weekday - 1];
+  }
+
+  String _formatDate(DateTime date) {
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    return '${months[date.month - 1]} ${date.day}';
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: const BoxDecoration(
+              color: Color(0xFFF0F4F8),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.check_circle_outline,
+              size: 64,
+              color: Color(0xFF9CA3AF),
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'No tasks yet',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF1A1D1F),
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Add a task to get started',
+            style: TextStyle(
+              fontSize: 14,
+              color: Color(0xFF9CA3AF),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModernTaskCard(DailyTask task, int index, String dateKey) {
+    final frozenToday = _wasFrozenOn(_todayKey(), task.id);
+    final iconData = _getIconForCategory(task.category);
+    final color = _getColorForCategory(task.category);
+
+    return Container(
+      key: ValueKey(task.id),
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () => _toggleDone(task, dateKey: dateKey),
+          onLongPress: () => _openTaskActions(task, index, dateKey),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                // Drag Handle
+                ReorderableDragStartListener(
+                  index: index,
+                  child: const Icon(
+                    Icons.drag_indicator,
+                    color: Color(0xFFD1D5DB),
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Icon
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    iconData,
+                    color: color,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                // Content
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        task.title,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: task.done
+                              ? const Color(0xFF9CA3AF)
+                              : const Color(0xFF1A1D1F),
+                          decoration: task.done ? TextDecoration.lineThrough : null,
+                        ),
+                      ),
+                      if (task.description != null && task.description!.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            task.description!,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: task.done
+                                  ? const Color(0xFFBFC5D2)
+                                  : const Color(0xFF6F7789),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      // Task Type Badge
+                      Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: task.keep
+                                ? const Color(0xFFE3F2FD)
+                                : const Color(0xFFFFF3E0),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                task.keep ? Icons.repeat : Icons.event,
+                                size: 12,
+                                color: task.keep
+                                    ? const Color(0xFF2196F3)
+                                    : const Color(0xFFFF9800),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                task.keep ? 'Recurring' : 'Daily',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: task.keep
+                                      ? const Color(0xFF2196F3)
+                                      : const Color(0xFFFF9800),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      if (task.keep && task.streak > 0)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.local_fire_department,
+                                  size: 14, color: Color(0xFFFF5722)),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${task.streak} day${task.streak > 1 ? 's' : ''} streak',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xFFFF5722),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      if (frozenToday)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.ac_unit,
+                                  size: 14, color: Color(0xFF2196F3)),
+                              const SizedBox(width: 4),
+                              const Text(
+                                'Frozen today',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xFF2196F3),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Checkbox/Status
+                Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: task.done ? const Color(0xFFE53935) : Colors.transparent,
+                    border: Border.all(
+                      color: task.done ? const Color(0xFFE53935) : const Color(0xFFE0E0E0),
+                      width: 2,
+                    ),
+                  ),
+                  child: task.done
+                      ? const Icon(Icons.check, size: 18, color: Colors.white)
+                      : null,
                 ),
               ],
             ),
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _openCreateTaskSheet(
-          forDateKey:
-          _mode == DailyViewMode.today ? _todayKey() : _selectedKey(),
-        ),
-        icon: const Icon(Icons.add),
-        label: Text(
-          _mode == DailyViewMode.today ? 'Add for today' : 'Add for date',
+          ),
         ),
       ),
     );
+  }
+
+  IconData _getIconForCategory(String? category) {
+    if (category == null) return Icons.task_alt;
+    switch (category.toLowerCase()) {
+      case 'gym':
+      case 'fitness':
+      case 'workout':
+      case 'exercise':
+        return Icons.fitness_center;
+      case 'work':
+        return Icons.work_outline;
+      case 'leisure':
+      case 'fun':
+        return Icons.celebration;
+      case 'health':
+      case 'water':
+      case 'drink':
+        return Icons.water_drop;
+      case 'morning':
+      case 'routine':
+        return Icons.wb_sunny;
+      case 'read':
+      case 'book':
+        return Icons.menu_book;
+      case 'study':
+      case 'learning':
+        return Icons.school;
+      case 'food':
+      case 'meal':
+        return Icons.restaurant;
+      case 'chores':
+      case 'chore':
+        return Icons.cleaning_services;
+      case 'creatin':
+      case 'creatine':
+        return Icons.medication_liquid;
+      default:
+        return Icons.task_alt;
+    }
+  }
+
+  Color _getColorForCategory(String? category) {
+    if (category == null) return const Color(0xFF9C27B0);
+    switch (category.toLowerCase()) {
+      case 'gym':
+      case 'fitness':
+      case 'workout':
+      case 'exercise':
+        return const Color(0xFFFF5722);
+      case 'work':
+        return const Color(0xFF2196F3);
+      case 'leisure':
+      case 'fun':
+        return const Color(0xFFFF9800);
+      case 'health':
+      case 'water':
+      case 'drink':
+        return const Color(0xFF03A9F4);
+      case 'morning':
+      case 'routine':
+        return const Color(0xFFFFC107);
+      case 'read':
+      case 'book':
+        return const Color(0xFF795548);
+      case 'study':
+      case 'learning':
+        return const Color(0xFF3F51B5);
+      case 'food':
+      case 'meal':
+        return const Color(0xFF4CAF50);
+      case 'chores':
+      case 'chore':
+        return const Color(0xFF607D8B);
+      case 'creatin':
+      case 'creatine':
+        return const Color(0xFFE53935);
+      default:
+        return const Color(0xFF9C27B0);
+    }
+  }
+
+  Widget _buildModernFAB(String dateKey) {
+    return Container(
+      width: 60,
+      height: 60,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFE53935), Color(0xFFEF5350)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFE53935).withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(30),
+          onTap: () => _openCreateTaskSheet(forDateKey: dateKey),
+          child: const Icon(
+            Icons.add,
+            color: Colors.white,
+            size: 28,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (picked != null) {
+      setState(() => _selectedDate = picked);
+    }
   }
 
   // -- Reset all (only uncheck keep tasks today; one-offs stay untouched)
@@ -1292,7 +1741,15 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
 
   late DateTime _scheduledDate;
 
-  static const _suggestedCategories = ['Gym', 'Work', 'Study', 'Leisure', 'Skill'];
+  static const _suggestedCategories = [
+    'Gym',
+    'Work',
+    'Study',
+    'Leisure',
+    'Skill',
+    'Chores',
+    'Creatine',
+  ];
 
   @override
   void initState() {
@@ -1332,146 +1789,341 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
     final bottom = MediaQuery.of(context).viewInsets.bottom;
     final today = DateTime.now();
 
-    return Padding(
+    return Container(
+      decoration: const BoxDecoration(
+        color: Color(0xFFF5F7FA),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       padding: EdgeInsets.only(bottom: bottom),
       child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+        padding: const EdgeInsets.all(24),
         child: Form(
           key: _formKey,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Header
               Row(
                 children: [
-                  const Text('New Daily Task',
-                      style:
-                      TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFEBEE),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.add_task, color: Color(0xFFE53935), size: 24),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'New Task',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1A1D1F),
+                    ),
+                  ),
                   const Spacer(),
                   IconButton(
                     onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close),
+                    icon: const Icon(Icons.close, color: Color(0xFF6F7789)),
                   )
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 24),
+              // Task Name
               TextFormField(
                 controller: _titleCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Name',
+                style: const TextStyle(fontSize: 16),
+                decoration: InputDecoration(
+                  labelText: 'Task Name',
                   hintText: 'e.g. Drink 2L water',
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFFE53935), width: 2),
+                  ),
+                  prefixIcon: const Icon(Icons.check_circle_outline, color: Color(0xFF6F7789)),
                 ),
-                validator: (v) =>
-                (v == null || v.trim().isEmpty) ? 'Required' : null,
+                validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
                 textInputAction: TextInputAction.next,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
+              // Description
               TextFormField(
                 controller: _descCtrl,
-                decoration: const InputDecoration(
+                style: const TextStyle(fontSize: 16),
+                decoration: InputDecoration(
                   labelText: 'Description (optional)',
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFFE53935), width: 2),
+                  ),
+                  prefixIcon: const Icon(Icons.notes, color: Color(0xFF6F7789)),
                 ),
                 maxLines: 2,
               ),
-              const SizedBox(height: 12),
-              TextFormField(
-                initialValue: _category,
-                decoration: const InputDecoration(
-                  labelText: 'Category (optional)',
-                  hintText: 'Gym, Work, …',
+              const SizedBox(height: 20),
+              // Category
+              const Text(
+                'Category',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF6F7789),
                 ),
-                onChanged: (v) => _category = v,
               ),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
+                runSpacing: 8,
                 children: _suggestedCategories.map((c) {
                   final selected = _category == c;
-                  return ChoiceChip(
-                    label: Text(c),
-                    selected: selected,
-                    onSelected: (_) => setState(() => _category = c),
+                  return GestureDetector(
+                    onTap: () => setState(() => _category = selected ? null : c),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: selected ? const Color(0xFFE53935) : Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: selected ? const Color(0xFFE53935) : const Color(0xFFE0E0E0),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Text(
+                        c,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: selected ? Colors.white : const Color(0xFF6F7789),
+                        ),
+                      ),
+                    ),
                   );
                 }).toList(),
               ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  const Text('Points'),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Slider(
+              const SizedBox(height: 20),
+              // Points
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.star, size: 20, color: Color(0xFFFF9800)),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Points',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF1A1D1F),
+                          ),
+                        ),
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFF3E0),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            '$_points',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFFFF9800),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Slider(
                       value: 1.0 * _points,
                       min: 1,
                       max: 10,
                       divisions: 9,
-                      label: '$_points',
+                      activeColor: const Color(0xFFE53935),
+                      inactiveColor: const Color(0xFFFFEBEE),
                       onChanged: (v) => setState(() => _points = v.round()),
                     ),
-                  ),
-                  SizedBox(
-                    width: 48,
-                    child: Text(
-                      '$_points',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                  )
-                ],
-              ),
-              const SizedBox(height: 12),
-              CheckboxListTile(
-                value: _keep,
-                onChanged: (v) => setState(() => _keep = v ?? false),
-                title: const Text('Keep for future days'),
-                subtitle: const Text('If disabled: task is for a specific date'),
-                controlAffinity: ListTileControlAffinity.leading,
-                contentPadding: EdgeInsets.zero,
-              ),
-              const SizedBox(height: 12),
-              // Date picker only for one-offs
-              Opacity(
-                opacity: _keep ? 0.5 : 1,
-                child: IgnorePointer(
-                  ignoring: _keep,
-                  child: ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.event),
-                    title: const Text('Scheduled date'),
-                    subtitle: Text(
-                        '${_scheduledDate.year}-${_scheduledDate.month.toString().padLeft(2, '0')}-${_scheduledDate.day.toString().padLeft(2, '0')}'),
-                    onTap: () async {
-                      final picked = await showDatePicker(
-                        context: context,
-                        initialDate:
-                        _scheduledDate.isBefore(today) ? today : _scheduledDate,
-                        firstDate: today,
-                        lastDate: today.add(const Duration(days: 365)),
-                      );
-                      if (picked != null) {
-                        setState(() => _scheduledDate = picked);
-                      }
-                    },
-                  ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Cancel'),
+              const SizedBox(height: 16),
+              // Task Type Toggle
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => setState(() => _keep = false),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          decoration: BoxDecoration(
+                            color: !_keep ? const Color(0xFFE53935) : Colors.transparent,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.event,
+                                size: 18,
+                                color: !_keep ? Colors.white : const Color(0xFF6F7789),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Daily',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: !_keep ? Colors.white : const Color(0xFF6F7789),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => setState(() => _keep = true),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          decoration: BoxDecoration(
+                            color: _keep ? const Color(0xFFE53935) : Colors.transparent,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.repeat,
+                                size: 18,
+                                color: _keep ? Colors.white : const Color(0xFF6F7789),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Recurring',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: _keep ? Colors.white : const Color(0xFF6F7789),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (!_keep) ...[
+                const SizedBox(height: 16),
+                // Date picker only for one-offs
+                GestureDetector(
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: _scheduledDate.isBefore(today) ? today : _scheduledDate,
+                      firstDate: today,
+                      lastDate: today.add(const Duration(days: 365)),
+                    );
+                    if (picked != null) {
+                      setState(() => _scheduledDate = picked);
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.calendar_today, color: Color(0xFFE53935)),
+                        const SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Scheduled Date',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFF6F7789),
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '${_scheduledDate.day}/${_scheduledDate.month}/${_scheduledDate.year}',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF1A1D1F),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: FilledButton(
-                      onPressed: _submit,
-                      child: const Text('Create'),
+                ),
+              ],
+              const SizedBox(height: 24),
+              // Create Button
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: _submit,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFE53935),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                ],
+                  child: const Text(
+                    'Create Task',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
@@ -1515,7 +2167,15 @@ class _EditDailyTaskSheetState extends State<_EditDailyTaskSheet> {
   int _points = 1;
   bool _keep = false;
 
-  static const _suggestedCategories = ['Gym', 'Work', 'Study', 'Leisure', 'Skill'];
+  static const _suggestedCategories = [
+    'Gym',
+    'Work',
+    'Study',
+    'Leisure',
+    'Skill',
+    'Chores',
+    'Creatine',
+  ];
 
   @override
   void initState() {

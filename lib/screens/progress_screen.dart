@@ -299,11 +299,69 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Progress zurücksetzen?'),
-        content: const Text('Alle gespeicherten Tagespunkte werden gelöscht. Dies kann nicht rückgängig gemacht werden.'),
+        backgroundColor: const Color(0xFFF5F7FA),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        titlePadding: const EdgeInsets.fromLTRB(20, 20, 16, 0),
+        contentPadding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+        actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFEBEE),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.warning_amber_rounded, color: Color(0xFFE53935)),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'Progress zurücksetzen?',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          'Alle gespeicherten Tagespunkte werden gelöscht. Dies kann nicht rückgängig gemacht werden.',
+          style: TextStyle(fontSize: 14),
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Abbrechen')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Löschen')),
+          SizedBox(
+            width: double.infinity,
+            child: Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0xFFE0E0E0)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text('Abbrechen'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFE53935),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text('Löschen'),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -323,113 +381,99 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
     final avgRatio = _avgRatioLabel(_ratioDataForRange());
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Progress'),
-        actions: [
-          IconButton(
-            tooltip: 'Neu laden',
-            onPressed: () async {
-              await _loadHistory();
-              await _loadRatioHistory();
-            },
-            icon: const Icon(Icons.refresh),
-          ),
-          PopupMenuButton<String>(
-            onSelected: (v) {
-              if (v == 'clear') _confirmClearHistory();
-            },
-            itemBuilder: (_) => const [
-              PopupMenuItem(value: 'clear', child: Text('Clear history')),
-            ],
-          ),
-        ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
+      backgroundColor: const Color(0xFFF5F7FA),
+      body: SafeArea(
         child: Column(
           children: [
-            SegmentedButton<Range>(
-              segments: const [
-                ButtonSegment(value: Range.day, label: Text('Tag')),
-                ButtonSegment(value: Range.week, label: Text('Woche')),
-                ButtonSegment(value: Range.year, label: Text('Jahr')),
-              ],
-              selected: {range},
-              onSelectionChanged: (s) async {
-                setState(() => range = s.first);
-                await _saveRange();
-              },
-            ),
-            const SizedBox(height: 12),
-
-            // Modus-Umschalter: Punkte vs Verhältnis
-            SegmentedButton<DisplayMode>(
-              segments: const [
-                ButtonSegment(value: DisplayMode.points, label: Text('Punkte')),
-                ButtonSegment(value: DisplayMode.ratio, label: Text('Verhältnis')),
-              ],
-              selected: {_mode},
-              onSelectionChanged: (s) async {
-                setState(() => _mode = s.first);
-                await _saveMode();
-              },
-            ),
-            const SizedBox(height: 12),
-
+            _buildModernHeader(context),
             Expanded(
-              child: Card(
-                elevation: 1,
-                clipBehavior: Clip.antiAlias,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(8, 12, 16, 8),
-                  child: SfCartesianChart(
-                    zoomPanBehavior: _zoom,
-                    trackballBehavior: _trackball,
-                    primaryXAxis: DateTimeAxis(
-                      intervalType: range == Range.year
-                          ? DateTimeIntervalType.months
-                          : range == Range.week
-                          ? DateTimeIntervalType.days
-                          : DateTimeIntervalType.hours,
-                      majorGridLines: const MajorGridLines(width: 0),
-                    ),
-                    primaryYAxis: NumericAxis(
-                      title: AxisTitle(text: _mode == DisplayMode.ratio ? 'Verhältnis (%)' : 'Punkte'),
-                      majorGridLines: const MajorGridLines(width: 0.5),
-                    ),
-                    legend: const Legend(isVisible: false),
-                    series: <CartesianSeries<ActivityPoint, DateTime>>[
-                      SplineSeries<ActivityPoint, DateTime>(
-                        dataSource: data,
-                        xValueMapper: (p, _) => p.t,
-                        yValueMapper: (p, _) => p.value,
-                        name: _mode == DisplayMode.ratio ? 'Verhältnis' : 'Punkte',
-                        width: 2,
-                        markerSettings: const MarkerSettings(isVisible: true, height: 6, width: 6),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    // Mode toggle buttons
+                    _buildModeToggle(),
+                    const SizedBox(height: 12),
+                    // Range toggle buttons
+                    _buildRangeToggle(),
+                    const SizedBox(height: 16),
+
+                    // Chart card
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x0F000000),
+                            blurRadius: 10,
+                            offset: Offset(0, 3),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(8, 12, 16, 8),
+                        child: SizedBox(
+                          height: 300,
+                          child: SfCartesianChart(
+                            zoomPanBehavior: _zoom,
+                            trackballBehavior: _trackball,
+                            primaryXAxis: DateTimeAxis(
+                              intervalType: range == Range.year
+                                  ? DateTimeIntervalType.months
+                                  : range == Range.week
+                                  ? DateTimeIntervalType.days
+                                  : DateTimeIntervalType.hours,
+                              majorGridLines: const MajorGridLines(width: 0),
+                            ),
+                            primaryYAxis: NumericAxis(
+                              title: AxisTitle(text: _mode == DisplayMode.ratio ? 'Verhältnis (%)' : 'Punkte'),
+                              majorGridLines: const MajorGridLines(width: 0.5),
+                            ),
+                            legend: const Legend(isVisible: false),
+                            series: <CartesianSeries<ActivityPoint, DateTime>>[
+                              SplineSeries<ActivityPoint, DateTime>(
+                                dataSource: data,
+                                xValueMapper: (p, _) => p.t,
+                                yValueMapper: (p, _) => p.value,
+                                name: _mode == DisplayMode.ratio ? 'Verhältnis' : 'Punkte',
+                                color: const Color(0xFFE53935),
+                                width: 3,
+                                markerSettings: const MarkerSettings(
+                                  isVisible: true,
+                                  height: 8,
+                                  width: 8,
+                                  color: Color(0xFFE53935),
+                                  borderColor: Colors.white,
+                                  borderWidth: 2,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    Row(
+                      children: [
+                        if (_mode == DisplayMode.ratio) ...[
+                          Expanded(child: _metricCard('Aktuelles Verhältnis', currentRatio)),
+                        ] else ...[
+                          Expanded(child: _metricCard('Aktuelle ${_rangeLabel(range)}', '${_sumForRange(_dataForRange())} Pkt')),
+                        ],
+                        const SizedBox(width: 12),
+                        if (_mode == DisplayMode.ratio) ...[
+                          Expanded(child: _metricCard('Ø Verhältnis', avgRatio)),
+                        ] else ...[
+                          Expanded(child: _metricCard('Ø pro Tag', _avgLabel(_dataForRange()))),
+                        ],
+                      ],
+                    ),
+                  ],
                 ),
               ),
-            ),
-
-            const SizedBox(height: 12),
-
-            Row(
-              children: [
-                if (_mode == DisplayMode.ratio) ...[
-                  Expanded(child: _metricCard('Aktuelles Verhältnis', currentRatio)),
-                ] else ...[
-                  Expanded(child: _metricCard('Aktuelle ${_rangeLabel(range)}', '${_sumForRange(_dataForRange())} Pkt')),
-                ],
-                const SizedBox(width: 12),
-                if (_mode == DisplayMode.ratio) ...[
-                  Expanded(child: _metricCard('Ø Verhältnis', avgRatio)),
-                ] else ...[
-                  Expanded(child: _metricCard('Ø pro Tag', _avgLabel(_dataForRange()))),
-                ],
-              ],
             ),
           ],
         ),
@@ -441,16 +485,248 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.pink.shade50,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0F000000),
+            blurRadius: 10,
+            offset: Offset(0, 3),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-          const SizedBox(height: 6),
-          Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Text(
+            title,
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: Colors.grey.shade600,
+              fontSize: 13,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFFE53935),
+            ),
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildModernHeader(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFEBEE),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.show_chart,
+                  color: Color(0xFFE53935),
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'Progress',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1A1D1F),
+                ),
+              ),
+            ],
+          ),
+          Row(
+            children: [
+              IconButton(
+                tooltip: 'Neu laden',
+                onPressed: () async {
+                  await _loadHistory();
+                  await _loadRatioHistory();
+                },
+                icon: const Icon(Icons.refresh, color: Color(0xFF6F7789)),
+              ),
+              PopupMenuButton<String>(
+                onSelected: (v) {
+                  if (v == 'clear') _confirmClearHistory();
+                },
+                icon: const Icon(Icons.more_vert, color: Color(0xFF6F7789)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                itemBuilder: (_) => [
+                  const PopupMenuItem(
+                    value: 'clear',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete_outline, color: Color(0xFFE53935)),
+                        SizedBox(width: 12),
+                        Text('Clear history'),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModeToggle() {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0A000000),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _toggleButton(
+              label: 'Punkte',
+              icon: Icons.star_outline,
+              isSelected: _mode == DisplayMode.points,
+              onTap: () async {
+                setState(() => _mode = DisplayMode.points);
+                await _saveMode();
+              },
+            ),
+          ),
+          Expanded(
+            child: _toggleButton(
+              label: 'Verhältnis',
+              icon: Icons.percent,
+              isSelected: _mode == DisplayMode.ratio,
+              onTap: () async {
+                setState(() => _mode = DisplayMode.ratio);
+                await _saveMode();
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRangeToggle() {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0A000000),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _toggleButton(
+              label: 'Tag',
+              icon: Icons.today,
+              isSelected: range == Range.day,
+              onTap: () async {
+                setState(() => range = Range.day);
+                await _saveRange();
+              },
+            ),
+          ),
+          Expanded(
+            child: _toggleButton(
+              label: 'Woche',
+              icon: Icons.view_week,
+              isSelected: range == Range.week,
+              onTap: () async {
+                setState(() => range = Range.week);
+                await _saveRange();
+              },
+            ),
+          ),
+          Expanded(
+            child: _toggleButton(
+              label: 'Jahr',
+              icon: Icons.calendar_month,
+              isSelected: range == Range.year,
+              onTap: () async {
+                setState(() => range = Range.year);
+                await _saveRange();
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _toggleButton({
+    required String label,
+    required IconData icon,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFFE53935) : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 18,
+              color: isSelected ? Colors.white : const Color(0xFF6F7789),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+                color: isSelected ? Colors.white : const Color(0xFF6F7789),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
