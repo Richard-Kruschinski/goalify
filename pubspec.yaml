@@ -54,6 +54,7 @@ flutter:
     - assets/images/placeholder.jpg
     - assets/images/default_group.jpg
     - assets/workouts.json
+    - assets/images/exercises/
   uses-material-design: true
 
 

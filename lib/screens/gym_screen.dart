@@ -31,26 +31,34 @@ class Workout {
   final String id;
   final String name;
   final String description;
-  final IconData icon;
+  final IconData? icon;
+  final String? iconPath;
   final List<String> muscles;
 
   const Workout({
     required this.id,
     required this.name,
     required this.description,
-    required this.icon,
+    this.icon,
+    this.iconPath,
     this.muscles = const [],
   });
 
-  factory Workout.fromJson(Map<String, dynamic> m) => Workout(
-    id: m['id'] as String,
-    name: m['name'] as String,
-    description: m['description'] as String,
-    icon: _iconFromString(m['icon'] as String),
-    muscles: (m['muscles'] as List<dynamic>? ?? const [])
-        .map((e) => e.toString())
-        .toList(),
-  );
+  factory Workout.fromJson(Map<String, dynamic> m) {
+    final iconString = m['icon'] as String;
+    final bool isAssetPath = iconString.startsWith('assets/');
+    
+    return Workout(
+      id: m['id'] as String,
+      name: m['name'] as String,
+      description: m['description'] as String,
+      icon: isAssetPath ? null : _iconFromString(iconString),
+      iconPath: isAssetPath ? iconString : null,
+      muscles: (m['muscles'] as List<dynamic>? ?? const [])
+          .map((e) => e.toString())
+          .toList(),
+    );
+  }
 }
 
 class WorkoutLog {
@@ -2006,7 +2014,15 @@ class _WorkoutPickerSheetState extends State<WorkoutPickerSheet> {
             color: const Color(0xFFFFEBEE),
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(workout.icon, color: const Color(0xFFE53935)),
+          child: workout.iconPath != null
+              ? Padding( // Exercise Icon as Image
+                  padding: const EdgeInsets.all(5.0),
+                  child: Image.asset(
+                    workout.iconPath!,
+                    fit: BoxFit.contain,
+                  ),
+                )
+              : Icon(workout.icon ?? Icons.fitness_center, color: const Color(0xFFE53935)),
         ),
         title: Text(
           workout.name,
@@ -2346,7 +2362,15 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
                     color: const Color(0xFFFFEBEE),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(w.icon, color: const Color(0xFFE53935), size: 24),
+                  child: w.iconPath != null
+                      ? Padding( // Exercise Icon as Image
+                          padding: const EdgeInsets.all(5.0),
+                          child: Image.asset(
+                            w.iconPath!,
+                            fit: BoxFit.contain,
+                          ),
+                        )
+                      : Icon(w.icon ?? Icons.fitness_center, color: const Color(0xFFE53935), size: 24),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
