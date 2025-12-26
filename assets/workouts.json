@@ -115,7 +115,7 @@
     "id": "dips",
     "name": "Dips",
     "description": "Bodyweight or assisted dips for chest and triceps.",
-    "icon": "fitness_center",
+    "icon": "assets/images/exercises/dips.png",
     "muscles": ["Triceps", "Chest", "Shoulders"]
   },
   {

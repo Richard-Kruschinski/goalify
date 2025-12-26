@@ -61,40 +61,82 @@ class Workout {
   }
 }
 
-class WorkoutLog {
-  final DateTime dateTime;
+/// Ein einzelnes Set mit Weight (kg) und Reps
+class WorkoutSet {
   final double weightKg;
-  final int sets;
-  final String day;
-  final bool isDropset;
-  final List<double> extraSetWeights;
+  final int reps;
 
-  const WorkoutLog({
-    required this.dateTime,
+  const WorkoutSet({
     required this.weightKg,
-    required this.sets,
-    required this.day,
-    this.isDropset = false,
-    this.extraSetWeights = const [],
+    required this.reps,
   });
 
   Map<String, dynamic> toMap() => {
-    'dateTime': dateTime.toIso8601String(),
     'weightKg': weightKg,
-    'sets': sets,
-    'day': day,
-    'isDropset': isDropset,
-    'extraSetWeights': extraSetWeights,
+    'reps': reps,
   };
 
-  factory WorkoutLog.fromMap(Map<String, dynamic> m) => WorkoutLog(
-    dateTime: DateTime.parse(m['dateTime'] as String),
+  factory WorkoutSet.fromMap(Map<String, dynamic> m) => WorkoutSet(
     weightKg: (m['weightKg'] as num).toDouble(),
-    sets: (m['sets'] as num).toInt(),
-    day: m['day'] as String,
-    isDropset: (m['isDropset'] as bool?) ?? false,
-    extraSetWeights: ((m['extraSetWeights'] as List?)?.map((e) => (e as num).toDouble()).toList()) ?? const [],
+    reps: (m['reps'] as num).toInt(),
   );
+}
+
+class WorkoutLog {
+  final DateTime dateTime;
+  final String day;
+  final List<WorkoutSet> sets; // Liste von Sets, jedes mit Weight und Reps
+
+  const WorkoutLog({
+    required this.dateTime,
+    required this.day,
+    required this.sets,
+  });
+
+  // Für Kompatibilität: gibt das Gewicht des ersten Sets zurück
+  double get weightKg => sets.isNotEmpty ? sets.first.weightKg : 0.0;
+  // Für Kompatibilität: gibt die Anzahl der Sets zurück
+  int get setCount => sets.length;
+
+  // Gibt das Set mit dem höchsten Gewicht zurück
+  WorkoutSet? get heaviestSet {
+    if (sets.isEmpty) return null;
+    return sets.reduce((a, b) => a.weightKg >= b.weightKg ? a : b);
+  }
+
+  // Gibt das Gewicht des heaviest Sets zurück
+  double get maxWeightKg => heaviestSet?.weightKg ?? 0.0;
+  
+  // Gibt die Reps des heaviest Sets zurück
+  int get heaviestSetReps => heaviestSet?.reps ?? 0;
+
+  Map<String, dynamic> toMap() => {
+    'dateTime': dateTime.toIso8601String(),
+    'day': day,
+    'sets': sets.map((s) => s.toMap()).toList(),
+  };
+
+  factory WorkoutLog.fromMap(Map<String, dynamic> m) {
+    final setsList = (m['sets'] as List? ?? [])
+        .map((s) => WorkoutSet.fromMap(Map<String, dynamic>.from(s)))
+        .toList();
+    
+    // Fallback für alte Daten (mit weightKg und sets)
+    if (setsList.isEmpty && m['weightKg'] != null && m['sets'] != null) {
+      final weight = (m['weightKg'] as num).toDouble();
+      final setCount = (m['sets'] as num).toInt();
+      for (int i = 0; i < setCount; i++) {
+        // Alte Daten: erstelle Sets mit gleichen Gewicht und 0 Reps
+        setsList.add(WorkoutSet(weightKg: weight, reps: 0));
+      }
+    }
+
+    return WorkoutLog(
+      dateTime: DateTime.parse(m['dateTime'] as String),
+      day: m['day'] as String,
+      sets: setsList,
+    );
+  }
 }
 
 /// Rückgabewert des Dialogs:
@@ -563,10 +605,8 @@ class _GymScreenState extends State<GymScreen> {
       final list = _logs.putIfAbsent(workoutId, () => <WorkoutLog>[]);
       list.add(WorkoutLog(
         dateTime: result.dateTime,
-        weightKg: result.weightKg,
         sets: result.sets,
         day: result.day,
-        isDropset: result.isDropset,
       ));
       _ensureAssigned(result.day, workoutId);
       
@@ -932,12 +972,11 @@ class _GymScreenState extends State<GymScreen> {
       return;
     }
     logs.sort((a, b) => a.dateTime.compareTo(b.dateTime));
-
     final spots = List<FlSpot>.generate(
       logs.length,
           (i) => FlSpot(
         logs[i].dateTime.millisecondsSinceEpoch.toDouble(),
-        logs[i].weightKg,
+        logs[i].maxWeightKg,
       ),
     );
 
@@ -964,8 +1003,8 @@ class _GymScreenState extends State<GymScreen> {
       return nf * exp;
     }
 
-    double rawMinY = logs.map((e) => e.weightKg).reduce(math.min);
-    double rawMaxY = logs.map((e) => e.weightKg).reduce(math.max);
+    double rawMinY = (logs.map((e) => e.maxWeightKg).reduce(math.min) as num).toDouble();
+    double rawMaxY = (logs.map((e) => e.maxWeightKg).reduce(math.max) as num).toDouble();
     if (rawMinY == rawMaxY) {
       rawMinY -= 1;
       rawMaxY += 1;
@@ -1132,11 +1171,11 @@ class _GymScreenState extends State<GymScreen> {
                   getTooltipItems: (touchedSpots) => touchedSpots.map((t) {
                     final idx = t.spotIndex.clamp(0, logs.length - 1);
                     final dt = DateTime.fromMillisecondsSinceEpoch(t.x.round());
-                    final isDrop = logs[idx].isDropset;
+                    final reps = logs[idx].heaviestSetReps;
 
                     final dateStr = fmtTooltip(dt);
                     final weightStr =
-                        '${t.y.toStringAsFixed(1)} kg${isDrop ? ' • Dropset' : ''}';
+                        '${t.y.toStringAsFixed(1)} kg × $reps Wdh.';
 
                     return LineTooltipItem(
                       '$dateStr\n',
@@ -1163,12 +1202,11 @@ class _GymScreenState extends State<GymScreen> {
                   dotData: FlDotData(
                     show: true,
                     getDotPainter: (spot, percent, bar, index) {
-                      final isDrop = logs[index].isDropset;
                       return FlDotCirclePainter(
-                        radius: isDrop ? 5.2 : 3.0,
-                        color: isDrop ? const Color(0xFFB71C1C) : const Color(0xFFE53935),
-                        strokeWidth: isDrop ? 2.4 : 1.2,
-                        strokeColor: isDrop ? const Color(0xFFFFCDD2) : const Color(0x66E53935),
+                        radius: 3.0,
+                        color: const Color(0xFFE53935),
+                        strokeWidth: 1.2,
+                        strokeColor: const Color(0x66E53935),
                       );
                     },
                   ),
@@ -1565,7 +1603,7 @@ class _GymScreenState extends State<GymScreen> {
                       Text(
                         latest == null
                             ? 'No progress yet'
-                            : '${latest.day} • ${latest.weightKg} kg • ${latest.sets} Sets',
+                            : '${latest.day} • ${latest.maxWeightKg.toStringAsFixed(1)} kg × ${latest.heaviestSetReps} Wdh.',
                         style: const TextStyle(
                           fontSize: 13,
                           color: Color(0xFF6F7789),
@@ -1815,42 +1853,26 @@ class _GymScreenState extends State<GymScreen> {
             final log = list[i];
             return ListTile(
               leading: const Icon(Icons.history),
-              title: Text('${log.weightKg} kg  •  ${log.sets} Sets'),
+              title: Text('${log.setCount} Sets  •  ${_formatDate(log.dateTime)}'),
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('${log.day}  •  ${_formatDate(log.dateTime)}'),
-                  if (log.isDropset && log.extraSetWeights.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 4,
-                      children: log.extraSetWeights
-                          .map((w) => Chip(
-                                label: Text('${w.toStringAsFixed(1)} kg'),
-                                visualDensity: VisualDensity.compact,
-                                padding: EdgeInsets.zero,
-                              ))
-                          .toList(),
-                    ),
-                  ],
+                  Text('${log.day}'),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    children: log.sets
+                        .map((s) => Chip(
+                              label: Text('${s.weightKg.toStringAsFixed(1)} kg × ${s.reps}'),
+                              visualDensity: VisualDensity.compact,
+                              padding: EdgeInsets.zero,
+                            ))
+                        .toList(),
+                  ),
                 ],
               ),
-              trailing: log.isDropset
-                  ? Container(
-                padding:
-                const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: cs.primaryContainer,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  'Dropset',
-                  style: TextStyle(
-                      color: cs.onPrimaryContainer, fontSize: 12),
-                ),
-              )
-                  : null,
+              trailing: const SizedBox.shrink(),
             );
           },
         ),
@@ -1989,7 +2011,7 @@ class _WorkoutPickerSheetState extends State<WorkoutPickerSheet> {
     final WorkoutLog? latest = widget.latestFor(workout.id);
     final String subtitle = latest == null
         ? 'No progress yet'
-        : 'Update: ${latest.weightKg} kg • ${latest.sets} Sets';
+        : 'Update: ${latest.maxWeightKg.toStringAsFixed(1)} kg × ${latest.heaviestSetReps} Wdh.';
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
@@ -2389,7 +2411,7 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
                       Text(
                         latest == null
                             ? 'No progress yet'
-                            : '${latest.weightKg} kg • ${latest.sets} Sets',
+                            : '${latest.maxWeightKg.toStringAsFixed(1)} kg × ${latest.heaviestSetReps} Wdh.',
                         style: const TextStyle(fontSize: 13, color: Color(0xFF6F7789)),
                       ),
                     ],
@@ -2576,6 +2598,24 @@ class _ReorderDayTile extends StatelessWidget {
 }
 
 /// ===============================================================
+/// Helper Klasse für Set Input Fields
+/// ===============================================================
+class _SetInputField {
+  final TextEditingController weightController;
+  final TextEditingController repsController;
+
+  _SetInputField({double weightKg = 0, int reps = 0})
+      : weightController = TextEditingController(
+            text: weightKg > 0 ? weightKg.toStringAsFixed(1) : ''),
+        repsController = TextEditingController(text: reps > 0 ? reps.toString() : '');
+
+  void dispose() {
+    weightController.dispose();
+    repsController.dispose();
+  }
+}
+
+/// ===============================================================
 /// Dialog: Day selection + Werte
 /// ===============================================================
 class LogInputDialog extends StatefulWidget {
@@ -2599,28 +2639,29 @@ class LogInputDialog extends StatefulWidget {
 }
 
 class _LogInputDialogState extends State<LogInputDialog> {
-  late final TextEditingController _kgController;
-  late final TextEditingController _setsController;
   late final TextEditingController _dayController;
-
+  final List<_SetInputField> _setFields = [];
   String? _chipDay;
-  bool _isDropset = false;
-  final TextEditingController _extraWeightsController = TextEditingController();
 
   bool get _dayLocked => widget.contextDay != null;
 
   @override
   void initState() {
     super.initState();
-    _kgController = TextEditingController();
-    _setsController = TextEditingController();
     _dayController = TextEditingController();
 
-    if (widget.latest != null) {
-      _kgController.text = widget.latest!.weightKg.toStringAsFixed(1);
-      _setsController.text = widget.latest!.sets.toString();
-      _isDropset = widget.latest!.isDropset;
+    if (widget.latest != null && widget.latest!.sets.isNotEmpty) {
+      // Populate from latest
+      for (final set in widget.latest!.sets) {
+        _setFields.add(_SetInputField(
+          weightKg: set.weightKg,
+          reps: set.reps,
+        ));
+      }
       if (!_dayLocked) _dayController.text = widget.latest!.day;
+    } else {
+      // Start with one empty set
+      _setFields.add(_SetInputField(weightKg: 0, reps: 0));
     }
 
     if (_dayLocked) {
@@ -2630,10 +2671,10 @@ class _LogInputDialogState extends State<LogInputDialog> {
 
   @override
   void dispose() {
-    _kgController.dispose();
-    _setsController.dispose();
     _dayController.dispose();
-    _extraWeightsController.dispose();
+    for (final field in _setFields) {
+      field.dispose();
+    }
     super.dispose();
   }
 
@@ -2652,27 +2693,36 @@ class _LogInputDialogState extends State<LogInputDialog> {
     return '';
   }
 
-  bool _anyNumberFilled() =>
-      _kgController.text.trim().isNotEmpty ||
-          _setsController.text.trim().isNotEmpty;
+  bool _anyNumberFilled() {
+    return _setFields.any((f) =>
+        f.weightController.text.trim().isNotEmpty ||
+        f.repsController.text.trim().isNotEmpty);
+  }
 
   bool _validateForTracking() {
-    final kg = double.tryParse(_kgController.text.replaceAll(',', '.'));
-    final sets = int.tryParse(_setsController.text);
     final day = _resolveChosenDay();
 
-    if (kg == null || kg <= 0) {
-      _showSnackBar('Please enter a valid weight (> 0).');
+    if (day.isEmpty && !_dayLocked) {
+      _showSnackBar('Bitte wähle oder gib einen Workout-Tag ein.');
       return false;
     }
-    if (sets == null || sets <= 0) {
-      _showSnackBar('Please enter a valid number of sets (> 0).');
-      return false;
+
+    // Validate all sets
+    for (int i = 0; i < _setFields.length; i++) {
+      final field = _setFields[i];
+      final kg = double.tryParse(field.weightController.text.replaceAll(',', '.'));
+      final reps = int.tryParse(field.repsController.text);
+
+      if (kg == null || kg <= 0) {
+        _showSnackBar('Set ${i + 1}: Bitte gib ein gültiges Gewicht ein (> 0).');
+        return false;
+      }
+      if (reps == null || reps <= 0) {
+        _showSnackBar('Set ${i + 1}: Bitte gib gültige Wiederholungen ein (> 0).');
+        return false;
+      }
     }
-    if (!_dayLocked && day.isEmpty) {
-      _showSnackBar('Please select or enter a workout day.');
-      return false;
-    }
+
     return true;
   }
 
@@ -2680,11 +2730,33 @@ class _LogInputDialogState extends State<LogInputDialog> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
+  void _addSet() {
+    setState(() {
+      double suggestedWeight = 0;
+      if (_setFields.isNotEmpty) {
+        final lastField = _setFields.last;
+        final lastWeight = double.tryParse(
+            lastField.weightController.text.replaceAll(',', '.'));
+        if (lastWeight != null) {
+          suggestedWeight = lastWeight;
+        }
+      }
+      _setFields.add(_SetInputField(weightKg: suggestedWeight, reps: 0));
+    });
+  }
+
+  void _removeSet(int index) {
+    setState(() {
+      _setFields[index].dispose();
+      _setFields.removeAt(index);
+    });
+  }
+
   void _submit() {
     if (widget.creationMode && !_anyNumberFilled()) {
       final day = _resolveChosenDay();
       if (day.isEmpty && !_dayLocked) {
-        _showSnackBar('Pick a workout day to add this exercise to a group.');
+        _showSnackBar('Wähle einen Workout-Tag um diese Übung einer Gruppe hinzuzufügen.');
         return;
       }
       Navigator.pop<LogOutcome>(context, LogOutcome(assignDay: day));
@@ -2693,33 +2765,25 @@ class _LogInputDialogState extends State<LogInputDialog> {
 
     if (!_validateForTracking()) return;
 
-    final kg = double.parse(_kgController.text.replaceAll(',', '.'));
-    final sets = int.parse(_setsController.text);
     final day = _resolveChosenDay();
+    final sets = <WorkoutSet>[];
+
+    for (final field in _setFields) {
+      final kg = double.parse(field.weightController.text.replaceAll(',', '.'));
+      final reps = int.parse(field.repsController.text);
+      sets.add(WorkoutSet(weightKg: kg, reps: reps));
+    }
 
     Navigator.pop<LogOutcome>(
       context,
       LogOutcome(
         log: WorkoutLog(
           dateTime: DateTime.now(),
-          weightKg: kg,
-          sets: sets,
           day: day,
-          isDropset: _isDropset,
-          extraSetWeights: _parseExtraWeights(_extraWeightsController.text),
+          sets: sets,
         ),
       ),
     );
-  }
-
-  List<double> _parseExtraWeights(String text) {
-    final raw = text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty);
-    final out = <double>[];
-    for (final s in raw) {
-      final v = double.tryParse(s.replaceAll(',', '.'));
-      if (v != null) out.add(v);
-    }
-    return out;
   }
 
   Widget _buildDayInput(BuildContext context) {
@@ -2732,7 +2796,7 @@ class _LogInputDialogState extends State<LogInputDialog> {
       children: <Widget>[
         if (hasKnownDays) ...[
           const Text(
-            'Workout Day',
+            'Workout Tag',
             style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF6F7789)),
           ),
           const SizedBox(height: 6),
@@ -2754,11 +2818,11 @@ class _LogInputDialogState extends State<LogInputDialog> {
           controller: _dayController,
           decoration: InputDecoration(
             labelText: hasKnownDays
-                ? 'Other (type manually)'
+                ? 'Sonstiges (manuell eingeben)'
                 : (widget.creationMode
-                ? 'Workout Day (optional)'
-                : 'Workout Day (required)'),
-            hintText: hasKnownDays ? 'e.g. Push3' : 'e.g. Push / Pull / Leg …',
+                ? 'Workout Tag (optional)'
+                : 'Workout Tag (erforderlich)'),
+            hintText: hasKnownDays ? 'z.B. Push3' : 'z.B. Push / Pull / Leg …',
             filled: true,
             fillColor: Colors.white,
             border: OutlineInputBorder(
@@ -2796,92 +2860,101 @@ class _LogInputDialogState extends State<LogInputDialog> {
     );
   }
 
-  Widget _buildNumberFields() {
-    final cs = Theme.of(context).colorScheme;
+  Widget _buildSetFields() {
     return Column(
-      children: <Widget>[
-        TextField(
-          controller: _kgController,
-          keyboardType:
-          const TextInputType.numberWithOptions(decimal: true),
-          decoration: InputDecoration(
-            labelText:
-            widget.creationMode ? 'Weight (kg) – optional' : 'Weight (kg)',
-            hintText: 'e.g. 80',
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFE53935), width: 2),
-            ),
-          ),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Sets',
+          style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF6F7789)),
         ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: _setsController,
-          keyboardType: TextInputType.number,
-          decoration: InputDecoration(
-            labelText: widget.creationMode ? 'Sets – optional' : 'Sets',
-            hintText: 'e.g. 3',
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFE53935), width: 2),
-            ),
+        const SizedBox(height: 8),
+        ..._setFields.asMap().entries.map((entry) {
+          final index = entry.key;
+          final field = entry.value;
+          return _buildSetRow(index, field);
+        }).toList(),
+        const SizedBox(height: 8),
+        ElevatedButton.icon(
+          onPressed: _addSet,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFFE53935),
+            foregroundColor: Colors.white,
+            elevation: 0,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           ),
+          icon: const Icon(Icons.add),
+          label: const Text('Set hinzufügen'),
         ),
-        const SizedBox(height: 12),
-        CheckboxListTile(
-          value: _isDropset,
-          onChanged: (v) => setState(() => _isDropset = v ?? false),
-          controlAffinity: ListTileControlAffinity.leading,
-          activeColor: cs.primary,
-          title: const Text('Dropset'),
-          secondary: Icon(Icons.bolt, color: cs.primary),
-          contentPadding: EdgeInsets.zero,
-        ),
-        if (_isDropset) ...[
-          const SizedBox(height: 8),
-          TextField(
-            controller: _extraWeightsController,
-            decoration: InputDecoration(
-              labelText: 'Additional weights (comma separated)',
-              hintText: 'e.g. 60, 50, 40',
-              filled: true,
-              fillColor: Colors.white,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFFE53935), width: 2),
-              ),
-            ),
-          ),
-        ],
       ],
+    );
+  }
+
+  Widget _buildSetRow(int index, _SetInputField field) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: field.weightController,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: InputDecoration(
+                labelText: 'Gewicht (kg)',
+                hintText: 'z.B. 80',
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Color(0xFFE53935), width: 2),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: TextField(
+              controller: field.repsController,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: 'Wdh.',
+                hintText: 'z.B. 8',
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Color(0xFFE53935), width: 2),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          if (_setFields.length > 1)
+            IconButton(
+              icon: const Icon(Icons.close, color: Color(0xFFE53935)),
+              onPressed: () => _removeSet(index),
+              tooltip: 'Set entfernen',
+            )
+          else
+            const SizedBox(width: 48),
+        ],
+      ),
     );
   }
 
@@ -2917,8 +2990,8 @@ class _LogInputDialogState extends State<LogInputDialog> {
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             _buildDayInput(context),
-            const SizedBox(height: 12),
-            _buildNumberFields(),
+            const SizedBox(height: 16),
+            _buildSetFields(),
           ],
         ),
       ),
@@ -2936,7 +3009,7 @@ class _LogInputDialogState extends State<LogInputDialog> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text('Cancel'),
+                  child: const Text('Abbrechen'),
                 ),
               ),
               const SizedBox(width: 12),
@@ -2951,7 +3024,7 @@ class _LogInputDialogState extends State<LogInputDialog> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: Text(widget.creationMode ? 'Save' : 'Update'),
+                  child: Text(widget.creationMode ? 'Speichern' : 'Aktualisieren'),
                 ),
               ),
             ],
@@ -2980,6 +3053,12 @@ class FullScreenChartPage extends StatefulWidget {
 }
 
 class _FullScreenChartPageState extends State<FullScreenChartPage> {
+  // Filter options
+  String _filterBy = 'Standard'; // Standard (max weight), Gewicht, Datum, Set 1, Set 2, Set 3, etc.
+  DateTime? _dateRangeStart;
+  DateTime? _dateRangeEnd;
+  double? _filterWeight;
+
   @override
   void initState() {
     super.initState();
@@ -2998,19 +3077,86 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
     super.dispose();
   }
 
+  void _showFilterMenu() {
+    showDialog<void>(
+      context: context,
+      builder: (_) => _FilterDialogModern(
+        filterBy: _filterBy,
+        dateRangeStart: _dateRangeStart,
+        dateRangeEnd: _dateRangeEnd,
+        filterWeight: _filterWeight,
+        logs: widget.logs,
+        onFilterChanged: (filterBy, {dateStart, dateEnd, weight}) {
+          setState(() {
+            _filterBy = filterBy;
+            _dateRangeStart = dateStart;
+            _dateRangeEnd = dateEnd;
+            _filterWeight = weight;
+          });
+          Navigator.pop(context);
+        },
+      ),
+    );
+  }
+
+  List<FlSpot> _getFilteredSpots(List<WorkoutLog> logs) {
+    List<WorkoutLog> filteredLogs = logs;
+
+    // Apply date range filter if "Datum" is selected
+    if (_filterBy == 'Datum' && _dateRangeStart != null && _dateRangeEnd != null) {
+      filteredLogs = logs.where((log) {
+        final logDate = log.dateTime;
+        return logDate.isAfter(_dateRangeStart!) &&
+            logDate.isBefore(_dateRangeEnd!.add(const Duration(days: 1)));
+      }).toList();
+    }
+
+    // Apply weight filter if "Gewicht" is selected AND weight is set
+    if (_filterBy == 'Gewicht' && _filterWeight != null) {
+      filteredLogs = logs.where((log) => log.maxWeightKg >= _filterWeight!).toList();
+      return List<FlSpot>.generate(
+        filteredLogs.length,
+        (i) => FlSpot(
+          filteredLogs[i].dateTime.millisecondsSinceEpoch.toDouble(),
+          filteredLogs[i].maxWeightKg,
+        ),
+      );
+    }
+
+    // Handle Set N filter
+    if (_filterBy.startsWith('Set ')) {
+      final setIndex = int.tryParse(_filterBy.split(' ')[1]) ?? 1;
+      return List<FlSpot>.generate(
+        filteredLogs.length,
+        (i) {
+          final set = setIndex <= filteredLogs[i].sets.length
+              ? filteredLogs[i].sets[setIndex - 1]
+              : null;
+          return FlSpot(
+            filteredLogs[i].dateTime.millisecondsSinceEpoch.toDouble(),
+            set?.weightKg ?? 0,
+          );
+        },
+      );
+    }
+
+    // Default: show heaviest weight per day (when no specific filter is active)
+    return List<FlSpot>.generate(
+      filteredLogs.length,
+      (i) => FlSpot(
+        filteredLogs[i].dateTime.millisecondsSinceEpoch.toDouble(),
+        filteredLogs[i].maxWeightKg,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
     final logs = List<WorkoutLog>.from(widget.logs)
       ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
-    final spots = List<FlSpot>.generate(
-      logs.length,
-          (i) => FlSpot(
-        logs[i].dateTime.millisecondsSinceEpoch.toDouble(),
-        logs[i].weightKg,
-      ),
-    );
+    final spots = _getFilteredSpots(logs);
 
     final double minX = spots.first.x;
     final double maxX = spots.last.x;
@@ -3035,8 +3181,18 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
       return nf * exp;
     }
 
-    double rawMinY = logs.map((e) => e.weightKg).reduce(math.min);
-    double rawMaxY = logs.map((e) => e.weightKg).reduce(math.max);
+    // Calculate Y-range based on filter
+    double rawMinY;
+    double rawMaxY;
+    
+    if (spots.isEmpty) {
+      rawMinY = 0;
+      rawMaxY = 10;
+    } else {
+      rawMinY = (spots.map((s) => s.y).reduce(math.min) as num).toDouble();
+      rawMaxY = (spots.map((s) => s.y).reduce(math.max) as num).toDouble();
+    }
+    
     if (rawMinY == rawMaxY) {
       rawMinY -= 1;
       rawMaxY += 1;
@@ -3060,6 +3216,11 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
         elevation: 0.5,
         title: Text(widget.title, style: const TextStyle(fontWeight: FontWeight.bold)),
         actions: [
+          IconButton(
+            tooltip: 'Filtern',
+            icon: const Icon(Icons.filter_list),
+            onPressed: _showFilterMenu,
+          ),
           IconButton(
             tooltip: 'Exit full screen',
             icon: const Icon(Icons.fullscreen_exit),
@@ -3127,11 +3288,11 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
                 getTooltipItems: (touchedSpots) => touchedSpots.map((t) {
                   final idx = t.spotIndex.clamp(0, logs.length - 1);
                   final dt = DateTime.fromMillisecondsSinceEpoch(t.x.round());
-                  final isDrop = logs[idx].isDropset;
+                  final reps = logs[idx].heaviestSetReps;
 
                   final dateStr = fmtTooltip(dt);
                   final weightStr =
-                      '${t.y.toStringAsFixed(1)} kg${isDrop ? ' • Dropset' : ''}';
+                      '${t.y.toStringAsFixed(1)} kg × $reps Wdh.';
 
                   return LineTooltipItem(
                     '$dateStr\n',
@@ -3162,11 +3323,10 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
                 dotData: FlDotData(
                   show: true,
                   getDotPainter: (spot, percent, bar, index) {
-                    final isDrop = logs[index].isDropset;
                     return FlDotCirclePainter(
-                      radius: isDrop ? 4.5 : 3.2,
-                      color: isDrop ? Color(0xFFB71C1C) : Color(0xFFE53935),
-                      strokeWidth: isDrop ? 2 : 1.5,
+                      radius: 3.2,
+                      color: const Color(0xFFE53935),
+                      strokeWidth: 1.5,
                       strokeColor: const Color(0x66E53935),
                     );
                   },
@@ -3762,5 +3922,741 @@ class _ToggleButton extends StatelessWidget {
         child: Icon(icon, color: const Color(0xFF374151), size: 20),
       ),
     );
+  }
+}
+class _FilterDialogModern extends StatefulWidget {
+  final String filterBy;
+  final DateTime? dateRangeStart;
+  final DateTime? dateRangeEnd;
+  final double? filterWeight;
+  final List<WorkoutLog> logs;
+  final Function(String, {DateTime? dateStart, DateTime? dateEnd, double? weight}) onFilterChanged;
+
+  const _FilterDialogModern({
+    required this.filterBy,
+    this.dateRangeStart,
+    this.dateRangeEnd,
+    this.filterWeight,
+    required this.logs,
+    required this.onFilterChanged,
+  });
+
+  @override
+  State<_FilterDialogModern> createState() => _FilterDialogModernState();
+}
+
+class _FilterDialogModernState extends State<_FilterDialogModern> {
+  late String _selectedFilter;
+  late DateTime? _startDate;
+  late DateTime? _endDate;
+  late TextEditingController _weightController;
+  final _maxSets = 5;
+
+  String _fmtDate(DateTime d) =>
+      '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.${d.year}';
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedFilter = widget.filterBy;
+    _startDate = widget.dateRangeStart;
+    _endDate = widget.dateRangeEnd;
+    _weightController = TextEditingController(
+      text: widget.filterWeight?.toStringAsFixed(1) ?? '',
+    );
+  }
+
+  @override
+  void dispose() {
+    _weightController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      backgroundColor: const Color(0xFFF5F7FA),
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Title
+              const Text(
+                'Filtern nach:',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF111827),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Filter options - Standard (no filter)
+              _buildFilterOption(
+                'Standard',
+                'Zeige stärkste Set',
+                _selectedFilter == 'Standard',
+                () => setState(() => _selectedFilter = 'Standard'),
+              ),
+              const SizedBox(height: 16),
+
+              // Filter options - Gewicht
+              _buildFilterOption(
+                'Gewicht',
+                'Mindestgewicht eingeben',
+                _selectedFilter == 'Gewicht',
+                () => setState(() => _selectedFilter = 'Gewicht'),
+              ),
+              if (_selectedFilter == 'Gewicht') ...[
+                const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.only(left: 40),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0xFFE5E7EB)),
+                    ),
+                    child: TextField(
+                      controller: _weightController,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: InputDecoration(
+                        hintText: 'z.B. 80.5 kg',
+                        hintStyle: const TextStyle(color: Color(0xFF9CA3AF)),
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                        suffixText: 'kg',
+                        suffixStyle: const TextStyle(
+                          color: Color(0xFF6B7280),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 16),
+
+              // Filter options - Datum
+              _buildFilterOption(
+                'Datum',
+                _startDate != null && _endDate != null
+                    ? '${_fmtDate(_startDate!)} - ${_fmtDate(_endDate!)}'
+                    : 'Datumsbereich wählen',
+                _selectedFilter == 'Datum',
+                () async {
+                  final range = await showDialog<DateTimeRange>(
+                    context: context,
+                    builder: (context) => ModernDateRangePicker(
+                      initialStart: _startDate,
+                      initialEnd: _endDate,
+                      firstDate: DateTime(2020),
+                      lastDate: DateTime.now(),
+                    ),
+                  );
+                  if (range != null) {
+                    setState(() {
+                      _selectedFilter = 'Datum';
+                      _startDate = range.start;
+                      _endDate = range.end;
+                    });
+                  }
+                },
+              ),
+              const SizedBox(height: 16),
+
+              // Filter options - Sets
+              ..._buildSetFilterOptions(),
+
+              const SizedBox(height: 24),
+
+              // Action buttons
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text(
+                      'Abbrechen',
+                      style: TextStyle(color: Color(0xFF6B7280)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFE53935),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
+                    ),
+                    onPressed: () {
+                      double? weight;
+                      if (_selectedFilter == 'Gewicht' && _weightController.text.isNotEmpty) {
+                        weight = double.tryParse(_weightController.text);
+                      }
+
+                      if (_selectedFilter == 'Datum') {
+                        widget.onFilterChanged(
+                          _selectedFilter,
+                          dateStart: _startDate,
+                          dateEnd: _endDate,
+                        );
+                      } else if (_selectedFilter == 'Gewicht') {
+                        widget.onFilterChanged(
+                          _selectedFilter,
+                          weight: weight,
+                        );
+                      } else {
+                        widget.onFilterChanged(_selectedFilter);
+                      }
+                    },
+                    child: const Text(
+                      'Anwenden',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterOption(
+    String title,
+    String subtitle,
+    bool isSelected,
+    VoidCallback onTap,
+  ) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFFFFEBEE) : Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isSelected ? const Color(0xFFE53935) : const Color(0xFFE5E7EB),
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Radio<String>(
+              value: title,
+              groupValue: _selectedFilter,
+              onChanged: (_) => onTap(),
+              activeColor: const Color(0xFFE53935),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF111827),
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF6B7280),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildSetFilterOptions() {
+    final maxSets = widget.logs.fold<int>(
+      0,
+      (max, log) => log.sets.length > max ? log.sets.length : max,
+    );
+
+    return List.generate(
+      maxSets,
+      (index) => Padding(
+        padding: EdgeInsets.only(bottom: index < maxSets - 1 ? 16 : 0),
+        child: _buildFilterOption(
+          'Set ${index + 1}',
+          'Gewicht des Sets ${index + 1}',
+          _selectedFilter == 'Set ${index + 1}',
+          () => setState(() => _selectedFilter = 'Set ${index + 1}'),
+        ),
+      ),
+    );
+  }
+}
+
+class ModernDateRangePicker extends StatefulWidget {
+  final DateTime? initialStart;
+  final DateTime? initialEnd;
+  final DateTime firstDate;
+  final DateTime lastDate;
+
+  const ModernDateRangePicker({
+    this.initialStart,
+    this.initialEnd,
+    required this.firstDate,
+    required this.lastDate,
+  });
+
+  @override
+  State<ModernDateRangePicker> createState() => _ModernDateRangePickerState();
+}
+
+class _ModernDateRangePickerState extends State<ModernDateRangePicker> {
+  late DateTime _currentMonth;
+  late DateTime? _selectedStart;
+  late DateTime? _selectedEnd;
+  late PageController _pageController;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedStart = widget.initialStart;
+    _selectedEnd = widget.initialEnd;
+    _currentMonth = _selectedStart ?? DateTime.now();
+    _pageController = PageController(
+      initialPage: _monthDifference(widget.firstDate, _currentMonth),
+    );
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  int _monthDifference(DateTime d1, DateTime d2) {
+    return (d2.year - d1.year) * 12 + (d2.month - d1.month);
+  }
+
+  DateTime _getMonthFromIndex(int index) {
+    return DateTime(
+      widget.firstDate.year + (widget.firstDate.month + index - 1) ~/ 12,
+      ((widget.firstDate.month + index - 1) % 12) + 1,
+    );
+  }
+
+  bool _isSameDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
+  bool _isInRange(DateTime date) {
+    if (_selectedStart == null || _selectedEnd == null) return false;
+    final start = _selectedStart!;
+    final end = _selectedEnd!;
+    return date.isAfter(start) && date.isBefore(end.add(Duration(days: 1)));
+  }
+
+  bool _isStartDate(DateTime date) {
+    return _selectedStart != null && _isSameDay(date, _selectedStart!);
+  }
+
+  bool _isEndDate(DateTime date) {
+    return _selectedEnd != null && _isSameDay(date, _selectedEnd!);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final maxMonths = _monthDifference(widget.firstDate, widget.lastDate) + 1;
+    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
+
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      backgroundColor: const Color(0xFFF5F7FA),
+      insetPadding: const EdgeInsets.all(16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Title and range display
+          Padding(
+            padding: EdgeInsets.all(isLandscape ? 16 : 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Datumsbereich wählen',
+                  style: TextStyle(
+                    fontSize: isLandscape ? 16 : 18,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF111827),
+                  ),
+                ),
+                SizedBox(height: isLandscape ? 12 : 16),
+                // Start and End date display
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: const Color(0xFFE5E7EB)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Anfangsdatum',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Color(0xFF6B7280),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _selectedStart != null
+                                  ? _formatDate(_selectedStart!)
+                                  : 'Wählen...',
+                              style: TextStyle(
+                                fontSize: isLandscape ? 12 : 14,
+                                fontWeight: FontWeight.w600,
+                                color: _selectedStart != null
+                                    ? const Color(0xFF111827)
+                                    : const Color(0xFF9CA3AF),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: isLandscape ? 8 : 12),
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: const Color(0xFFE5E7EB)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Enddatum',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Color(0xFF6B7280),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _selectedEnd != null ? _formatDate(_selectedEnd!) : 'Wählen...',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: _selectedEnd != null
+                                    ? const Color(0xFF111827)
+                                    : const Color(0xFF9CA3AF),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          // Calendar
+          Expanded(
+            child: PageView.builder(
+              controller: _pageController,
+              onPageChanged: (index) {
+                setState(() {
+                  _currentMonth = _getMonthFromIndex(index);
+                });
+              },
+              itemCount: maxMonths,
+              itemBuilder: (context, index) {
+                final month = _getMonthFromIndex(index);
+                return _buildCalendarMonth(month);
+              },
+            ),
+          ),
+
+          // Navigation and buttons
+          Padding(
+            padding: EdgeInsets.all(isLandscape ? 16 : 20),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      _monthYearFormat(_currentMonth),
+                      style: TextStyle(
+                        fontSize: isLandscape ? 12 : 14,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF111827),
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        IconButton(
+                          onPressed: () {
+                            _pageController.previousPage(
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                            );
+                          },
+                          icon: const Icon(Icons.chevron_left),
+                          iconSize: isLandscape ? 18 : 20,
+                          color: const Color(0xFF6B7280),
+                        ),
+                        IconButton(
+                          onPressed: () {
+                            _pageController.nextPage(
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                            );
+                          },
+                          icon: const Icon(Icons.chevron_right),
+                          iconSize: isLandscape ? 18 : 20,
+                          color: const Color(0xFF6B7280),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                SizedBox(height: isLandscape ? 12 : 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text(
+                        'Abbrechen',
+                        style: TextStyle(
+                          color: const Color(0xFF6B7280),
+                          fontSize: isLandscape ? 12 : 14,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFE53935),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isLandscape ? 16 : 24,
+                          vertical: isLandscape ? 8 : 12,
+                        ),
+                      ),
+                      onPressed: _selectedStart != null && _selectedEnd != null
+                          ? () {
+                              Navigator.pop(
+                                context,
+                                DateTimeRange(start: _selectedStart!, end: _selectedEnd!),
+                              );
+                            }
+                          : null,
+                      child: Text(
+                        'Anwenden',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: isLandscape ? 12 : 14,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCalendarMonth(DateTime month) {
+    final firstDay = DateTime(month.year, month.month, 1);
+    final lastDay = DateTime(month.year, month.month + 1, 0);
+    final daysInMonth = lastDay.day;
+    final firstWeekday = firstDay.weekday;
+
+    const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+    const List<String> monthNames = [
+      '',
+      'Januar',
+      'Februar',
+      'März',
+      'April',
+      'Mai',
+      'Juni',
+      'Juli',
+      'August',
+      'September',
+      'Oktober',
+      'November',
+      'Dezember',
+    ];
+
+    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      constraints: BoxConstraints(
+        maxHeight: isLandscape ? 300 : double.infinity,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Day headers
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(
+              children: weekDays
+                  .map((day) => Expanded(
+                        child: Center(
+                          child: Text(
+                            day,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF6B7280),
+                            ),
+                          ),
+                        ),
+                      ))
+                  .toList(),
+            ),
+          ),
+
+          // Calendar grid
+          Expanded(
+            child: GridView.count(
+              crossAxisCount: 7,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              childAspectRatio: isLandscape ? 1.1 : 1.2,
+              mainAxisSpacing: isLandscape ? 2 : 4,
+              crossAxisSpacing: isLandscape ? 2 : 4,
+              children: [
+                // Empty cells for days before month starts
+                ...List.generate(
+                  firstWeekday - 1,
+                  (_) => const SizedBox(),
+                ),
+                // Days of month
+                ...List.generate(
+                  daysInMonth,
+                  (index) {
+                  final date = DateTime(month.year, month.month, index + 1);
+                  final isStart = _isStartDate(date);
+                  final isEnd = _isEndDate(date);
+                  final inRange = _isInRange(date);
+
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        if (_selectedStart == null) {
+                          _selectedStart = date;
+                        } else if (_selectedEnd == null) {
+                          if (date.isBefore(_selectedStart!)) {
+                            _selectedEnd = _selectedStart;
+                            _selectedStart = date;
+                          } else {
+                            _selectedEnd = date;
+                          }
+                        } else {
+                          _selectedStart = date;
+                          _selectedEnd = null;
+                        }
+                      });
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: isStart || isEnd
+                            ? const Color(0xFFE53935)
+                            : inRange
+                                ? const Color(0xFFFFEBEE)
+                                : Colors.transparent,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        '${index + 1}',
+                        style: TextStyle(
+                          fontSize: isLandscape ? 12 : 13,
+                          fontWeight: isStart || isEnd ? FontWeight.w700 : FontWeight.w500,
+                          color: isStart || isEnd
+                              ? Colors.white
+                              : const Color(0xFF111827),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}.${date.year}';
+  }
+
+  String _monthYearFormat(DateTime date) {
+    const months = [
+      '',
+      'Januar',
+      'Februar',
+      'März',
+      'April',
+      'Mai',
+      'Juni',
+      'Juli',
+      'August',
+      'September',
+      'Oktober',
+      'November',
+      'Dezember',
+    ];
+    return '${months[date.month]} ${date.year}';
   }
 }
