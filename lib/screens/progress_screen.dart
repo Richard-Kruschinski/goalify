@@ -254,7 +254,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
     }
   }
 
-  String _rangeLabel(Range r) => r == Range.day ? 'Tag' : r == Range.week ? 'Woche' : 'Jahr';
+  String _rangeLabel(Range r) => r == Range.day ? 'Day' : r == Range.week ? 'Week' : 'Year';
 
   /// KPIs korrekt berechnen (bei Range.day NICHT 24x zählen)
   int _sumForRange(List<ActivityPoint> data) {
@@ -317,14 +317,14 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
             const SizedBox(width: 12),
             const Expanded(
               child: Text(
-                'Progress zurücksetzen?',
+                'Reset progress?',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ),
           ],
         ),
         content: const Text(
-          'Alle gespeicherten Tagespunkte werden gelöscht. Dies kann nicht rückgängig gemacht werden.',
+          'All stored daily points will be removed. This cannot be undone.',
           style: TextStyle(fontSize: 14),
         ),
         actions: [
@@ -341,7 +341,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Text('Abbrechen'),
+                    child: const Text('Cancel'),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -356,7 +356,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Text('Löschen'),
+                    child: const Text('Delete'),
                   ),
                 ),
               ],
@@ -427,7 +427,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
                               majorGridLines: const MajorGridLines(width: 0),
                             ),
                             primaryYAxis: NumericAxis(
-                              title: AxisTitle(text: _mode == DisplayMode.ratio ? 'Verhältnis (%)' : 'Punkte'),
+                              title: AxisTitle(text: _mode == DisplayMode.ratio ? 'Ratio (%)' : 'Points'),
                               majorGridLines: const MajorGridLines(width: 0.5),
                             ),
                             legend: const Legend(isVisible: false),
@@ -436,7 +436,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
                                 dataSource: data,
                                 xValueMapper: (p, _) => p.t,
                                 yValueMapper: (p, _) => p.value,
-                                name: _mode == DisplayMode.ratio ? 'Verhältnis' : 'Punkte',
+                                name: _mode == DisplayMode.ratio ? 'Ratio' : 'Points',
                                 color: const Color(0xFFE53935),
                                 width: 3,
                                 markerSettings: const MarkerSettings(
@@ -459,15 +459,15 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
                     Row(
                       children: [
                         if (_mode == DisplayMode.ratio) ...[
-                          Expanded(child: _metricCard('Aktuelles Verhältnis', currentRatio)),
+                          Expanded(child: _metricCard('Current ratio', currentRatio)),
                         ] else ...[
-                          Expanded(child: _metricCard('Aktuelle ${_rangeLabel(range)}', '${_sumForRange(_dataForRange())} Pkt')),
+                          Expanded(child: _metricCard('Current ${_rangeLabel(range)}', '${_sumForRange(_dataForRange())} pts')),
                         ],
                         const SizedBox(width: 12),
                         if (_mode == DisplayMode.ratio) ...[
-                          Expanded(child: _metricCard('Ø Verhältnis', avgRatio)),
+                          Expanded(child: _metricCard('Avg ratio', avgRatio)),
                         ] else ...[
-                          Expanded(child: _metricCard('Ø pro Tag', _avgLabel(_dataForRange()))),
+                          Expanded(child: _metricCard('Avg per day', _avgLabel(_dataForRange()))),
                         ],
                       ],
                     ),
@@ -564,37 +564,78 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
           Row(
             children: [
               IconButton(
-                tooltip: 'Neu laden',
+                tooltip: 'Reload',
                 onPressed: () async {
                   await _loadHistory();
                   await _loadRatioHistory();
                 },
                 icon: const Icon(Icons.refresh, color: Color(0xFF6F7789)),
               ),
-              PopupMenuButton<String>(
-                onSelected: (v) {
-                  if (v == 'clear') _confirmClearHistory();
-                },
+              IconButton(
+                tooltip: 'More options',
+                onPressed: _showActionsSheet,
                 icon: const Icon(Icons.more_vert, color: Color(0xFF6F7789)),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                itemBuilder: (_) => [
-                  const PopupMenuItem(
-                    value: 'clear',
-                    child: Row(
-                      children: [
-                        Icon(Icons.delete_outline, color: Color(0xFFE53935)),
-                        SizedBox(width: 12),
-                        Text('Clear history'),
-                      ],
-                    ),
-                  ),
-                ],
               ),
             ],
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _showActionsSheet() async {
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x14000000),
+                  blurRadius: 20,
+                  offset: Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 42,
+                  height: 4,
+                  margin: const EdgeInsets.only(top: 12, bottom: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE0E4EB),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.delete_outline, color: Color(0xFFE53935)),
+                  title: const Text('Clear history', style: TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: const Text('Remove all stored progress data'),
+                  onTap: () => Navigator.pop(context, 'clear'),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.close, color: Color(0xFF6F7789)),
+                  title: const Text('Close'),
+                  onTap: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    if (action == 'clear') {
+      await _confirmClearHistory();
+    }
   }
 
   Widget _buildModeToggle() {
@@ -615,7 +656,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
         children: [
           Expanded(
             child: _toggleButton(
-              label: 'Punkte',
+              label: 'Points',
               icon: Icons.star_outline,
               isSelected: _mode == DisplayMode.points,
               onTap: () async {
@@ -626,7 +667,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
           ),
           Expanded(
             child: _toggleButton(
-              label: 'Verhältnis',
+              label: 'Ratio',
               icon: Icons.percent,
               isSelected: _mode == DisplayMode.ratio,
               onTap: () async {
@@ -658,7 +699,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
         children: [
           Expanded(
             child: _toggleButton(
-              label: 'Tag',
+              label: 'Day',
               icon: Icons.today,
               isSelected: range == Range.day,
               onTap: () async {
@@ -669,7 +710,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
           ),
           Expanded(
             child: _toggleButton(
-              label: 'Woche',
+              label: 'Week',
               icon: Icons.view_week,
               isSelected: range == Range.week,
               onTap: () async {
@@ -680,7 +721,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
           ),
           Expanded(
             child: _toggleButton(
-              label: 'Jahr',
+              label: 'Year',
               icon: Icons.calendar_month,
               isSelected: range == Range.year,
               onTap: () async {

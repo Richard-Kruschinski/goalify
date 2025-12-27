@@ -110,6 +110,23 @@ class WorkoutLog {
   // Gibt die Reps des heaviest Sets zurück
   int get heaviestSetReps => heaviestSet?.reps ?? 0;
 
+  // Erkennt ob es ein Dropset ist (unterschiedliche Gewichte zwischen Sets)
+  bool get isDropset {
+    if (sets.length <= 1) return false;
+    final firstWeight = sets.first.weightKg;
+    return sets.any((s) => s.weightKg != firstWeight);
+  }
+
+  // Gibt die Displaystring für die Sets zurück (mit Dropset-Erkennung)
+  String get setDisplayString {
+    if (sets.isEmpty) return '0 Sets';
+    if (isDropset) {
+      // Zeige Dropset Format: "80kg × 8, 70kg × 10, ..." oder "Dropset"
+      return 'Dropset';
+    }
+    return '${maxWeightKg.toStringAsFixed(1)} kg × ${heaviestSetReps} Wdh.';
+  }
+
   Map<String, dynamic> toMap() => {
     'dateTime': dateTime.toIso8601String(),
     'day': day,
@@ -1580,11 +1597,27 @@ class _GymScreenState extends State<GymScreen> {
                     color: const Color(0xFFFFEBEE),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(
-                    w.icon,
-                    color: const Color(0xFFE53935),
-                    size: 24,
-                  ),
+                  alignment: Alignment.center,
+                  padding: const EdgeInsets.all(5.0),
+                  child: w.icon != null
+                      ? Icon(
+                          w.icon!,
+                          color: const Color(0xFFE53935),
+                          size: 24,
+                        )
+                      : w.iconPath != null
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.asset(
+                                w.iconPath!,
+                                fit: BoxFit.cover,
+                              ),
+                            )
+                          : Icon(
+                              Icons.fitness_center,
+                              color: const Color(0xFFE53935),
+                              size: 24,
+                            ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -1603,7 +1636,7 @@ class _GymScreenState extends State<GymScreen> {
                       Text(
                         latest == null
                             ? 'No progress yet'
-                            : '${latest.day} • ${latest.maxWeightKg.toStringAsFixed(1)} kg × ${latest.heaviestSetReps} Wdh.',
+                            : '${latest.day} • ${latest.isDropset ? 'Dropset' : '${latest.maxWeightKg.toStringAsFixed(1)} kg × ${latest.heaviestSetReps} Wdh.'}',
                         style: const TextStyle(
                           fontSize: 13,
                           color: Color(0xFF6F7789),
@@ -2011,7 +2044,7 @@ class _WorkoutPickerSheetState extends State<WorkoutPickerSheet> {
     final WorkoutLog? latest = widget.latestFor(workout.id);
     final String subtitle = latest == null
         ? 'No progress yet'
-        : 'Update: ${latest.maxWeightKg.toStringAsFixed(1)} kg × ${latest.heaviestSetReps} Wdh.';
+        : 'Update: ${latest.isDropset ? 'Dropset' : '${latest.maxWeightKg.toStringAsFixed(1)} kg × ${latest.heaviestSetReps} Wdh.'}';
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
@@ -2411,7 +2444,7 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
                       Text(
                         latest == null
                             ? 'No progress yet'
-                            : '${latest.maxWeightKg.toStringAsFixed(1)} kg × ${latest.heaviestSetReps} Wdh.',
+                            : '${latest.isDropset ? 'Dropset' : '${latest.maxWeightKg.toStringAsFixed(1)} kg × ${latest.heaviestSetReps} Wdh.'}',
                         style: const TextStyle(fontSize: 13, color: Color(0xFF6F7789)),
                       ),
                     ],

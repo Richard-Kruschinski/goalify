@@ -763,12 +763,16 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
           bool danger = false,
           bool enabled = true,
         }) {
-          final effectiveIconColor = enabled
+          final foreground = enabled
               ? (danger ? const Color(0xFFE53935) : iconColor)
               : const Color(0xFFBFC5D2);
-          final effectiveTextColor = enabled
+          final textColor = enabled
               ? (danger ? const Color(0xFFE53935) : const Color(0xFF1A1D1F))
               : const Color(0xFFBFC5D2);
+          final bgColor = danger
+              ? const Color(0xFFFFEBEE)
+              : iconColor.withOpacity(0.12);
+
           return Opacity(
             opacity: enabled ? 1 : 0.6,
             child: InkWell(
@@ -790,16 +794,13 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                 child: Row(
                   children: [
                     Container(
-                      width: 40,
-                      height: 40,
+                      width: 44,
+                      height: 44,
                       decoration: BoxDecoration(
-                        color: (danger
-                                ? const Color(0xFFFFEBEE)
-                                : iconColor.withOpacity(0.12))
-                            .withOpacity(enabled ? 1 : 0.6),
-                        borderRadius: BorderRadius.circular(12),
+                        color: bgColor,
+                        borderRadius: BorderRadius.circular(14),
                       ),
-                      child: Icon(icon, color: effectiveIconColor),
+                      child: Icon(icon, color: foreground, size: 22),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -811,7 +812,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                             style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w600,
-                              color: effectiveTextColor,
+                              color: textColor,
                             ),
                           ),
                           if (subtitle != null) ...[
@@ -829,10 +830,10 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                         ],
                       ),
                     ),
-                    if (danger)
-                      const Icon(Icons.delete_outline, color: Color(0xFFE53935))
-                    else
-                      const Icon(Icons.chevron_right, color: Color(0xFFCDD2D8)),
+                    Icon(
+                      danger ? Icons.delete_outline : Icons.chevron_right,
+                      color: danger ? const Color(0xFFE53935) : const Color(0xFFCDD2D8),
+                    ),
                   ],
                 ),
               ),
@@ -1020,6 +1021,18 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                 if (t.keep) const SizedBox(height: 10),
                 if (t.keep)
                   actionTile(
+                    icon: Icons.emoji_events,
+                    title: 'Show highest streak',
+                    subtitle: 'See your all-time best for this task',
+                    iconColor: const Color(0xFF388E3C),
+                    onTap: () async {
+                      Navigator.pop(ctx);
+                      await _showHighestStreak(t);
+                    },
+                  ),
+                if (t.keep) const SizedBox(height: 10),
+                if (t.keep)
+                  actionTile(
                     icon: Icons.local_fire_department_outlined,
                     title: 'Reset current streak',
                     subtitle: 'Clear today’s streak progress',
@@ -1060,6 +1073,35 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
           ),
         );
       },
+    );
+  }
+
+  Future<void> _showHighestStreak(DailyTask task) async {
+    final best = task.bestStreak;
+    final label = best == 1 ? '1 day' : '$best days';
+    await showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: const Color(0xFFF5F7FA),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: const [
+            Icon(Icons.emoji_events, color: Color(0xFFE53935)),
+            SizedBox(width: 8),
+            Text('Highest streak'),
+          ],
+        ),
+        content: Text(
+          best > 0 ? 'Your best streak for this task is $label.' : 'No streak recorded yet.',
+          style: const TextStyle(fontSize: 15),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
     );
   }
 
