@@ -45,7 +45,7 @@
     "id": "butterfly_machine",
     "name": "Butterfly (Machine)",
     "description": "Pec deck machine fly for chest isolation.",
-    "icon": "fitness_center",
+    "icon": "assets/images/exercises/butterfly_machine.png",
     "muscles": ["Chest"]
   },
   {
@@ -59,7 +59,7 @@
     "id": "cable_rotation",
     "name": "Cable Rotation",
     "description": "Standing cable trunk rotation. Focus on obliques and overall core control.",
-    "icon": "fitness_center",
+    "icon": "assets/images/exercises/cable_rotation.png",
     "muscles": ["Obliques", "Core"]
   },
   {
@@ -94,7 +94,7 @@
     "id": "crunches_cable",
     "name": "Crunches (Cable)",
     "description": "Kneeling cable crunch for weighted ab work.",
-    "icon": "fitness_center",
+    "icon": "assets/images/exercises/crunches_cable.png",
     "muscles": ["Abs"]
   },
   {
@@ -129,7 +129,7 @@
     "id": "hex_squat",
     "name": "Hex Squat",
     "description": "Machine-guided squat variation. Focuses on quadriceps activation.",
-    "icon": "accessibility_new",
+    "icon": "assets/images/exercises/hex_squat.png",
     "muscles": ["Quads", "Glutes"]
   },
   {
@@ -178,7 +178,7 @@
     "id": "lateral_raise_machine",
     "name": "Lateral Raise (Machine)",
     "description": "Isolation exercise for side delts using a machine.",
-    "icon": "accessibility",
+    "icon": "assets/images/exercises/lateral_raise_machine.png",
     "muscles": ["Shoulders (Lateral)"]
   },
   {
@@ -192,14 +192,14 @@
     "id": "leg_curl",
     "name": "Leg Curls",
     "description": "Machine hamstring curl. Isolates the hamstrings.",
-    "icon": "fitness_center",
+    "icon": "assets/images/exercises/leg_curl.png",
     "muscles": ["Hamstrings"]
   },
   {
     "id": "leg_extension",
     "name": "Leg Extension",
     "description": "Machine quad extension. Isolates the quadriceps.",
-    "icon": "fitness_center",
+    "icon": "assets/images/exercises/leg_extension.png",
     "muscles": ["Quads"]
   },
   {
@@ -255,7 +255,7 @@
     "id": "rope_skipping",
     "name": "Rope Skipping",
     "description": "Jump-rope cardio to build endurance and coordination; keep a steady rhythm and soft landings.",
-    "icon": "fitness_center",
+    "icon": "assets/images/exercises/rope_skipping.png",
     "muscles": ["Cardio", "Calves", "Shoulders"],
     "inputType": "duration"
   },
@@ -263,7 +263,7 @@
     "id": "reverse_wrist_curls_dumbbell",
     "name": "Reverse Wrist Curls (Dumbbell)",
     "description": "Seated reverse wrist curls with dumbbells to target forearm extensors.",
-    "icon": "fitness_center",
+    "icon": "assets/images/exercises/wrist_curls_dumbbell.png",
     "muscles": ["Forearms (Extensors)"]
   },
   {
@@ -277,7 +277,7 @@
     "id": "shrugs_dumbbell",
     "name": "Shrugs (Dumbbell)",
     "description": "Dumbbell shrugs targeting the upper trapezius.",
-    "icon": "fitness_center",
+    "icon": "assets/images/exercises/shrugs_dumbbell.png",
     "muscles": ["Traps"]
   },
   {
@@ -326,14 +326,7 @@
     "id": "wrist_curls_dumbbell",
     "name": "Wrist Curls (Dumbbell)",
     "description": "Seated wrist curls with dumbbells to target forearm flexors.",
-    "icon": "fitness_center",
+    "icon": "assets/images/exercises/wrist_curls_dumbbell.png",
     "muscles": ["Forearms (Flexors)"]
-  },
-  {
-    "id": "wrist_extensions_dumbbell",
-    "name": "Wrist Extensions (Dumbbell)",
-    "description": "Seated wrist extensions with dumbbells to strengthen the forearm extensors. Keep the movement slow and controlled.",
-    "icon": "fitness_center",
-    "muscles": ["Forearms (Extensors)"]
   }
 ]

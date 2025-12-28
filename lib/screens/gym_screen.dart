@@ -47,7 +47,7 @@ String _latestSummaryText(Workout workout, WorkoutLog? latest) {
   }
   final value = latest.isDropset
       ? 'Dropset'
-      : '${latest.maxWeightKg.toStringAsFixed(1)} kg × ${latest.heaviestSetReps} Wdh.';
+      : '${latest.maxWeightKg.toStringAsFixed(1)} kg × ${latest.heaviestSetReps} reps';
   return '${latest.day} • $value';
 }
 
@@ -60,7 +60,7 @@ String _latestUpdateText(Workout workout, WorkoutLog? latest) {
   }
   final value = latest.isDropset
       ? 'Dropset'
-      : '${latest.maxWeightKg.toStringAsFixed(1)} kg × ${latest.heaviestSetReps} Wdh.';
+      : '${latest.maxWeightKg.toStringAsFixed(1)} kg × ${latest.heaviestSetReps} reps';
   return 'Update: $value';
 }
 
@@ -182,7 +182,7 @@ class WorkoutLog {
       // Zeige Dropset Format: "80kg × 8, 70kg × 10, ..." oder "Dropset"
       return 'Dropset';
     }
-    return '${maxWeightKg.toStringAsFixed(1)} kg × ${heaviestSetReps} Wdh.';
+    return '${maxWeightKg.toStringAsFixed(1)} kg × ${heaviestSetReps} reps';
   }
 
   Map<String, dynamic> toMap() => {
@@ -557,19 +557,27 @@ class _GymScreenState extends State<GymScreen> {
       builder: (_) {
         const List<MaterialColor> options = <MaterialColor>[
           Colors.blue,
-          Colors.green,
-          Colors.pink,
-          Colors.orange,
-          Colors.purple,
-          Colors.teal,
-          Colors.amber,
-          Colors.red,
+          Colors.lightBlue,
           Colors.indigo,
+          Colors.deepPurple,
+          Colors.purple,
+          Colors.pink,
+          Colors.red,
+          Colors.deepOrange,
+          Colors.orange,
+          Colors.amber,
+          Colors.lime,
+          Colors.lightGreen,
+          Colors.green,
+          Colors.teal,
           Colors.cyan,
+          Colors.blueGrey,
+          Colors.brown,
+          Colors.grey,
         ];
 
         return AlertDialog(
-          title: Text('Farbe für "$day"'),
+          title: Text('Color for "$day"'),
           content: Wrap(
             spacing: 12,
             runSpacing: 12,
@@ -591,7 +599,7 @@ class _GymScreenState extends State<GymScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Abbrechen'),
+              child: const Text('Cancel'),
             ),
           ],
         );
@@ -693,7 +701,7 @@ class _GymScreenState extends State<GymScreen> {
     if (_isDurationWorkout(workout)) {
       return _formatDurationShort(log.longestDurationSeconds);
     }
-    return '${yValue.toStringAsFixed(1)} kg × ${log.heaviestSetReps} Wdh.';
+    return '${yValue.toStringAsFixed(1)} kg × ${log.heaviestSetReps} reps';
   }
 
   void _addLog(String workoutId, WorkoutLog result) {
@@ -2823,7 +2831,7 @@ class _LogInputDialogState extends State<LogInputDialog> {
     final day = _resolveChosenDay();
 
     if (day.isEmpty && !_dayLocked) {
-      _showSnackBar('Bitte wähle oder gib einen Workout-Tag ein.');
+      _showSnackBar('Please select or enter a workout day.');
       return false;
     }
 
@@ -2832,7 +2840,7 @@ class _LogInputDialogState extends State<LogInputDialog> {
         final field = _setFields[i];
         final duration = int.tryParse(field.durationController.text);
         if (duration == null || duration <= 0) {
-          _showSnackBar('Set ${i + 1}: Bitte gib eine gültige Zeit (Sekunden) ein (> 0).');
+          _showSnackBar('Set ${i + 1}: Enter a valid time in seconds (> 0).');
           return false;
         }
       }
@@ -2846,11 +2854,11 @@ class _LogInputDialogState extends State<LogInputDialog> {
       final reps = int.tryParse(field.repsController.text);
 
       if (kg == null || kg <= 0) {
-        _showSnackBar('Set ${i + 1}: Bitte gib ein gültiges Gewicht ein (> 0).');
+        _showSnackBar('Set ${i + 1}: Enter a valid weight (> 0).');
         return false;
       }
       if (reps == null || reps <= 0) {
-        _showSnackBar('Set ${i + 1}: Bitte gib gültige Wiederholungen ein (> 0).');
+        _showSnackBar('Set ${i + 1}: Enter valid reps (> 0).');
         return false;
       }
     }
@@ -2901,7 +2909,7 @@ class _LogInputDialogState extends State<LogInputDialog> {
     if (widget.creationMode && !_anyNumberFilled()) {
       final day = _resolveChosenDay();
       if (day.isEmpty && !_dayLocked) {
-        _showSnackBar('Wähle einen Workout-Tag um diese Übung einer Gruppe hinzuzufügen.');
+        _showSnackBar('Choose a workout day to assign this exercise to a group.');
         return;
       }
       Navigator.pop<LogOutcome>(context, LogOutcome(assignDay: day));
@@ -2946,7 +2954,7 @@ class _LogInputDialogState extends State<LogInputDialog> {
       children: <Widget>[
         if (hasKnownDays) ...[
           const Text(
-            'Workout Tag',
+            'Workout day',
             style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF6F7789)),
           ),
           const SizedBox(height: 6),
@@ -2968,11 +2976,11 @@ class _LogInputDialogState extends State<LogInputDialog> {
           controller: _dayController,
           decoration: InputDecoration(
             labelText: hasKnownDays
-                ? 'Sonstiges (manuell eingeben)'
-                : (widget.creationMode
-                ? 'Workout Tag (optional)'
-                : 'Workout Tag (erforderlich)'),
-            hintText: hasKnownDays ? 'z.B. Push3' : 'z.B. Push / Pull / Leg …',
+              ? 'Custom (manual entry)'
+              : (widget.creationMode
+              ? 'Workout day (optional)'
+              : 'Workout day (required)'),
+            hintText: hasKnownDays ? 'e.g. Push3' : 'e.g. Push / Pull / Leg …',
             filled: true,
             fillColor: Colors.white,
             border: OutlineInputBorder(
@@ -3034,7 +3042,7 @@ class _LogInputDialogState extends State<LogInputDialog> {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           ),
           icon: const Icon(Icons.add),
-          label: const Text('Set hinzufügen'),
+          label: const Text('Add set'),
         ),
       ],
     );
@@ -3051,8 +3059,8 @@ class _LogInputDialogState extends State<LogInputDialog> {
                 controller: field.durationController,
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
-                  labelText: 'Zeit (Sekunden)',
-                  hintText: 'z.B. 60',
+                  labelText: 'Time (seconds)',
+                  hintText: 'e.g. 60',
                   filled: true,
                   fillColor: Colors.white,
                   border: OutlineInputBorder(
@@ -3075,7 +3083,7 @@ class _LogInputDialogState extends State<LogInputDialog> {
               IconButton(
                 icon: const Icon(Icons.close, color: Color(0xFFE53935)),
                 onPressed: () => _removeSet(index),
-                tooltip: 'Set entfernen',
+                tooltip: 'Remove set',
               )
             else
               const SizedBox(width: 48),
@@ -3093,8 +3101,8 @@ class _LogInputDialogState extends State<LogInputDialog> {
               controller: field.weightController,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               decoration: InputDecoration(
-                labelText: 'Gewicht (kg)',
-                hintText: 'z.B. 80',
+                labelText: 'Weight (kg)',
+                hintText: 'e.g. 80',
                 filled: true,
                 fillColor: Colors.white,
                 border: OutlineInputBorder(
@@ -3118,8 +3126,8 @@ class _LogInputDialogState extends State<LogInputDialog> {
               controller: field.repsController,
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
-                labelText: 'Wdh.',
-                hintText: 'z.B. 8',
+                labelText: 'Reps',
+                hintText: 'e.g. 8',
                 filled: true,
                 fillColor: Colors.white,
                 border: OutlineInputBorder(
@@ -3142,7 +3150,7 @@ class _LogInputDialogState extends State<LogInputDialog> {
             IconButton(
               icon: const Icon(Icons.close, color: Color(0xFFE53935)),
               onPressed: () => _removeSet(index),
-              tooltip: 'Set entfernen',
+              tooltip: 'Remove set',
             )
           else
             const SizedBox(width: 48),
@@ -3202,7 +3210,7 @@ class _LogInputDialogState extends State<LogInputDialog> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text('Abbrechen'),
+                  child: const Text('Cancel'),
                 ),
               ),
               const SizedBox(width: 12),
@@ -3217,7 +3225,7 @@ class _LogInputDialogState extends State<LogInputDialog> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: Text(widget.creationMode ? 'Speichern' : 'Aktualisieren'),
+                  child: Text(widget.creationMode ? 'Save' : 'Update'),
                 ),
               ),
             ],
@@ -3263,7 +3271,7 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
 
   String _tooltipValue(double yValue, WorkoutLog log) {
     if (_durationBased) return _formatDurationShort(log.longestDurationSeconds);
-    return '${yValue.toStringAsFixed(1)} kg × ${log.heaviestSetReps} Wdh.';
+    return '${yValue.toStringAsFixed(1)} kg × ${log.heaviestSetReps} reps';
   }
 
   @override
