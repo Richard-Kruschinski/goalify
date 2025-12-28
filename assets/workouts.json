@@ -252,6 +252,14 @@
     "muscles": ["Rear Delts", "Upper Back"]
   },
   {
+    "id": "rope_skipping",
+    "name": "Rope Skipping",
+    "description": "Jump-rope cardio to build endurance and coordination; keep a steady rhythm and soft landings.",
+    "icon": "fitness_center",
+    "muscles": ["Cardio", "Calves", "Shoulders"],
+    "inputType": "duration"
+  },
+  {
     "id": "reverse_wrist_curls_dumbbell",
     "name": "Reverse Wrist Curls (Dumbbell)",
     "description": "Seated reverse wrist curls with dumbbells to target forearm extensors.",

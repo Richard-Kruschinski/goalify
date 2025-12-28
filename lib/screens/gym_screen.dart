@@ -27,6 +27,43 @@ IconData _iconFromString(String? name) {
   }
 }
 
+String _formatDurationShort(int seconds) {
+  if (seconds <= 0) return '0 s';
+  final int minutes = seconds ~/ 60;
+  final int secs = seconds % 60;
+  if (minutes > 0 && secs > 0) return '$minutes min $secs s';
+  if (minutes > 0) return '$minutes min';
+  return '$seconds s';
+}
+
+bool _isDurationWorkout(Workout workout) => workout.isDurationBased;
+
+String _latestSummaryText(Workout workout, WorkoutLog? latest) {
+  if (latest == null) return 'No progress yet';
+  if (_isDurationWorkout(workout)) {
+    final dur = latest.longestDurationSeconds;
+    final value = dur > 0 ? _formatDurationShort(dur) : '${latest.setCount} Sets';
+    return '${latest.day} • $value';
+  }
+  final value = latest.isDropset
+      ? 'Dropset'
+      : '${latest.maxWeightKg.toStringAsFixed(1)} kg × ${latest.heaviestSetReps} Wdh.';
+  return '${latest.day} • $value';
+}
+
+String _latestUpdateText(Workout workout, WorkoutLog? latest) {
+  if (latest == null) return 'No progress yet';
+  if (_isDurationWorkout(workout)) {
+    final dur = latest.longestDurationSeconds;
+    final value = dur > 0 ? _formatDurationShort(dur) : '${latest.setCount} Sets';
+    return 'Update: $value';
+  }
+  final value = latest.isDropset
+      ? 'Dropset'
+      : '${latest.maxWeightKg.toStringAsFixed(1)} kg × ${latest.heaviestSetReps} Wdh.';
+  return 'Update: $value';
+}
+
 class Workout {
   final String id;
   final String name;
@@ -34,6 +71,7 @@ class Workout {
   final IconData? icon;
   final String? iconPath;
   final List<String> muscles;
+  final bool isDurationBased;
 
   const Workout({
     required this.id,
@@ -42,12 +80,14 @@ class Workout {
     this.icon,
     this.iconPath,
     this.muscles = const [],
+    this.isDurationBased = false,
   });
 
   factory Workout.fromJson(Map<String, dynamic> m) {
     final iconString = m['icon'] as String;
     final bool isAssetPath = iconString.startsWith('assets/');
-    
+    final inputType = (m['inputType'] ?? m['input_type'] ?? '').toString().toLowerCase();
+
     return Workout(
       id: m['id'] as String,
       name: m['name'] as String,
@@ -57,28 +97,34 @@ class Workout {
       muscles: (m['muscles'] as List<dynamic>? ?? const [])
           .map((e) => e.toString())
           .toList(),
+      isDurationBased: inputType == 'duration' || (m['durationOnly'] == true),
     );
   }
 }
 
-/// Ein einzelnes Set mit Weight (kg) und Reps
 class WorkoutSet {
   final double weightKg;
   final int reps;
+  final int? durationSeconds;
 
   const WorkoutSet({
     required this.weightKg,
     required this.reps,
+    this.durationSeconds,
   });
+
+  bool get hasDuration => (durationSeconds ?? 0) > 0;
 
   Map<String, dynamic> toMap() => {
     'weightKg': weightKg,
     'reps': reps,
+    if (durationSeconds != null) 'durationSeconds': durationSeconds,
   };
 
   factory WorkoutSet.fromMap(Map<String, dynamic> m) => WorkoutSet(
-    weightKg: (m['weightKg'] as num).toDouble(),
-    reps: (m['reps'] as num).toInt(),
+    weightKg: (m['weightKg'] as num?)?.toDouble() ?? 0.0,
+    reps: (m['reps'] as num?)?.toInt() ?? 0,
+    durationSeconds: (m['durationSeconds'] as num?)?.toInt(),
   );
 }
 
@@ -98,9 +144,16 @@ class WorkoutLog {
   // Für Kompatibilität: gibt die Anzahl der Sets zurück
   int get setCount => sets.length;
 
+  bool get hasDurationSets => sets.any((s) => s.hasDuration);
+
+  // Nutzt die längste Set-Dauer als wichtigste Kennzahl für Dauer-Workouts
+  int get longestDurationSeconds => hasDurationSets
+      ? sets.map((s) => s.durationSeconds ?? 0).reduce(math.max)
+      : 0;
+
   // Gibt das Set mit dem höchsten Gewicht zurück
   WorkoutSet? get heaviestSet {
-    if (sets.isEmpty) return null;
+    if (sets.isEmpty || hasDurationSets) return sets.isEmpty ? null : sets.first;
     return sets.reduce((a, b) => a.weightKg >= b.weightKg ? a : b);
   }
 
@@ -112,7 +165,7 @@ class WorkoutLog {
 
   // Erkennt ob es ein Dropset ist (unterschiedliche Gewichte zwischen Sets)
   bool get isDropset {
-    if (sets.length <= 1) return false;
+    if (hasDurationSets || sets.length <= 1) return false;
     final firstWeight = sets.first.weightKg;
     return sets.any((s) => s.weightKg != firstWeight);
   }
@@ -120,6 +173,11 @@ class WorkoutLog {
   // Gibt die Displaystring für die Sets zurück (mit Dropset-Erkennung)
   String get setDisplayString {
     if (sets.isEmpty) return '0 Sets';
+    if (hasDurationSets) {
+      final dur = longestDurationSeconds;
+      if (dur <= 0) return '${sets.length} Sets';
+      return '${sets.length} Sets • ${_formatDurationShort(dur)}';
+    }
     if (isDropset) {
       // Zeige Dropset Format: "80kg × 8, 70kg × 10, ..." oder "Dropset"
       return 'Dropset';
@@ -617,6 +675,27 @@ class _GymScreenState extends State<GymScreen> {
   String _formatDate(DateTime dt) =>
       '${dt.day.toString().padLeft(2, '0')}.${dt.month.toString().padLeft(2, '0')}.${dt.year}';
 
+  String _formatSetValue(Workout workout, WorkoutSet set) {
+    if (_isDurationWorkout(workout) && set.hasDuration) {
+      return _formatDurationShort(set.durationSeconds ?? 0);
+    }
+    return '${set.weightKg.toStringAsFixed(1)} kg × ${set.reps}';
+  }
+
+  double _chartYValue(Workout workout, WorkoutLog log) =>
+      _isDurationWorkout(workout)
+          ? log.longestDurationSeconds.toDouble()
+          : log.maxWeightKg;
+
+  String _chartYAxisLabel(Workout workout) => _isDurationWorkout(workout) ? 's' : 'kg';
+
+  String _tooltipValue(Workout workout, double yValue, WorkoutLog log) {
+    if (_isDurationWorkout(workout)) {
+      return _formatDurationShort(log.longestDurationSeconds);
+    }
+    return '${yValue.toStringAsFixed(1)} kg × ${log.heaviestSetReps} Wdh.';
+  }
+
   void _addLog(String workoutId, WorkoutLog result) {
     setState(() {
       final list = _logs.putIfAbsent(workoutId, () => <WorkoutLog>[]);
@@ -979,6 +1058,7 @@ class _GymScreenState extends State<GymScreen> {
   // ----------------------------- Charts -----------------------------
   void _openProgressChartDialog(Workout w) {
     final cs = Theme.of(context).colorScheme;
+    final isDuration = _isDurationWorkout(w);
 
     final logs = List<WorkoutLog>.from(_logs[w.id] ?? const <WorkoutLog>[]);
     if (logs.isEmpty) {
@@ -993,7 +1073,7 @@ class _GymScreenState extends State<GymScreen> {
       logs.length,
           (i) => FlSpot(
         logs[i].dateTime.millisecondsSinceEpoch.toDouble(),
-        logs[i].maxWeightKg,
+        _chartYValue(w, logs[i]),
       ),
     );
 
@@ -1020,12 +1100,13 @@ class _GymScreenState extends State<GymScreen> {
       return nf * exp;
     }
 
-    double rawMinY = (logs.map((e) => e.maxWeightKg).reduce(math.min) as num).toDouble();
-    double rawMaxY = (logs.map((e) => e.maxWeightKg).reduce(math.max) as num).toDouble();
+    double rawMinY = (logs.map((e) => _chartYValue(w, e)).reduce(math.min) as num).toDouble();
+    double rawMaxY = (logs.map((e) => _chartYValue(w, e)).reduce(math.max) as num).toDouble();
     if (rawMinY == rawMaxY) {
       rawMinY -= 1;
       rawMaxY += 1;
     }
+    if (isDuration && rawMinY < 0) rawMinY = 0;
 
     const targetLines = 5;
     final niceRange = niceNum(rawMaxY - rawMinY, round: false);
@@ -1078,6 +1159,7 @@ class _GymScreenState extends State<GymScreen> {
                     builder: (_) => FullScreenChartPage(
                       title: w.name,
                       logs: logs,
+                          isDurationBased: isDuration,
                     ),
                   ),
                 );
@@ -1111,9 +1193,10 @@ class _GymScreenState extends State<GymScreen> {
               ),
               titlesData: FlTitlesData(
                 leftTitles: AxisTitles(
-                  axisNameWidget: const Padding(
-                    padding: EdgeInsets.only(right: kLeftAxisNamePadding),
-                    child: Text('kg', style: TextStyle(fontWeight: FontWeight.w600)),
+                  axisNameWidget: Padding(
+                    padding: const EdgeInsets.only(right: kLeftAxisNamePadding),
+                    child: Text(_chartYAxisLabel(w),
+                        style: const TextStyle(fontWeight: FontWeight.w600)),
                   ),
                   axisNameSize: 26,
                   sideTitles: SideTitles(
@@ -1188,18 +1271,15 @@ class _GymScreenState extends State<GymScreen> {
                   getTooltipItems: (touchedSpots) => touchedSpots.map((t) {
                     final idx = t.spotIndex.clamp(0, logs.length - 1);
                     final dt = DateTime.fromMillisecondsSinceEpoch(t.x.round());
-                    final reps = logs[idx].heaviestSetReps;
-
                     final dateStr = fmtTooltip(dt);
-                    final weightStr =
-                        '${t.y.toStringAsFixed(1)} kg × $reps Wdh.';
+                    final valueStr = _tooltipValue(w, t.y, logs[idx]);
 
                     return LineTooltipItem(
                       '$dateStr\n',
                       const TextStyle(color: Color(0xFF1A1D1F), fontWeight: FontWeight.w700),
                       children: [
                         TextSpan(
-                          text: weightStr,
+                          text: valueStr,
                           style: TextStyle(
                             color: const Color(0xFF1A1D1F),
                             fontWeight: FontWeight.w500,
@@ -1634,9 +1714,7 @@ class _GymScreenState extends State<GymScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        latest == null
-                            ? 'No progress yet'
-                            : '${latest.day} • ${latest.isDropset ? 'Dropset' : '${latest.maxWeightKg.toStringAsFixed(1)} kg × ${latest.heaviestSetReps} Wdh.'}',
+                        _latestSummaryText(w, latest),
                         style: const TextStyle(
                           fontSize: 13,
                           color: Color(0xFF6F7789),
@@ -1897,7 +1975,7 @@ class _GymScreenState extends State<GymScreen> {
                     runSpacing: 4,
                     children: log.sets
                         .map((s) => Chip(
-                              label: Text('${s.weightKg.toStringAsFixed(1)} kg × ${s.reps}'),
+                              label: Text(_formatSetValue(w, s)),
                               visualDensity: VisualDensity.compact,
                               padding: EdgeInsets.zero,
                             ))
@@ -2042,9 +2120,7 @@ class _WorkoutPickerSheetState extends State<WorkoutPickerSheet> {
 
   Widget _buildWorkoutCard(Workout workout) {
     final WorkoutLog? latest = widget.latestFor(workout.id);
-    final String subtitle = latest == null
-        ? 'No progress yet'
-        : 'Update: ${latest.isDropset ? 'Dropset' : '${latest.maxWeightKg.toStringAsFixed(1)} kg × ${latest.heaviestSetReps} Wdh.'}';
+    final String subtitle = _latestUpdateText(workout, latest);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
@@ -2442,9 +2518,7 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        latest == null
-                            ? 'No progress yet'
-                            : '${latest.isDropset ? 'Dropset' : '${latest.maxWeightKg.toStringAsFixed(1)} kg × ${latest.heaviestSetReps} Wdh.'}',
+                        _latestSummaryText(w, latest),
                         style: const TextStyle(fontSize: 13, color: Color(0xFF6F7789)),
                       ),
                     ],
@@ -2636,15 +2710,19 @@ class _ReorderDayTile extends StatelessWidget {
 class _SetInputField {
   final TextEditingController weightController;
   final TextEditingController repsController;
+  final TextEditingController durationController;
 
-  _SetInputField({double weightKg = 0, int reps = 0})
+  _SetInputField({double weightKg = 0, int reps = 0, int? durationSeconds})
       : weightController = TextEditingController(
             text: weightKg > 0 ? weightKg.toStringAsFixed(1) : ''),
-        repsController = TextEditingController(text: reps > 0 ? reps.toString() : '');
+        repsController = TextEditingController(text: reps > 0 ? reps.toString() : ''),
+        durationController = TextEditingController(
+            text: (durationSeconds ?? 0) > 0 ? durationSeconds.toString() : '');
 
   void dispose() {
     weightController.dispose();
     repsController.dispose();
+    durationController.dispose();
   }
 }
 
@@ -2677,6 +2755,7 @@ class _LogInputDialogState extends State<LogInputDialog> {
   String? _chipDay;
 
   bool get _dayLocked => widget.contextDay != null;
+  bool get _isDurationWorkout => widget.workout.isDurationBased;
 
   @override
   void initState() {
@@ -2689,12 +2768,17 @@ class _LogInputDialogState extends State<LogInputDialog> {
         _setFields.add(_SetInputField(
           weightKg: set.weightKg,
           reps: set.reps,
+          durationSeconds: set.durationSeconds,
         ));
       }
       if (!_dayLocked) _dayController.text = widget.latest!.day;
     } else {
       // Start with one empty set
-      _setFields.add(_SetInputField(weightKg: 0, reps: 0));
+      _setFields.add(_SetInputField(
+        weightKg: 0,
+        reps: 0,
+        durationSeconds: _isDurationWorkout ? 0 : null,
+      ));
     }
 
     if (_dayLocked) {
@@ -2727,6 +2811,9 @@ class _LogInputDialogState extends State<LogInputDialog> {
   }
 
   bool _anyNumberFilled() {
+    if (_isDurationWorkout) {
+      return _setFields.any((f) => f.durationController.text.trim().isNotEmpty);
+    }
     return _setFields.any((f) =>
         f.weightController.text.trim().isNotEmpty ||
         f.repsController.text.trim().isNotEmpty);
@@ -2738,6 +2825,18 @@ class _LogInputDialogState extends State<LogInputDialog> {
     if (day.isEmpty && !_dayLocked) {
       _showSnackBar('Bitte wähle oder gib einen Workout-Tag ein.');
       return false;
+    }
+
+    if (_isDurationWorkout) {
+      for (int i = 0; i < _setFields.length; i++) {
+        final field = _setFields[i];
+        final duration = int.tryParse(field.durationController.text);
+        if (duration == null || duration <= 0) {
+          _showSnackBar('Set ${i + 1}: Bitte gib eine gültige Zeit (Sekunden) ein (> 0).');
+          return false;
+        }
+      }
+      return true;
     }
 
     // Validate all sets
@@ -2765,6 +2864,19 @@ class _LogInputDialogState extends State<LogInputDialog> {
 
   void _addSet() {
     setState(() {
+      if (_isDurationWorkout) {
+        int suggestedDuration = 0;
+        if (_setFields.isNotEmpty) {
+          final last = _setFields.last;
+          final lastDuration = int.tryParse(last.durationController.text);
+          if (lastDuration != null) {
+            suggestedDuration = lastDuration;
+          }
+        }
+        _setFields.add(_SetInputField(durationSeconds: suggestedDuration));
+        return;
+      }
+
       double suggestedWeight = 0;
       if (_setFields.isNotEmpty) {
         final lastField = _setFields.last;
@@ -2802,9 +2914,14 @@ class _LogInputDialogState extends State<LogInputDialog> {
     final sets = <WorkoutSet>[];
 
     for (final field in _setFields) {
-      final kg = double.parse(field.weightController.text.replaceAll(',', '.'));
-      final reps = int.parse(field.repsController.text);
-      sets.add(WorkoutSet(weightKg: kg, reps: reps));
+      if (_isDurationWorkout) {
+        final duration = int.parse(field.durationController.text);
+        sets.add(WorkoutSet(weightKg: 0, reps: 0, durationSeconds: duration));
+      } else {
+        final kg = double.parse(field.weightController.text.replaceAll(',', '.'));
+        final reps = int.parse(field.repsController.text);
+        sets.add(WorkoutSet(weightKg: kg, reps: reps));
+      }
     }
 
     Navigator.pop<LogOutcome>(
@@ -2924,6 +3041,49 @@ class _LogInputDialogState extends State<LogInputDialog> {
   }
 
   Widget _buildSetRow(int index, _SetInputField field) {
+    if (_isDurationWorkout) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: field.durationController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: 'Zeit (Sekunden)',
+                  hintText: 'z.B. 60',
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide.none,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Color(0xFFE53935), width: 2),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            if (_setFields.length > 1)
+              IconButton(
+                icon: const Icon(Icons.close, color: Color(0xFFE53935)),
+                onPressed: () => _removeSet(index),
+                tooltip: 'Set entfernen',
+              )
+            else
+              const SizedBox(width: 48),
+          ],
+        ),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
@@ -3074,11 +3234,13 @@ class _LogInputDialogState extends State<LogInputDialog> {
 class FullScreenChartPage extends StatefulWidget {
   final String title;
   final List<WorkoutLog> logs;
+  final bool isDurationBased;
 
   const FullScreenChartPage({
     super.key,
     required this.title,
     required this.logs,
+    this.isDurationBased = false,
   });
 
   @override
@@ -3091,6 +3253,18 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
   DateTime? _dateRangeStart;
   DateTime? _dateRangeEnd;
   double? _filterWeight;
+  List<WorkoutLog> _lastFilteredLogs = const [];
+
+  bool get _durationBased => widget.isDurationBased;
+  String get _unitLabel => _durationBased ? 's' : 'kg';
+
+  double _yValueForLog(WorkoutLog log) =>
+      _durationBased ? log.longestDurationSeconds.toDouble() : log.maxWeightKg;
+
+  String _tooltipValue(double yValue, WorkoutLog log) {
+    if (_durationBased) return _formatDurationShort(log.longestDurationSeconds);
+    return '${yValue.toStringAsFixed(1)} kg × ${log.heaviestSetReps} Wdh.';
+  }
 
   @override
   void initState() {
@@ -3111,6 +3285,12 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
   }
 
   void _showFilterMenu() {
+    if (_durationBased && _filterBy == 'Gewicht') {
+      setState(() {
+        _filterBy = 'Standard';
+        _filterWeight = null;
+      });
+    }
     showDialog<void>(
       context: context,
       builder: (_) => _FilterDialogModern(
@@ -3119,6 +3299,7 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
         dateRangeEnd: _dateRangeEnd,
         filterWeight: _filterWeight,
         logs: widget.logs,
+        isDurationBased: _durationBased,
         onFilterChanged: (filterBy, {dateStart, dateEnd, weight}) {
           setState(() {
             _filterBy = filterBy;
@@ -3144,14 +3325,17 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
       }).toList();
     }
 
-    // Apply weight filter if "Gewicht" is selected AND weight is set
+    double yForLog(WorkoutLog log) => _yValueForLog(log);
+
+    // Apply weight/duration filter if selected AND value is set
     if (_filterBy == 'Gewicht' && _filterWeight != null) {
-      filteredLogs = logs.where((log) => log.maxWeightKg >= _filterWeight!).toList();
+      filteredLogs = filteredLogs.where((log) => yForLog(log) >= _filterWeight!).toList();
+      _lastFilteredLogs = filteredLogs;
       return List<FlSpot>.generate(
         filteredLogs.length,
         (i) => FlSpot(
           filteredLogs[i].dateTime.millisecondsSinceEpoch.toDouble(),
-          filteredLogs[i].maxWeightKg,
+          yForLog(filteredLogs[i]),
         ),
       );
     }
@@ -3159,6 +3343,7 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
     // Handle Set N filter
     if (_filterBy.startsWith('Set ')) {
       final setIndex = int.tryParse(_filterBy.split(' ')[1]) ?? 1;
+      _lastFilteredLogs = filteredLogs;
       return List<FlSpot>.generate(
         filteredLogs.length,
         (i) {
@@ -3167,18 +3352,21 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
               : null;
           return FlSpot(
             filteredLogs[i].dateTime.millisecondsSinceEpoch.toDouble(),
-            set?.weightKg ?? 0,
+            _durationBased
+                ? (set?.durationSeconds ?? 0).toDouble()
+                : (set?.weightKg ?? 0),
           );
         },
       );
     }
 
-    // Default: show heaviest weight per day (when no specific filter is active)
+    // Default: show heaviest weight or longest duration per day
+    _lastFilteredLogs = filteredLogs;
     return List<FlSpot>.generate(
       filteredLogs.length,
       (i) => FlSpot(
         filteredLogs[i].dateTime.millisecondsSinceEpoch.toDouble(),
-        filteredLogs[i].maxWeightKg,
+        yForLog(filteredLogs[i]),
       ),
     );
   }
@@ -3190,6 +3378,31 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
     final logs = List<WorkoutLog>.from(widget.logs)
       ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
     final spots = _getFilteredSpots(logs);
+
+    if (spots.isEmpty) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF5F7FA),
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          foregroundColor: const Color(0xFF1A1D1F),
+          elevation: 0.5,
+          title: Text(widget.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+          actions: [
+            IconButton(
+              tooltip: 'Filtern',
+              icon: const Icon(Icons.filter_list),
+              onPressed: _showFilterMenu,
+            ),
+            IconButton(
+              tooltip: 'Exit full screen',
+              icon: const Icon(Icons.fullscreen_exit),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ],
+        ),
+        body: const Center(child: Text('Keine Daten für diesen Filter.')),
+      );
+    }
 
     final double minX = spots.first.x;
     final double maxX = spots.last.x;
@@ -3230,6 +3443,7 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
       rawMinY -= 1;
       rawMaxY += 1;
     }
+    if (_durationBased && rawMinY < 0) rawMinY = 0;
 
     const targetLines = 5;
     final niceRange = niceNum(rawMaxY - rawMinY, round: false);
@@ -3267,6 +3481,27 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
           LineChartData(
             titlesData: FlTitlesData(
               topTitles: const AxisTitles(
+                sideTitles: SideTitles(showTitles: false),
+              ),
+              leftTitles: AxisTitles(
+                axisNameWidget: Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: Text(_unitLabel,
+                      style: const TextStyle(fontWeight: FontWeight.w600)),
+                ),
+                axisNameSize: 26,
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  reservedSize: 42,
+                  interval: yInterval,
+                  getTitlesWidget: (value, meta) => SideTitleWidget(
+                    axisSide: meta.axisSide,
+                    space: 6,
+                    child: Text(value.toStringAsFixed(0)),
+                  ),
+                ),
+              ),
+              rightTitles: const AxisTitles(
                 sideTitles: SideTitles(showTitles: false),
               ),
               bottomTitles: AxisTitles(
@@ -3319,20 +3554,20 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
                 tooltipPadding:
                 const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 getTooltipItems: (touchedSpots) => touchedSpots.map((t) {
-                  final idx = t.spotIndex.clamp(0, logs.length - 1);
+                  final activeLogs = _lastFilteredLogs.isNotEmpty ? _lastFilteredLogs : logs;
+                  final idx = t.spotIndex.clamp(0, activeLogs.length - 1);
+                  final log = activeLogs[idx];
                   final dt = DateTime.fromMillisecondsSinceEpoch(t.x.round());
-                  final reps = logs[idx].heaviestSetReps;
 
                   final dateStr = fmtTooltip(dt);
-                  final weightStr =
-                      '${t.y.toStringAsFixed(1)} kg × $reps Wdh.';
+                  final valueStr = _tooltipValue(t.y, log);
 
                   return LineTooltipItem(
                     '$dateStr\n',
                     const TextStyle(color: Color(0xFF1A1D1F), fontWeight: FontWeight.w700),
                     children: [
                       TextSpan(
-                        text: weightStr,
+                        text: valueStr,
                         style: const TextStyle(
                           color: Color(0xFF1A1D1F),
                           fontWeight: FontWeight.w500,
@@ -3963,6 +4198,7 @@ class _FilterDialogModern extends StatefulWidget {
   final DateTime? dateRangeEnd;
   final double? filterWeight;
   final List<WorkoutLog> logs;
+  final bool isDurationBased;
   final Function(String, {DateTime? dateStart, DateTime? dateEnd, double? weight}) onFilterChanged;
 
   const _FilterDialogModern({
@@ -3971,6 +4207,7 @@ class _FilterDialogModern extends StatefulWidget {
     this.dateRangeEnd,
     this.filterWeight,
     required this.logs,
+    this.isDurationBased = false,
     required this.onFilterChanged,
   });
 
@@ -3997,6 +4234,10 @@ class _FilterDialogModernState extends State<_FilterDialogModern> {
     _weightController = TextEditingController(
       text: widget.filterWeight?.toStringAsFixed(1) ?? '',
     );
+
+    if (widget.isDurationBased && _selectedFilter == 'Gewicht') {
+      _selectedFilter = 'Standard';
+    }
   }
 
   @override
