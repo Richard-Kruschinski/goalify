@@ -87,7 +87,7 @@
     "id": "concentration_curls",
     "name": "Concentration Curls",
     "description": "One-arm biceps curl. Focuses on peak contraction and isolation.",
-    "icon": "fitness_center",
+    "icon": "assets/images/exercises/concentration_curls.png",
     "muscles": ["Biceps"]
   },
   {
