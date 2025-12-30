@@ -799,36 +799,6 @@ class _GymScreenState extends State<GymScreen> {
     setState(() {});
   }
 
-  // ---------- Reihenfolge: pro Day ----------
-  List<Workout> _getWorkoutsForDayOrdered(String day) {
-    final idsFromLogs = <String>{};
-    _logs.forEach((wid, list) {
-      if (list.any((l) => l.day == day)) idsFromLogs.add(wid);
-    });
-    final idsFromAssign = _assignmentsByDay[day]?.toSet() ?? <String>{};
-
-    final ids = {...idsFromLogs, ...idsFromAssign}.toList();
-
-    final order = List<String>.from(_orderByDay[day] ?? const []);
-    bool changed = false;
-    for (final id in ids) {
-      if (!order.contains(id)) {
-        order.add(id);
-        changed = true;
-      }
-    }
-    if (changed) {
-      _orderByDay[day] = order;
-      _saveOrderByDay();
-    }
-
-    final filtered =
-    _workouts.where((w) => ids.contains(w.id)).toList(growable: false);
-    filtered.sort(
-            (a, b) => order.indexOf(a.id).compareTo(order.indexOf(b.id)));
-    return filtered;
-  }
-
   // ---------- Nur zugewiesene Übungen für Day ----------
   List<Workout> _getAssignedWorkoutsForDayOrdered(String day) {
     final ids = _assignmentsByDay[day]?.toList() ?? <String>[];
@@ -1079,7 +1049,6 @@ class _GymScreenState extends State<GymScreen> {
 
   // ----------------------------- Charts -----------------------------
   void _openProgressChartDialog(Workout w) {
-    final cs = Theme.of(context).colorScheme;
     final isDuration = _isDurationWorkout(w);
 
     final logs = List<WorkoutLog>.from(_logs[w.id] ?? const <WorkoutLog>[]);
@@ -1972,7 +1941,6 @@ class _GymScreenState extends State<GymScreen> {
     if (list.isEmpty) {
       return const AlertDialog(content: Text('No entries available'));
     }
-    final cs = Theme.of(context).colorScheme;
 
     return AlertDialog(
       title: Text('History – ${w.name}'),
@@ -2586,140 +2554,6 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-// ===============================================================
-// Gemeinsame Reorder-Tiles
-// ===============================================================
-class _ReorderTile extends StatelessWidget {
-  final int index;
-  final Color leadingStripColor;
-  final Widget title;
-  final Widget subtitle;
-  final Widget? trailingMore;
-  final Icon? avatar;
-  final VoidCallback onHistory;
-  final VoidCallback? onDelete;
-  final VoidCallback? onTap;
-  final VoidCallback? onLongPress;
-
-  const _ReorderTile({
-    super.key,
-    required this.index,
-    required this.leadingStripColor,
-    required this.title,
-    required this.subtitle,
-    required this.avatar,
-    required this.onHistory,
-    this.onDelete,
-    this.onTap,
-    this.onLongPress,
-    this.trailingMore,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      key: key,
-      child: Container(
-        decoration: const BoxDecoration(
-          border: Border(bottom: BorderSide(width: 0.5, color: Color(0x1F000000))),
-        ),
-        child: Row(
-          children: [
-            const SizedBox(width: 12),
-            ReorderableDelayedDragStartListener(
-              index: index,
-              child: Container(
-                width: 16,
-                height: 54,
-                color: leadingStripColor,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: ListTile(
-                leading: CircleAvatar(child: avatar),
-                title: title,
-                subtitle: subtitle,
-                onTap: onTap,
-                onLongPress: onLongPress,
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      tooltip: 'History',
-                      onPressed: onHistory,
-                      icon: const Icon(Icons.history),
-                    ),
-                    if (trailingMore != null) trailingMore!,
-                    if (onDelete != null)
-                      IconButton(
-                        tooltip: 'Remove',
-                        onPressed: onDelete,
-                        icon: const Icon(Icons.delete_outline),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ReorderDayTile extends StatelessWidget {
-  final int index;
-  final Color leadingStripColor;
-  final Widget title;
-  final Widget? subtitle;
-  final VoidCallback onTap;
-
-  const _ReorderDayTile({
-    super.key,
-    required this.index,
-    required this.leadingStripColor,
-    required this.title,
-    this.subtitle,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      key: key,
-      child: Container(
-        decoration: const BoxDecoration(
-          border: Border(bottom: BorderSide(width: 0.5, color: Color(0x1F000000))),
-        ),
-        child: Row(
-          children: [
-            const SizedBox(width: 12),
-            ReorderableDelayedDragStartListener(
-              index: index,
-              child: Container(
-                width: 16,
-                height: 54,
-                color: leadingStripColor,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: ListTile(
-                leading: const Icon(Icons.fitness_center),
-                title: title,
-                subtitle: subtitle,
-                trailing: const Icon(Icons.chevron_right),
-                onTap: onTap,
-              ),
-            ),
-          ],
         ),
       ),
     );
@@ -3395,8 +3229,6 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
     final logs = List<WorkoutLog>.from(widget.logs)
       ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
     final spots = _getFilteredSpots(logs);
@@ -4242,7 +4074,6 @@ class _FilterDialogModernState extends State<_FilterDialogModern> {
   late DateTime? _startDate;
   late DateTime? _endDate;
   late TextEditingController _weightController;
-  final _maxSets = 5;
 
   String _fmtDate(DateTime d) =>
       '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.${d.year}';
@@ -4812,21 +4643,6 @@ class _ModernDateRangePickerState extends State<ModernDateRangePicker> {
     final firstWeekday = firstDay.weekday;
 
     const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
-    const List<String> monthNames = [
-      '',
-      'Januar',
-      'Februar',
-      'März',
-      'April',
-      'Mai',
-      'Juni',
-      'Juli',
-      'August',
-      'September',
-      'Oktober',
-      'November',
-      'Dezember',
-    ];
 
     final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
 
