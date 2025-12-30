@@ -4,6 +4,7 @@ import 'package:flutter/services.dart'; // rootBundle, SystemChrome, DeviceOrien
 import 'package:fl_chart/fl_chart.dart';
 import 'dart:math' as math;
 import '../storage/local_storage.dart'; // saveJson/loadJson
+import 'daily_tasks_screen.dart'; // for markGymTaskDoneForToday
 
 enum ViewMode { byExercise, byDay }
 
@@ -528,6 +529,9 @@ class _GymScreenState extends State<GymScreen> {
         _dayColors[dayName] = _resolveDayColor(dayName, cs).value;
         await _saveDayColors();
       }
+      
+      // Mark the gym task as done in daily screen
+      await DailyTasksHelper.markGymTaskDoneForToday();
     } else {
       set.remove(dayName);
       if (set.isEmpty) _calendarByDate.remove(key);
@@ -705,6 +709,11 @@ class _GymScreenState extends State<GymScreen> {
   }
 
   void _addLog(String workoutId, WorkoutLog result) {
+    final now = DateTime.now();
+    final isToday = result.dateTime.year == now.year && 
+                    result.dateTime.month == now.month && 
+                    result.dateTime.day == now.day;
+    
     setState(() {
       final list = _logs.putIfAbsent(workoutId, () => <WorkoutLog>[]);
       list.add(WorkoutLog(
@@ -727,6 +736,11 @@ class _GymScreenState extends State<GymScreen> {
       _saveCalendar();
     });
     _saveLogs();
+    
+    // Mark gym task as done in daily screen if logged today
+    if (isToday) {
+      DailyTasksHelper.markGymTaskDoneForToday();
+    }
   }
 
   WorkoutLog? _latestForDay(String workoutId, String day) {
