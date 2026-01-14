@@ -1940,6 +1940,7 @@ class _GymScreenState extends State<GymScreen> {
             if (outcome == null) return;
             if (outcome.log != null) _addLog(w.id, outcome.log!);
           },
+          onRefresh: () => setState(() {}),
           onShowHistory: _openHistoryDialog,
           onShowChart: _openProgressChartDialog,
           onDeleteForDay: (w) => _confirmDeleteForDay(w, day),
@@ -2284,6 +2285,7 @@ class DayDetailScreen extends StatefulWidget {
   final void Function(Workout workout) onUnassignFromDay;
   final void Function(List<String> newOrder) onReorder;
   final Color stripeColor;
+  final VoidCallback? onRefresh;
 
   final bool Function() isDoneToday;
   final Future<void> Function(bool value) onToggleDoneToday;
@@ -2303,6 +2305,7 @@ class DayDetailScreen extends StatefulWidget {
     required this.onUnassignFromDay,
     required this.onReorder,
     required this.stripeColor,
+    this.onRefresh,
     required this.isDoneToday,
     required this.onToggleDoneToday,
     required this.dayColor,
@@ -2486,7 +2489,13 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: () => widget.onEdit(w, latest),
+          onTap: () async {
+            await widget.onEdit(w, latest);
+            if (widget.onRefresh != null) {
+              widget.onRefresh!();
+              setState(() {}); // Refresh UI
+            }
+          },
           onLongPress: () => widget.onShowChart(w),
           child: Padding(
             padding: const EdgeInsets.all(16),
