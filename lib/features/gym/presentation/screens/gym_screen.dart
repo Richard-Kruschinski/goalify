@@ -46,7 +46,7 @@ String _latestSummaryText(Workout workout, WorkoutLog? latest) {
     final value = dur > 0 ? _formatDurationShort(dur) : '${latest.setCount} Sets';
     return '${latest.day} • $value';
   }
-  final value = latest.isDropset
+  final value = latest.hasAnyDropsets
       ? 'Dropset'
       : '${latest.maxWeightKg.toStringAsFixed(1)} kg × ${latest.heaviestSetReps} reps';
   return '${latest.day} • $value';
@@ -59,7 +59,7 @@ String _latestUpdateText(Workout workout, WorkoutLog? latest) {
     final value = dur > 0 ? _formatDurationShort(dur) : '${latest.setCount} Sets';
     return 'Update: $value';
   }
-  final value = latest.isDropset
+  final value = latest.hasAnyDropsets
       ? 'Dropset'
       : '${latest.maxWeightKg.toStringAsFixed(1)} kg × ${latest.heaviestSetReps} reps';
   return 'Update: $value';
@@ -107,26 +107,37 @@ class WorkoutSet {
   final double weightKg;
   final int reps;
   final int? durationSeconds;
+  final List<WorkoutSet> dropsets; // Dropsets gehören zu diesem Set
 
   const WorkoutSet({
     required this.weightKg,
     required this.reps,
     this.durationSeconds,
+    this.dropsets = const [],
   });
 
   bool get hasDuration => (durationSeconds ?? 0) > 0;
+  bool get hasDropsets => dropsets.isNotEmpty;
 
   Map<String, dynamic> toMap() => {
     'weightKg': weightKg,
     'reps': reps,
     if (durationSeconds != null) 'durationSeconds': durationSeconds,
+    if (dropsets.isNotEmpty) 'dropsets': dropsets.map((s) => s.toMap()).toList(),
   };
 
-  factory WorkoutSet.fromMap(Map<String, dynamic> m) => WorkoutSet(
-    weightKg: (m['weightKg'] as num?)?.toDouble() ?? 0.0,
-    reps: (m['reps'] as num?)?.toInt() ?? 0,
-    durationSeconds: (m['durationSeconds'] as num?)?.toInt(),
-  );
+  factory WorkoutSet.fromMap(Map<String, dynamic> m) {
+    final dropsetsList = (m['dropsets'] as List? ?? [])
+        .map((s) => WorkoutSet.fromMap(Map<String, dynamic>.from(s)))
+        .toList();
+    
+    return WorkoutSet(
+      weightKg: (m['weightKg'] as num?)?.toDouble() ?? 0.0,
+      reps: (m['reps'] as num?)?.toInt() ?? 0,
+      durationSeconds: (m['durationSeconds'] as num?)?.toInt(),
+      dropsets: dropsetsList,
+    );
+  }
 }
 
 class WorkoutLog {
@@ -164,11 +175,9 @@ class WorkoutLog {
   // Gibt die Reps des heaviest Sets zurück
   int get heaviestSetReps => heaviestSet?.reps ?? 0;
 
-  // Erkennt ob es ein Dropset ist (unterschiedliche Gewichte zwischen Sets)
-  bool get isDropset {
-    if (hasDurationSets || sets.length <= 1) return false;
-    final firstWeight = sets.first.weightKg;
-    return sets.any((s) => s.weightKg != firstWeight);
+  // Erkennt ob es ein Dropset ist (jetzt prüfen wir ob Sets Dropsets haben)
+  bool get hasAnyDropsets {
+    return sets.any((s) => s.hasDropsets);
   }
 
   // Gibt die Displaystring für die Sets zurück (mit Dropset-Erkennung)
@@ -179,9 +188,15 @@ class WorkoutLog {
       if (dur <= 0) return '${sets.length} Sets';
       return '${sets.length} Sets • ${_formatDurationShort(dur)}';
     }
-    if (isDropset) {
-      // Zeige Dropset Format: "80kg × 8, 70kg × 10, ..." oder "Dropset"
-      return 'Dropset';
+    
+    // Zähle Dropsets
+    int totalDropsets = 0;
+    for (final set in sets) {
+      totalDropsets += set.dropsets.length;
+    }
+    
+    if (totalDropsets > 0) {
+      return 'Dropset (${sets.length} + $totalDropsets)';
     }
     return '${maxWeightKg.toStringAsFixed(1)} kg × ${heaviestSetReps} reps';
   }
@@ -2595,24 +2610,29 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
 }
 
 /// ===============================================================
-/// Helper Klasse für Set Input Fields
+/// Helper Klasse für Set Input Fields (mit Dropset-Support)
 /// ===============================================================
 class _SetInputField {
   final TextEditingController weightController;
   final TextEditingController repsController;
   final TextEditingController durationController;
+  final List<_SetInputField> dropsets; // Dropsets dieses Sets
 
-  _SetInputField({double weightKg = 0, int reps = 0, int? durationSeconds})
+  _SetInputField({double weightKg = 0, int reps = 0, int? durationSeconds, List<_SetInputField>? dropsets})
       : weightController = TextEditingController(
             text: weightKg > 0 ? weightKg.toStringAsFixed(1) : ''),
         repsController = TextEditingController(text: reps > 0 ? reps.toString() : ''),
         durationController = TextEditingController(
-            text: (durationSeconds ?? 0) > 0 ? durationSeconds.toString() : '');
+            text: (durationSeconds ?? 0) > 0 ? durationSeconds.toString() : ''),
+        dropsets = dropsets ?? [];
 
   void dispose() {
     weightController.dispose();
     repsController.dispose();
     durationController.dispose();
+    for (final dropset in dropsets) {
+      dropset.dispose();
+    }
   }
 }
 
@@ -2655,11 +2675,7 @@ class _LogInputDialogState extends State<LogInputDialog> {
     if (widget.latest != null && widget.latest!.sets.isNotEmpty) {
       // Populate from latest
       for (final set in widget.latest!.sets) {
-        _setFields.add(_SetInputField(
-          weightKg: set.weightKg,
-          reps: set.reps,
-          durationSeconds: set.durationSeconds,
-        ));
+        _setFields.add(_createSetInputField(set));
       }
       if (!_dayLocked) _dayController.text = widget.latest!.day;
     } else {
@@ -2674,6 +2690,19 @@ class _LogInputDialogState extends State<LogInputDialog> {
     if (_dayLocked) {
       _chipDay = widget.contextDay;
     }
+  }
+
+  // Konvertiert WorkoutSet zu _SetInputField (mit Dropsets)
+  _SetInputField _createSetInputField(WorkoutSet set) {
+    final dropsets = set.dropsets
+        .map((d) => _createSetInputField(d))
+        .toList();
+    return _SetInputField(
+      weightKg: set.weightKg,
+      reps: set.reps,
+      durationSeconds: set.durationSeconds,
+      dropsets: dropsets,
+    );
   }
 
   @override
@@ -2701,12 +2730,20 @@ class _LogInputDialogState extends State<LogInputDialog> {
   }
 
   bool _anyNumberFilled() {
-    if (_isDurationWorkout) {
-      return _setFields.any((f) => f.durationController.text.trim().isNotEmpty);
+    bool _checkField(_SetInputField field) {
+      if (_isDurationWorkout) {
+        if (field.durationController.text.trim().isNotEmpty) return true;
+      } else {
+        if (field.weightController.text.trim().isNotEmpty ||
+            field.repsController.text.trim().isNotEmpty) {
+          return true;
+        }
+      }
+      // Check dropsets
+      return field.dropsets.any((d) => _checkField(d));
     }
-    return _setFields.any((f) =>
-        f.weightController.text.trim().isNotEmpty ||
-        f.repsController.text.trim().isNotEmpty);
+
+    return _setFields.any((f) => _checkField(f));
   }
 
   bool _validateForTracking() {
@@ -2717,30 +2754,52 @@ class _LogInputDialogState extends State<LogInputDialog> {
       return false;
     }
 
-    if (_isDurationWorkout) {
-      for (int i = 0; i < _setFields.length; i++) {
-        final field = _setFields[i];
+    // Validiere alle Sets (inkl. Dropsets)
+    bool _validateField(int setNum, int dropsetNum, _SetInputField field) {
+      if (_isDurationWorkout) {
         final duration = int.tryParse(field.durationController.text);
         if (duration == null || duration <= 0) {
-          _showSnackBar('Set ${i + 1}: Enter a valid time in seconds (> 0).');
+          if (dropsetNum > 0) {
+            _showSnackBar('Set $setNum Dropset $dropsetNum: Enter a valid time in seconds (> 0).');
+          } else {
+            _showSnackBar('Set $setNum: Enter a valid time in seconds (> 0).');
+          }
+          return false;
+        }
+      } else {
+        final kg = double.tryParse(field.weightController.text.replaceAll(',', '.'));
+        final reps = int.tryParse(field.repsController.text);
+
+        if (kg == null || kg <= 0) {
+          if (dropsetNum > 0) {
+            _showSnackBar('Set $setNum Dropset $dropsetNum: Enter a valid weight (> 0).');
+          } else {
+            _showSnackBar('Set $setNum: Enter a valid weight (> 0).');
+          }
+          return false;
+        }
+        if (reps == null || reps <= 0) {
+          if (dropsetNum > 0) {
+            _showSnackBar('Set $setNum Dropset $dropsetNum: Enter valid reps (> 0).');
+          } else {
+            _showSnackBar('Set $setNum: Enter valid reps (> 0).');
+          }
           return false;
         }
       }
+
+      // Validiere Dropsets rekursiv
+      for (int i = 0; i < field.dropsets.length; i++) {
+        if (!_validateField(setNum, i + 1, field.dropsets[i])) {
+          return false;
+        }
+      }
+
       return true;
     }
 
-    // Validate all sets
     for (int i = 0; i < _setFields.length; i++) {
-      final field = _setFields[i];
-      final kg = double.tryParse(field.weightController.text.replaceAll(',', '.'));
-      final reps = int.tryParse(field.repsController.text);
-
-      if (kg == null || kg <= 0) {
-        _showSnackBar('Set ${i + 1}: Enter a valid weight (> 0).');
-        return false;
-      }
-      if (reps == null || reps <= 0) {
-        _showSnackBar('Set ${i + 1}: Enter valid reps (> 0).');
+      if (!_validateField(i + 1, 0, _setFields[i])) {
         return false;
       }
     }
@@ -2755,28 +2814,13 @@ class _LogInputDialogState extends State<LogInputDialog> {
   void _addSet() {
     setState(() {
       if (_isDurationWorkout) {
-        int suggestedDuration = 0;
-        if (_setFields.isNotEmpty) {
-          final last = _setFields.last;
-          final lastDuration = int.tryParse(last.durationController.text);
-          if (lastDuration != null) {
-            suggestedDuration = lastDuration;
-          }
-        }
-        _setFields.add(_SetInputField(durationSeconds: suggestedDuration));
+        // Leeres Set ohne vorgefüllte Werte
+        _setFields.add(_SetInputField(durationSeconds: 0));
         return;
       }
 
-      double suggestedWeight = 0;
-      if (_setFields.isNotEmpty) {
-        final lastField = _setFields.last;
-        final lastWeight = double.tryParse(
-            lastField.weightController.text.replaceAll(',', '.'));
-        if (lastWeight != null) {
-          suggestedWeight = lastWeight;
-        }
-      }
-      _setFields.add(_SetInputField(weightKg: suggestedWeight, reps: 0));
+      // Leeres Set ohne vorgefüllte Werte
+      _setFields.add(_SetInputField(weightKg: 0, reps: 0));
     });
   }
 
@@ -2785,6 +2829,29 @@ class _LogInputDialogState extends State<LogInputDialog> {
       _setFields[index].dispose();
       _setFields.removeAt(index);
     });
+  }
+
+  // Konvertiert _SetInputField zu WorkoutSet mit Dropsets
+  WorkoutSet _convertSetInputFieldToWorkoutSet(_SetInputField field) {
+    if (_isDurationWorkout) {
+      final duration = int.parse(field.durationController.text);
+      final dropsets = field.dropsets
+          .map((d) => _convertSetInputFieldToWorkoutSet(d))
+          .toList();
+      return WorkoutSet(
+        weightKg: 0,
+        reps: 0,
+        durationSeconds: duration,
+        dropsets: dropsets,
+      );
+    } else {
+      final kg = double.parse(field.weightController.text.replaceAll(',', '.'));
+      final reps = int.parse(field.repsController.text);
+      final dropsets = field.dropsets
+          .map((d) => _convertSetInputFieldToWorkoutSet(d))
+          .toList();
+      return WorkoutSet(weightKg: kg, reps: reps, dropsets: dropsets);
+    }
   }
 
   void _submit() {
@@ -2804,14 +2871,7 @@ class _LogInputDialogState extends State<LogInputDialog> {
     final sets = <WorkoutSet>[];
 
     for (final field in _setFields) {
-      if (_isDurationWorkout) {
-        final duration = int.parse(field.durationController.text);
-        sets.add(WorkoutSet(weightKg: 0, reps: 0, durationSeconds: duration));
-      } else {
-        final kg = double.parse(field.weightController.text.replaceAll(',', '.'));
-        final reps = int.parse(field.repsController.text);
-        sets.add(WorkoutSet(weightKg: kg, reps: reps));
-      }
+      sets.add(_convertSetInputFieldToWorkoutSet(field));
     }
 
     Navigator.pop<LogOutcome>(
@@ -2931,44 +2991,128 @@ class _LogInputDialogState extends State<LogInputDialog> {
   }
 
   Widget _buildSetRow(int index, _SetInputField field) {
+    final dropsetsCount = field.dropsets.length;
+
     if (_isDurationWorkout) {
       return Padding(
         padding: const EdgeInsets.only(bottom: 12),
-        child: Row(
+        child: Column(
           children: [
-            Expanded(
-              child: TextField(
-                controller: field.durationController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: 'Time (seconds)',
-                  hintText: 'e.g. 60',
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide.none,
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide.none,
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: Color(0xFFE53935), width: 2),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: field.durationController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: 'Time (seconds)',
+                      hintText: 'e.g. 60',
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide.none,
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide.none,
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(color: Color(0xFFE53935), width: 2),
+                      ),
+                    ),
                   ),
                 ),
+                const SizedBox(width: 8),
+                if (_setFields.length > 1)
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Color(0xFFE53935)),
+                    onPressed: () => _removeSet(index),
+                    tooltip: 'Remove set',
+                  )
+                else
+                  const SizedBox(width: 48),
+              ],
+            ),
+            // Dropsets anzeigen
+            if (dropsetsCount > 0) ...[
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.only(left: 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: List.generate(dropsetsCount, (dropsetIndex) {
+                    final dropset = field.dropsets[dropsetIndex];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.arrow_downward, size: 20, color: Color(0xFFE53935)),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: TextField(
+                              controller: dropset.durationController,
+                              keyboardType: TextInputType.number,
+                              decoration: InputDecoration(
+                                labelText: 'Dropset ${dropsetIndex + 1} Time (seconds)',
+                                hintText: 'e.g. 60',
+                                filled: true,
+                                fillColor: Colors.white,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: BorderSide.none,
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: BorderSide.none,
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: const BorderSide(color: Color(0xFFE53935), width: 2),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton(
+                            icon: const Icon(Icons.close, color: Color(0xFFE53935)),
+                            onPressed: () {
+                              setState(() {
+                                dropset.dispose();
+                                field.dropsets.removeAt(dropsetIndex);
+                              });
+                            },
+                            tooltip: 'Remove dropset',
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                ),
+              ),
+            ],
+            // Add Dropset Button
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Row(
+                children: [
+                  const SizedBox(width: 24),
+                  TextButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        field.dropsets.add(_SetInputField(durationSeconds: 0));
+                      });
+                    },
+                    icon: const Icon(Icons.add, size: 18),
+                    label: const Text('Add dropset'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: const Color(0xFFE53935),
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(width: 8),
-            if (_setFields.length > 1)
-              IconButton(
-                icon: const Icon(Icons.close, color: Color(0xFFE53935)),
-                onPressed: () => _removeSet(index),
-                tooltip: 'Remove set',
-              )
-            else
-              const SizedBox(width: 48),
           ],
         ),
       );
@@ -2976,66 +3120,173 @@ class _LogInputDialogState extends State<LogInputDialog> {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
+      child: Column(
         children: [
-          Expanded(
-            child: TextField(
-              controller: field.weightController,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: InputDecoration(
-                labelText: 'Weight (kg)',
-                hintText: 'e.g. 80',
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide.none,
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Color(0xFFE53935), width: 2),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: TextField(
-              controller: field.repsController,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                labelText: 'Reps',
-                hintText: 'e.g. 8',
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide.none,
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Color(0xFFE53935), width: 2),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: field.weightController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: InputDecoration(
+                    labelText: 'Weight (kg)',
+                    hintText: 'e.g. 80',
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: Color(0xFFE53935), width: 2),
+                    ),
+                  ),
                 ),
               ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: TextField(
+                  controller: field.repsController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: 'Reps',
+                    hintText: 'e.g. 8',
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: Color(0xFFE53935), width: 2),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              if (_setFields.length > 1)
+                IconButton(
+                  icon: const Icon(Icons.close, color: Color(0xFFE53935)),
+                  onPressed: () => _removeSet(index),
+                  tooltip: 'Remove set',
+                )
+              else
+                const SizedBox(width: 48),
+            ],
+          ),
+          // Dropsets anzeigen
+          if (dropsetsCount > 0) ...[
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.only(left: 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: List.generate(dropsetsCount, (dropsetIndex) {
+                  final dropset = field.dropsets[dropsetIndex];
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.arrow_downward, size: 20, color: Color(0xFFE53935)),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: dropset.weightController,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            decoration: InputDecoration(
+                              labelText: 'Dropset ${dropsetIndex + 1} Weight (kg)',
+                              hintText: 'e.g. 70',
+                              filled: true,
+                              fillColor: Colors.white,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide.none,
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide.none,
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: const BorderSide(color: Color(0xFFE53935), width: 2),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: dropset.repsController,
+                            keyboardType: TextInputType.number,
+                            decoration: InputDecoration(
+                              labelText: 'Reps',
+                              hintText: 'e.g. 10',
+                              filled: true,
+                              fillColor: Colors.white,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide.none,
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide.none,
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: const BorderSide(color: Color(0xFFE53935), width: 2),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Color(0xFFE53935)),
+                          onPressed: () {
+                            setState(() {
+                              dropset.dispose();
+                              field.dropsets.removeAt(dropsetIndex);
+                            });
+                          },
+                          tooltip: 'Remove dropset',
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+              ),
+            ),
+          ],
+          // Add Dropset Button
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Row(
+              children: [
+                const SizedBox(width: 24),
+                TextButton.icon(
+                  onPressed: () {
+                    setState(() {
+                      field.dropsets.add(_SetInputField(weightKg: 0, reps: 0));
+                    });
+                  },
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text('Add dropset'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFFE53935),
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(width: 8),
-          if (_setFields.length > 1)
-            IconButton(
-              icon: const Icon(Icons.close, color: Color(0xFFE53935)),
-              onPressed: () => _removeSet(index),
-              tooltip: 'Remove set',
-            )
-          else
-            const SizedBox(width: 48),
         ],
       ),
     );
@@ -3230,21 +3481,46 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
       );
     }
 
-    // Handle Set N filter
+    // Handle Set N oder Set N • Dropset M filter
     if (_filterBy.startsWith('Set ')) {
-      final setIndex = int.tryParse(_filterBy.split(' ')[1]) ?? 1;
       _lastFilteredLogs = filteredLogs;
       return List<FlSpot>.generate(
         filteredLogs.length,
         (i) {
-          final set = setIndex <= filteredLogs[i].sets.length
-              ? filteredLogs[i].sets[setIndex - 1]
-              : null;
+          final log = filteredLogs[i];
+          
+          // Parse filter: "Set 1", "Set 1 • Dropset 1", etc.
+          double value = 0;
+          
+          if (_filterBy.contains('•')) {
+            // Dropset filter: "Set 1 • Dropset 1"
+            final parts = _filterBy.split('•');
+            final setNum = int.tryParse(parts[0].trim().split(' ')[1]) ?? 1;
+            final dropsetNum = int.tryParse(parts[1].trim().split(' ')[1]) ?? 1;
+            
+            if (setNum <= log.sets.length) {
+              final set = log.sets[setNum - 1];
+              if (dropsetNum <= set.dropsets.length) {
+                final dropset = set.dropsets[dropsetNum - 1];
+                value = _durationBased
+                    ? (dropset.durationSeconds ?? 0).toDouble()
+                    : dropset.weightKg;
+              }
+            }
+          } else {
+            // Regular set filter: "Set 1"
+            final setIndex = int.tryParse(_filterBy.split(' ')[1]) ?? 1;
+            if (setIndex <= log.sets.length) {
+              final set = log.sets[setIndex - 1];
+              value = _durationBased
+                  ? (set.durationSeconds ?? 0).toDouble()
+                  : set.weightKg;
+            }
+          }
+          
           return FlSpot(
-            filteredLogs[i].dateTime.millisecondsSinceEpoch.toDouble(),
-            _durationBased
-                ? (set?.durationSeconds ?? 0).toDouble()
-                : (set?.weightKg ?? 0),
+            log.dateTime.millisecondsSinceEpoch.toDouble(),
+            value,
           );
         },
       );
@@ -4358,20 +4634,53 @@ class _FilterDialogModernState extends State<_FilterDialogModern> {
   }
 
   List<Widget> _buildSetFilterOptions() {
-    final maxSets = widget.logs.fold<int>(
-      0,
-      (max, log) => log.sets.length > max ? log.sets.length : max,
-    );
+    final options = <Map<String, String>>[];
+    int setIndex = 1;
+
+    for (final log in widget.logs) {
+      for (int i = 0; i < log.sets.length; i++) {
+        final set = log.sets[i];
+        final setLabel = 'Set $setIndex';
+        
+        // Füge das Haupt-Set hinzu
+        options.add({
+          'label': setLabel,
+          'subtitle': 'Gewicht des Sets $setIndex',
+        });
+
+        // Füge Dropsets hinzu, falls vorhanden
+        for (int d = 0; d < set.dropsets.length; d++) {
+          options.add({
+            'label': '$setLabel • Dropset ${d + 1}',
+            'subtitle': 'Dropset ${d + 1} von Set $setIndex',
+          });
+        }
+        
+        setIndex++;
+      }
+    }
+
+    // Deduplizieren - nur einzigartige Set-Labels behalten
+    final seen = <String>{};
+    final uniqueOptions = <Map<String, String>>[];
+    
+    for (final option in options) {
+      final label = option['label']!;
+      if (!seen.contains(label)) {
+        seen.add(label);
+        uniqueOptions.add(option);
+      }
+    }
 
     return List.generate(
-      maxSets,
+      uniqueOptions.length,
       (index) => Padding(
-        padding: EdgeInsets.only(bottom: index < maxSets - 1 ? 16 : 0),
+        padding: EdgeInsets.only(bottom: index < uniqueOptions.length - 1 ? 16 : 0),
         child: _buildFilterOption(
-          'Set ${index + 1}',
-          'Gewicht des Sets ${index + 1}',
-          _selectedFilter == 'Set ${index + 1}',
-          () => setState(() => _selectedFilter = 'Set ${index + 1}'),
+          uniqueOptions[index]['label']!,
+          uniqueOptions[index]['subtitle']!,
+          _selectedFilter == uniqueOptions[index]['label']!,
+          () => setState(() => _selectedFilter = uniqueOptions[index]['label']!),
         ),
       ),
     );
