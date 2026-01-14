@@ -716,11 +716,36 @@ class _GymScreenState extends State<GymScreen> {
     
     setState(() {
       final list = _logs.putIfAbsent(workoutId, () => <WorkoutLog>[]);
-      list.add(WorkoutLog(
-        dateTime: result.dateTime,
-        sets: result.sets,
-        day: result.day,
-      ));
+      
+      // Check if there's already an entry for the same day
+      int existingIndex = -1;
+      for (int i = 0; i < list.length; i++) {
+        final log = list[i];
+        if (log.dateTime.year == result.dateTime.year &&
+            log.dateTime.month == result.dateTime.month &&
+            log.dateTime.day == result.dateTime.day &&
+            log.day == result.day) {
+          existingIndex = i;
+          break;
+        }
+      }
+      
+      if (existingIndex >= 0) {
+        // Update existing entry for the same day
+        list[existingIndex] = WorkoutLog(
+          dateTime: result.dateTime,
+          sets: result.sets,
+          day: result.day,
+        );
+      } else {
+        // Add new entry
+        list.add(WorkoutLog(
+          dateTime: result.dateTime,
+          sets: result.sets,
+          day: result.day,
+        ));
+      }
+      
       _ensureAssigned(result.day, workoutId);
       
       // Aktualisiere Kalender mit dem Log-Datum
