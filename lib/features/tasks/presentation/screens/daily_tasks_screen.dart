@@ -1770,15 +1770,16 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   }
 
   Future<void> _pickDate() async {
-    final picked = await showDatePicker(
+    showDialog<void>(
       context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
+      builder: (_) => _ModernDatePickerDialog(
+        initialDate: _selectedDate,
+        onDateSelected: (picked) {
+          setState(() => _selectedDate = picked);
+          Navigator.pop(context);
+        },
+      ),
     );
-    if (picked != null) {
-      setState(() => _selectedDate = picked);
-    }
   }
 
   // -- Reset all (only uncheck keep tasks today; one-offs stay untouched)
@@ -2709,6 +2710,316 @@ class _CongratsScreenState extends State<CongratsScreen>
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// ===============================================================
+/// Modern Date Picker Dialog
+/// ===============================================================
+class _ModernDatePickerDialog extends StatefulWidget {
+  final DateTime initialDate;
+  final ValueChanged<DateTime> onDateSelected;
+
+  const _ModernDatePickerDialog({
+    required this.initialDate,
+    required this.onDateSelected,
+  });
+
+  @override
+  State<_ModernDatePickerDialog> createState() => _ModernDatePickerDialogState();
+}
+
+class _ModernDatePickerDialogState extends State<_ModernDatePickerDialog> {
+  late DateTime _currentMonth;
+  double? _dragStartX;
+  bool _dragHandled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentMonth = DateTime(widget.initialDate.year, widget.initialDate.month);
+  }
+
+  String _dateKey(DateTime dt) {
+    final y = dt.year.toString().padLeft(4, '0');
+    final m = dt.month.toString().padLeft(2, '0');
+    final d = dt.day.toString().padLeft(2, '0');
+    return '$y-$m-$d';
+  }
+
+  int _daysInMonth(DateTime date) {
+    return DateTime(date.year, date.month + 1, 0).day;
+  }
+
+  void _prevMonth() {
+    setState(() {
+      _currentMonth = DateTime(_currentMonth.year, _currentMonth.month - 1);
+    });
+  }
+
+  void _nextMonth() {
+    setState(() {
+      _currentMonth = DateTime(_currentMonth.year, _currentMonth.month + 1);
+    });
+  }
+
+  void _handleHorizontalDragStart(DragStartDetails details) {
+    _dragStartX = details.globalPosition.dx;
+    _dragHandled = false;
+  }
+
+  void _handleHorizontalDragUpdate(DragUpdateDetails details) {
+    if (_dragHandled || _dragStartX == null) return;
+    final delta = details.globalPosition.dx - _dragStartX!;
+    const threshold = 60;
+    if (delta.abs() > threshold) {
+      if (delta > 0) {
+        _prevMonth();
+      } else {
+        _nextMonth();
+      }
+      _dragHandled = true;
+    }
+  }
+
+  void _handleHorizontalDragEnd(DragEndDetails details) {
+    _dragStartX = null;
+    _dragHandled = false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final firstWeekday = DateTime(_currentMonth.year, _currentMonth.month, 1).weekday;
+    final leadingEmpty = (firstWeekday + 6) % 7;
+    final days = _daysInMonth(_currentMonth);
+    final cells = leadingEmpty + days;
+    final rows = (cells / 7).ceil();
+
+    final localizations = MaterialLocalizations.of(context);
+    final titleLabel = localizations.formatMonthYear(_currentMonth);
+    final now = DateTime.now();
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onHorizontalDragStart: _handleHorizontalDragStart,
+        onHorizontalDragUpdate: _handleHorizontalDragUpdate,
+        onHorizontalDragEnd: _handleHorizontalDragEnd,
+        child: Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFF5F7FA),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          constraints: const BoxConstraints(maxWidth: 560),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Row(
+                children: [
+                  InkWell(
+                    onTap: () => Navigator.pop(context),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x14000000),
+                            blurRadius: 10,
+                            offset: Offset(0, 3),
+                          )
+                        ],
+                      ),
+                      child: const Icon(Icons.arrow_back, color: Color(0xFF374151)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          titleLabel,
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Select a date',
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  _MonthIconButton(icon: Icons.chevron_left, onTap: _prevMonth),
+                  const SizedBox(width: 8),
+                  _MonthIconButton(icon: Icons.chevron_right, onTap: _nextMonth, isPrimary: true),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  _Dow('Mon'), _Dow('Tue'), _Dow('Wed'),
+                  _Dow('Thu'), _Dow('Fri'), _Dow('Sat'), _Dow('Sun'),
+                ],
+              ),
+            ),
+            const Divider(height: 0),
+            Padding(
+              padding: const EdgeInsets.all(8),
+              child: GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 7,
+                  mainAxisSpacing: 6,
+                  crossAxisSpacing: 6,
+                  childAspectRatio: 0.9,
+                ),
+                itemCount: rows * 7,
+                itemBuilder: (_, idx) {
+                  if (idx < leadingEmpty || idx >= leadingEmpty + days) {
+                    return const SizedBox.shrink();
+                  }
+                  final dayNum = idx - leadingEmpty + 1;
+                  final date = DateTime(_currentMonth.year, _currentMonth.month, dayNum);
+                  final isToday = _dateKey(date) == _dateKey(now);
+                  final isSelected = _dateKey(date) == _dateKey(widget.initialDate);
+
+                  return GestureDetector(
+                    onTap: () => widget.onDateSelected(date),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? const Color(0xFFEF4444)
+                            : isToday
+                                ? const Color(0xFFFEE2E2)
+                                : Colors.white,
+                        border: isToday && !isSelected
+                            ? Border.all(color: const Color(0xFFEF4444), width: 1.5)
+                            : null,
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: isSelected
+                            ? const [
+                                BoxShadow(
+                                  color: Color(0x33EF4444),
+                                  blurRadius: 8,
+                                  offset: Offset(0, 2),
+                                )
+                              ]
+                            : const [
+                                BoxShadow(
+                                  color: Color(0x0A000000),
+                                  blurRadius: 4,
+                                  offset: Offset(0, 1),
+                                )
+                              ],
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        dayNum.toString(),
+                        style: TextStyle(
+                          fontWeight: isSelected || isToday ? FontWeight.w600 : FontWeight.w500,
+                          fontSize: 14,
+                          color: isSelected
+                              ? Colors.white
+                              : isToday
+                                  ? const Color(0xFFEF4444)
+                                  : Colors.black,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+        ),
+      ),
+    );
+  }
+}
+
+/// ===============================================================
+/// Month Button Components
+/// ===============================================================
+class _MonthIconButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool isPrimary;
+
+  const _MonthIconButton({
+    required this.icon,
+    required this.onTap,
+    this.isPrimary = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: isPrimary ? const Color(0xFFEF4444) : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x14000000),
+              blurRadius: 10,
+              offset: Offset(0, 3),
+            )
+          ],
+        ),
+        child: Icon(
+          icon,
+          color: isPrimary ? Colors.white : const Color(0xFF374151),
+          size: 18,
+        ),
+      ),
+    );
+  }
+}
+
+class _Dow extends StatelessWidget {
+  final String label;
+
+  const _Dow(this.label);
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF6F7789),
+            letterSpacing: 0.3,
+          ),
+        ),
       ),
     );
   }

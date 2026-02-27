@@ -17,14 +17,14 @@
     "id": "bench_press_dumbbell",
     "name": "Bench Press (Dumbbell)",
     "description": "Bench press using dumbbells. Promotes balanced chest activation and stability.",
-    "icon": "fitness_center",
+    "icon": "assets/images/exercises/bench_press_dumbbell.png",
     "muscles": ["Chest", "Triceps", "Shoulders"]
   },
   {
     "id": "bench_press_smith_machine",
     "name": "Bench Press (Smith Machine)",
     "description": "Smith machine bench press with a guided bar path for chest, triceps, and shoulders.",
-    "icon": "fitness_center",
+    "icon": "assets/images/exercises/bench_press_smith_machine.png",
     "muscles": ["Chest", "Triceps", "Shoulders"]
   },
   {
@@ -136,7 +136,7 @@
     "id": "incline_bench_press",
     "name": "Incline Bench Press",
     "description": "Performed on an incline bench. Emphasizes upper chest and shoulders.",
-    "icon": "fitness_center",
+    "icon": "assets/images/exercises/incline_bench_press.png",
     "muscles": ["Upper Chest", "Shoulders", "Triceps"]
   },
   {
@@ -291,7 +291,7 @@
     "id": "squat",
     "name": "Squat",
     "description": "Fundamental leg and glute exercise. Keep depth and neutral spine.",
-    "icon": "accessibility_new",
+    "icon": "assets/images/exercises/squat.png",
     "muscles": ["Quads", "Glutes", "Hamstrings", "Core"]
   },
   {
