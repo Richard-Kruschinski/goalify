@@ -38,7 +38,7 @@
     "id": "butterfly_cables",
     "name": "Butterfly (Cables)",
     "description": "Cable fly (standing or lying) for chest isolation.",
-    "icon": "fitness_center",
+    "icon": "assets/images/exercises/butterfly_cables.png",
     "muscles": ["Chest"]
   },
   {
@@ -73,7 +73,7 @@
     "id": "calf_raise_machine",
     "name": "Calf Raises (Standing Machine)",
     "description": "Standing calf raises at the machine. Focus on the gastrocnemius.",
-    "icon": "fitness_center",
+    "icon": "assets/images/exercises/calf_raise_machine.png",
     "muscles": ["Calves (Gastrocnemius)"]
   },
   {
@@ -108,7 +108,7 @@
     "id": "deadlift",
     "name": "Deadlift",
     "description": "Fundamental back and leg exercise. Keep bar close and spine neutral.",
-    "icon": "align_vertical_bottom",
+    "icon": "assets/images/exercises/deadlift.png",
     "muscles": ["Hamstrings", "Glutes", "Back", "Core"]
   },
   {
