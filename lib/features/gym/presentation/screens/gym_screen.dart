@@ -1100,16 +1100,45 @@ class _GymScreenState extends State<GymScreen> {
       return;
     }
     logs.sort((a, b) => a.dateTime.compareTo(b.dateTime));
-    final spots = List<FlSpot>.generate(
-      logs.length,
-          (i) => FlSpot(
-        logs[i].dateTime.millisecondsSinceEpoch.toDouble(),
-        _chartYValue(w, logs[i]),
-      ),
+    final int maxSets = logs.fold<int>(
+      0,
+      (m, l) => math.max(m, l.sets.length),
     );
+    final List<int> seriesSetIndices = <int>[];
+    final List<List<FlSpot>> multiSeriesSpots = <List<FlSpot>>[];
 
-    final double minX = spots.first.x;
-    final double maxX = spots.last.x;
+    for (int setIndex = 0; setIndex < maxSets; setIndex++) {
+      final series = <FlSpot>[];
+      for (final log in logs) {
+        if (log.sets.length <= setIndex) continue;
+        final set = log.sets[setIndex];
+        final value = isDuration
+            ? (set.durationSeconds ?? 0).toDouble()
+            : set.weightKg;
+        if (value <= 0) continue;
+        series.add(FlSpot(
+          log.dateTime.millisecondsSinceEpoch.toDouble(),
+          value,
+        ));
+      }
+      if (series.isNotEmpty) {
+        seriesSetIndices.add(setIndex);
+        multiSeriesSpots.add(series);
+      }
+    }
+
+    final allSpots = multiSeriesSpots.expand((s) => s).toList();
+
+    if (allSpots.isEmpty) {
+      showDialog<void>(
+        context: context,
+        builder: (_) => const AlertDialog(content: Text('No entries available')),
+      );
+      return;
+    }
+
+    final double minX = allSpots.map((s) => s.x).reduce(math.min);
+    final double maxX = allSpots.map((s) => s.x).reduce(math.max);
 
     double niceNum(double range, {required bool round}) {
       if (range <= 0) return 1;
@@ -1131,8 +1160,8 @@ class _GymScreenState extends State<GymScreen> {
       return nf * exp;
     }
 
-    double rawMinY = (logs.map((e) => _chartYValue(w, e)).reduce(math.min) as num).toDouble();
-    double rawMaxY = (logs.map((e) => _chartYValue(w, e)).reduce(math.max) as num).toDouble();
+    double rawMinY = (allSpots.map((s) => s.y).reduce(math.min) as num).toDouble();
+    double rawMaxY = (allSpots.map((s) => s.y).reduce(math.max) as num).toDouble();
     if (rawMinY == rawMaxY) {
       rawMinY -= 1;
       rawMaxY += 1;
@@ -1148,6 +1177,12 @@ class _GymScreenState extends State<GymScreen> {
     String fmtDate(DateTime d) =>
         '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.${d.year}';
     String fmtTooltip(DateTime d) => fmtDate(d);
+    String valueLabel(double y) =>
+      isDuration ? _formatDurationShort(y.round()) : '${y.toStringAsFixed(1)} kg';
+    Color seriesColor(int index) {
+      final palette = Colors.primaries;
+      return palette[index % palette.length].shade400;
+    }
 
     const double kLeftAxisSpaceToLine = 4;
     const double kLeftAxisReserved = 38;
@@ -1300,17 +1335,17 @@ class _GymScreenState extends State<GymScreen> {
                   getTooltipColor: (_) => Colors.white,
                   tooltipPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                   getTooltipItems: (touchedSpots) => touchedSpots.map((t) {
-                    final idx = t.spotIndex.clamp(0, logs.length - 1);
                     final dt = DateTime.fromMillisecondsSinceEpoch(t.x.round());
                     final dateStr = fmtTooltip(dt);
-                    final valueStr = _tooltipValue(w, t.y, logs[idx]);
+                    final setIndex = seriesSetIndices[t.barIndex];
+                    final valueStr = valueLabel(t.y);
 
                     return LineTooltipItem(
                       '$dateStr\n',
                       const TextStyle(color: Color(0xFF1A1D1F), fontWeight: FontWeight.w700),
                       children: [
                         TextSpan(
-                          text: valueStr,
+                          text: 'Set ${setIndex + 1}: $valueStr',
                           style: TextStyle(
                             color: const Color(0xFF1A1D1F),
                             fontWeight: FontWeight.w500,
@@ -1321,25 +1356,29 @@ class _GymScreenState extends State<GymScreen> {
                   }).toList(),
                 ),
               ),
-              lineBarsData: [
-                LineChartBarData(
-                  spots: spots,
-                  isCurved: false,
-                  barWidth: 3,
-                  color: const Color(0xFFE53935),
-                  dotData: FlDotData(
-                    show: true,
-                    getDotPainter: (spot, percent, bar, index) {
-                      return FlDotCirclePainter(
-                        radius: 3.0,
-                        color: const Color(0xFFE53935),
-                        strokeWidth: 1.2,
-                        strokeColor: const Color(0x66E53935),
-                      );
-                    },
-                  ),
-                ),
-              ],
+              lineBarsData: List<LineChartBarData>.generate(
+                multiSeriesSpots.length,
+                (i) {
+                  final color = seriesColor(i);
+                  return LineChartBarData(
+                    spots: multiSeriesSpots[i],
+                    isCurved: false,
+                    barWidth: 2.6,
+                    color: color,
+                    dotData: FlDotData(
+                      show: true,
+                      getDotPainter: (spot, percent, bar, index) {
+                        return FlDotCirclePainter(
+                          radius: 3.0,
+                          color: color,
+                          strokeWidth: 1.2,
+                          strokeColor: color.withValues(alpha: 0.5),
+                        );
+                      },
+                    ),
+                  );
+                },
+              ),
             ),
           ),
         ),
@@ -3395,6 +3434,7 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
   DateTime? _dateRangeEnd;
   double? _filterWeight;
   List<WorkoutLog> _lastFilteredLogs = const [];
+  bool _showAllSets = true;
 
   bool get _durationBased => widget.isDurationBased;
   String get _unitLabel => _durationBased ? 's' : 'kg';
@@ -3405,6 +3445,14 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
   String _tooltipValue(double yValue, WorkoutLog log) {
     if (_durationBased) return _formatDurationShort(log.longestDurationSeconds);
     return '${yValue.toStringAsFixed(1)} kg × ${log.heaviestSetReps} reps';
+  }
+
+  String _valueLabel(double y) =>
+      _durationBased ? _formatDurationShort(y.round()) : '${y.toStringAsFixed(1)} kg';
+
+  Color _seriesColor(int index) {
+    final palette = Colors.primaries;
+    return palette[index % palette.length].shade400;
   }
 
   @override
@@ -3441,6 +3489,7 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
         filterWeight: _filterWeight,
         logs: widget.logs,
         isDurationBased: _durationBased,
+        showAllSets: _showAllSets,
         onFilterChanged: (filterBy, {dateStart, dateEnd, weight}) {
           setState(() {
             _filterBy = filterBy;
@@ -3449,6 +3498,9 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
             _filterWeight = weight;
           });
           Navigator.pop(context);
+        },
+        onToggleShowAllSets: (value) {
+          setState(() => _showAllSets = value);
         },
       ),
     );
@@ -3541,9 +3593,58 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
   Widget build(BuildContext context) {
     final logs = List<WorkoutLog>.from(widget.logs)
       ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
-    final spots = _getFilteredSpots(logs);
+    final bool useMulti = _showAllSets &&
+        (_filterBy == 'Standard' || _filterBy == 'Datum');
 
-    if (spots.isEmpty) {
+    final List<WorkoutLog> dateFilteredLogs = (_filterBy == 'Datum' &&
+            _dateRangeStart != null &&
+            _dateRangeEnd != null)
+        ? logs.where((log) {
+            final logDate = log.dateTime;
+            return logDate.isAfter(_dateRangeStart!) &&
+                logDate.isBefore(_dateRangeEnd!.add(const Duration(days: 1)));
+          }).toList()
+        : logs;
+
+    final List<int> seriesSetIndices = <int>[];
+    final List<List<FlSpot>> multiSeriesSpots = <List<FlSpot>>[];
+
+    if (useMulti) {
+      final int maxSets = dateFilteredLogs.fold<int>(
+        0,
+        (m, l) => math.max(m, l.sets.length),
+      );
+
+      for (int setIndex = 0; setIndex < maxSets; setIndex++) {
+        final series = <FlSpot>[];
+        for (final log in dateFilteredLogs) {
+          if (log.sets.length <= setIndex) continue;
+          final set = log.sets[setIndex];
+          final value = _durationBased
+              ? (set.durationSeconds ?? 0).toDouble()
+              : set.weightKg;
+          if (value <= 0) continue;
+          series.add(FlSpot(
+            log.dateTime.millisecondsSinceEpoch.toDouble(),
+            value,
+          ));
+        }
+        if (series.isNotEmpty) {
+          seriesSetIndices.add(setIndex);
+          multiSeriesSpots.add(series);
+        }
+      }
+    }
+
+    final spots = useMulti
+        ? <FlSpot>[]
+        : _getFilteredSpots(logs);
+
+    final allSpots = useMulti
+        ? multiSeriesSpots.expand((s) => s).toList()
+        : spots;
+
+    if (allSpots.isEmpty) {
       return Scaffold(
         backgroundColor: const Color(0xFFF5F7FA),
         appBar: AppBar(
@@ -3568,8 +3669,8 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
       );
     }
 
-    final double minX = spots.first.x;
-    final double maxX = spots.last.x;
+    final double minX = allSpots.map((s) => s.x).reduce(math.min);
+    final double maxX = allSpots.map((s) => s.x).reduce(math.max);
 
     double niceNum(double range, {required bool round}) {
       if (range <= 0) return 1;
@@ -3595,12 +3696,12 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
     double rawMinY;
     double rawMaxY;
     
-    if (spots.isEmpty) {
+    if (allSpots.isEmpty) {
       rawMinY = 0;
       rawMaxY = 10;
     } else {
-      rawMinY = (spots.map((s) => s.y).reduce(math.min) as num).toDouble();
-      rawMaxY = (spots.map((s) => s.y).reduce(math.max) as num).toDouble();
+      rawMinY = (allSpots.map((s) => s.y).reduce(math.min) as num).toDouble();
+      rawMaxY = (allSpots.map((s) => s.y).reduce(math.max) as num).toDouble();
     }
     
     if (rawMinY == rawMaxY) {
@@ -3718,12 +3819,30 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
                 tooltipPadding:
                 const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 getTooltipItems: (touchedSpots) => touchedSpots.map((t) {
-                  final activeLogs = _lastFilteredLogs.isNotEmpty ? _lastFilteredLogs : logs;
-                  final idx = t.spotIndex.clamp(0, activeLogs.length - 1);
-                  final log = activeLogs[idx];
                   final dt = DateTime.fromMillisecondsSinceEpoch(t.x.round());
 
                   final dateStr = fmtTooltip(dt);
+                  if (useMulti) {
+                    final setIndex = seriesSetIndices[t.barIndex];
+                    final valueStr = _valueLabel(t.y);
+                    return LineTooltipItem(
+                      '$dateStr\n',
+                      const TextStyle(color: Color(0xFF1A1D1F), fontWeight: FontWeight.w700),
+                      children: [
+                        TextSpan(
+                          text: 'Set ${setIndex + 1}: $valueStr',
+                          style: const TextStyle(
+                            color: Color(0xFF1A1D1F),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    );
+                  }
+
+                  final activeLogs = _lastFilteredLogs.isNotEmpty ? _lastFilteredLogs : logs;
+                  final idx = t.spotIndex.clamp(0, activeLogs.length - 1);
+                  final log = activeLogs[idx];
                   final valueStr = _tooltipValue(t.y, log);
 
                   return LineTooltipItem(
@@ -3746,25 +3865,49 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
             maxX: maxX,
             minY: minY.toDouble(),
             maxY: maxY.toDouble(),
-            lineBarsData: [
-              LineChartBarData(
-                spots: spots,
-                isCurved: false,
-                barWidth: 3,
-                color: const Color(0xFFE53935),
-                dotData: FlDotData(
-                  show: true,
-                  getDotPainter: (spot, percent, bar, index) {
-                    return FlDotCirclePainter(
-                      radius: 3.2,
+            lineBarsData: useMulti
+                ? List<LineChartBarData>.generate(
+                    multiSeriesSpots.length,
+                    (i) {
+                      final color = _seriesColor(i);
+                      return LineChartBarData(
+                        spots: multiSeriesSpots[i],
+                        isCurved: false,
+                        barWidth: 2.6,
+                        color: color,
+                        dotData: FlDotData(
+                          show: true,
+                          getDotPainter: (spot, percent, bar, index) {
+                            return FlDotCirclePainter(
+                              radius: 3.0,
+                              color: color,
+                              strokeWidth: 1.4,
+                              strokeColor: color.withValues(alpha: 0.5),
+                            );
+                          },
+                        ),
+                      );
+                    },
+                  )
+                : [
+                    LineChartBarData(
+                      spots: spots,
+                      isCurved: false,
+                      barWidth: 3,
                       color: const Color(0xFFE53935),
-                      strokeWidth: 1.5,
-                      strokeColor: const Color(0x66E53935),
-                    );
-                  },
-                ),
-              ),
-            ],
+                      dotData: FlDotData(
+                        show: true,
+                        getDotPainter: (spot, percent, bar, index) {
+                          return FlDotCirclePainter(
+                            radius: 3.2,
+                            color: const Color(0xFFE53935),
+                            strokeWidth: 1.5,
+                            strokeColor: const Color(0x66E53935),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
           ),
         ),
       ),
@@ -4363,7 +4506,9 @@ class _FilterDialogModern extends StatefulWidget {
   final double? filterWeight;
   final List<WorkoutLog> logs;
   final bool isDurationBased;
+  final bool showAllSets;
   final Function(String, {DateTime? dateStart, DateTime? dateEnd, double? weight}) onFilterChanged;
+  final ValueChanged<bool> onToggleShowAllSets;
 
   const _FilterDialogModern({
     required this.filterBy,
@@ -4372,7 +4517,9 @@ class _FilterDialogModern extends StatefulWidget {
     this.filterWeight,
     required this.logs,
     this.isDurationBased = false,
+    required this.showAllSets,
     required this.onFilterChanged,
+    required this.onToggleShowAllSets,
   });
 
   @override
@@ -4384,6 +4531,7 @@ class _FilterDialogModernState extends State<_FilterDialogModern> {
   late DateTime? _startDate;
   late DateTime? _endDate;
   late TextEditingController _weightController;
+  late bool _showAllSetsLocal;
 
   String _fmtDate(DateTime d) =>
       '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.${d.year}';
@@ -4397,6 +4545,7 @@ class _FilterDialogModernState extends State<_FilterDialogModern> {
     _weightController = TextEditingController(
       text: widget.filterWeight?.toStringAsFixed(1) ?? '',
     );
+    _showAllSetsLocal = widget.showAllSets;
 
     if (widget.isDurationBased && _selectedFilter == 'Gewicht') {
       _selectedFilter = 'Standard';
@@ -4438,6 +4587,30 @@ class _FilterDialogModernState extends State<_FilterDialogModern> {
                 'Zeige stärkste Set',
                 _selectedFilter == 'Standard',
                 () => setState(() => _selectedFilter = 'Standard'),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                ),
+                child: SwitchListTile.adaptive(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text(
+                    'Mehrere Graphen (pro Set)',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: const Text(
+                    'Schaltet zwischen einem Graphen und mehreren Set-Linien um',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  value: _showAllSetsLocal,
+                  onChanged: (v) => setState(() => _showAllSetsLocal = v),
+                  activeColor: const Color(0xFFE53935),
+                ),
               ),
               const SizedBox(height: 16),
 
@@ -4538,9 +4711,12 @@ class _FilterDialogModernState extends State<_FilterDialogModern> {
                       ),
                     ),
                     onPressed: () {
+                      widget.onToggleShowAllSets(_showAllSetsLocal);
                       double? weight;
                       if (_selectedFilter == 'Gewicht' && _weightController.text.isNotEmpty) {
-                        weight = double.tryParse(_weightController.text);
+                        weight = double.tryParse(
+                          _weightController.text.replaceAll(',', '.'),
+                        );
                       }
 
                       if (_selectedFilter == 'Datum') {
