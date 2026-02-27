@@ -231,6 +231,11 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
       _dateKey(DateTime.now().subtract(const Duration(days: 1)));
   String _selectedKey() => _dateKey(_selectedDate);
 
+  bool _isDoneForDate(DailyTask t, String dateKey) {
+    if (!t.keep) return t.done;
+    return dateKey == _todayKey() ? t.done : false;
+  }
+
   // ---- Progress: save today’s points ----
   Future<void> _saveProgressToday() async {
     final key = _todayKey();
@@ -682,6 +687,15 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   }
 
   Future<void> _toggleDone(DailyTask t, {required String dateKey}) async {
+    if (t.keep && dateKey != _todayKey()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          duration: Duration(seconds: 2),
+          content: Text('Recurring tasks can only be checked for today.'),
+        ),
+      );
+      return;
+    }
     setState(() {
       t.done = !t.done;
       _recalcTodayPoints();
@@ -1457,6 +1471,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     final frozenToday = _wasFrozenOn(_todayKey(), task.id);
     final iconData = _getIconForCategory(task.category);
     final color = _getColorForCategory(task.category);
+    final isDone = _isDoneForDate(task, dateKey);
 
     return Container(
       key: ValueKey(task.id),
@@ -1517,10 +1532,10 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          color: task.done
+                          color: isDone
                               ? const Color(0xFF9CA3AF)
                               : const Color(0xFF1A1D1F),
-                          decoration: task.done ? TextDecoration.lineThrough : null,
+                          decoration: isDone ? TextDecoration.lineThrough : null,
                         ),
                       ),
                       if (task.description != null && task.description!.isNotEmpty)
@@ -1530,7 +1545,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                             task.description!,
                             style: TextStyle(
                               fontSize: 13,
-                              color: task.done
+                              color: isDone
                                   ? const Color(0xFFBFC5D2)
                                   : const Color(0xFF6F7789),
                             ),
@@ -1622,13 +1637,13 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                   height: 28,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: task.done ? const Color(0xFFE53935) : Colors.transparent,
+                    color: isDone ? const Color(0xFFE53935) : Colors.transparent,
                     border: Border.all(
-                      color: task.done ? const Color(0xFFE53935) : const Color(0xFFE0E0E0),
+                      color: isDone ? const Color(0xFFE53935) : const Color(0xFFE0E0E0),
                       width: 2,
                     ),
                   ),
-                  child: task.done
+                  child: isDone
                       ? const Icon(Icons.check, size: 18, color: Colors.white)
                       : null,
                 ),
