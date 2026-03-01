@@ -1968,8 +1968,11 @@ class _GymScreenState extends State<GymScreen> {
     if (selectedIcon != null) {
       setState(() {
         _dayIcons[day] = selectedIcon.codePoint;
+        // Remove custom icon when switching to predefined icon
+        _dayCustomIcons.remove(day);
       });
       await _saveDayIcons();
+      await _saveDayCustomIcons();
     }
   }
 
