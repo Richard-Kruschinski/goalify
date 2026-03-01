@@ -2137,15 +2137,16 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
                 // Date picker only for one-offs
                 GestureDetector(
                   onTap: () async {
-                    final picked = await showDatePicker(
+                    await showDialog<void>(
                       context: context,
-                      initialDate: _scheduledDate.isBefore(today) ? today : _scheduledDate,
-                      firstDate: today,
-                      lastDate: today.add(const Duration(days: 365)),
+                      builder: (_) => _ModernDatePickerDialog(
+                        initialDate: _scheduledDate,
+                        onDateSelected: (picked) {
+                          setState(() => _scheduledDate = picked);
+                          Navigator.pop(context);
+                        },
+                      ),
                     );
-                    if (picked != null) {
-                      setState(() => _scheduledDate = picked);
-                    }
                   },
                   child: Container(
                     padding: const EdgeInsets.all(16),
