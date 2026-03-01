@@ -3,9 +3,13 @@
 //   confetti: ^0.7.0
 
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:confetti/confetti.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../../../core/utils/local_storage.dart';
+import '../../../../core/utils/icon_mapper.dart'; // IconMapper für zentrale Icon-Verwaltung
 import '../../../progress/presentation/screens/progress_screen.dart';
 
 /// ===============================================================
@@ -244,9 +248,17 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   // Shared with gym_screen: creatine intake per date
   static const _kCreatineKey = 'gym_creatine_intake_v1';
 
+  // Task Icons (standard and custom)
+  static const _kTaskIconsKey = 'daily_task_icons_v1'; // Map<taskId, codePoint>
+  static const _kTaskCustomIconsKey = 'daily_task_custom_icons_v1'; // Map<taskId, filePath>
+
   // State
   final List<DailyTask> _keepTasks = []; // keep=true
   final Map<String, List<DailyTask>> _oneOffByDate = {}; // keep=false by date
+  
+  // Task Icons
+  final Map<String, int> _taskIcons = <String, int>{}; // standard icons by task id (codePoint)
+  final Map<String, String> _taskCustomIcons = <String, String>{}; // custom icons by task id (file path)
 
   // Task History (last 7 days) - snapshots of all tasks per date
   final Map<String, List<DailyTask>> _tasksHistory = {};
@@ -336,7 +348,10 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   // Load & Save
   // ===============================================================
   Future<void> _load() async {
+    _availableTaskIcons = await IconMapper.getTaskIcons();
     await _loadCreatine();
+    await _loadTaskIcons();
+    await _loadTaskCustomIcons();
     // Keep-tasks (legacy list)
     final rawKeep = await LocalStorage.loadJson(_kDailyTasksKey, fallback: []);
     if (rawKeep is List) {
@@ -504,6 +519,33 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     }
     await _saveCreatine();
   }
+
+  Future<void> _loadTaskIcons() async {
+    final raw = await LocalStorage.loadJson(_kTaskIconsKey, fallback: {});
+    _taskIcons.clear();
+    if (raw is Map) {
+      raw.forEach((key, value) {
+        _taskIcons[key.toString()] = (value as num?)?.toInt() ?? 0;
+      });
+    }
+  }
+
+  Future<void> _saveTaskIcons() async =>
+      LocalStorage.saveJson(_kTaskIconsKey, _taskIcons);
+
+  Future<void> _loadTaskCustomIcons() async {
+    final raw = await LocalStorage.loadJson(_kTaskCustomIconsKey, fallback: {});
+    _taskCustomIcons.clear();
+    if (raw is Map) {
+      raw.forEach((key, value) {
+        _taskCustomIcons[key.toString()] = value.toString();
+      });
+    }
+  }
+
+  Future<void> _saveTaskCustomIcons() async =>
+      LocalStorage.saveJson(_kTaskCustomIconsKey, _taskCustomIcons);
+
 
   // Keep order sync (legacy - still used to seed combined)
   void _syncOrderKeepWithTasks() {
@@ -1282,6 +1324,17 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                 ),
                 const SizedBox(height: 10),
                 actionTile(
+                  icon: Icons.emoji_emotions,
+                  title: 'Change icon',
+                  subtitle: 'Choose a custom or predefined icon',
+                  iconColor: const Color(0xFFFF6F00),
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    await _changeTaskIconDialog(t);
+                  },
+                ),
+                const SizedBox(height: 10),
+                actionTile(
                   icon: Icons.copy_all,
                   title: 'Duplicate',
                   subtitle: 'Copy this task right below',
@@ -1427,6 +1480,223 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
         );
       },
     );
+  }
+
+  // ---- Icon Management for Tasks ----
+  late List<IconData> _availableTaskIcons = [];
+
+  IconData _getTaskIcon(String taskId) {
+    final stored = _taskIcons[taskId];
+    if (stored != null) {
+      try {
+        return _availableTaskIcons.firstWhere(
+          (icon) => icon.codePoint == stored,
+          orElse: () => Icons.check_circle_outline,
+        );
+      } catch (_) {
+        return Icons.check_circle_outline;
+      }
+    }
+    return Icons.check_circle_outline;
+  }
+
+  Widget _getTaskIconWidget(String taskId) {
+    final customPath = _taskCustomIcons[taskId];
+    if (customPath != null && customPath.isNotEmpty) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(6),
+        child: Image.file(
+          File(customPath),
+          fit: BoxFit.cover,
+        ),
+      );
+    }
+    return Icon(
+      _getTaskIcon(taskId),
+      color: const Color(0xFFE53935),
+      size: 20,
+    );
+  }
+
+  Future<void> _changeTaskIconDialog(DailyTask task) async {
+    final selectedIcon = await showDialog<IconData>(
+      context: context,
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+          ),
+          padding: const EdgeInsets.all(24),
+          constraints: const BoxConstraints(maxHeight: 650),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFEBEE),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.emoji_emotions,
+                      color: Color(0xFFE53935),
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      'Choose an Icon',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1A1D1F),
+                      ),
+                    ),
+                  ),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => Navigator.pop(ctx),
+                      borderRadius: BorderRadius.circular(8),
+                      child: const Padding(
+                        padding: EdgeInsets.all(8),
+                        child: Icon(
+                          Icons.close,
+                          color: Color(0xFF6F7789),
+                          size: 24,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              Expanded(
+                child: GridView.builder(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 6,
+                    mainAxisSpacing: 14,
+                    crossAxisSpacing: 14,
+                  ),
+                  itemCount: _availableTaskIcons.length + 1,
+                  itemBuilder: (_, index) {
+                    // Plus button at the end
+                    if (index == _availableTaskIcons.length) {
+                      return Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () => _pickCustomTaskIcon(task.id, ctx),
+                          borderRadius: BorderRadius.circular(14),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF5F7FA),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: const Color(0xFFE0E0E0),
+                                width: 2.5,
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.add,
+                              color: Color(0xFFE53935),
+                              size: 32,
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+
+                    final icon = _availableTaskIcons[index];
+                    final isSelected = _getTaskIcon(task.id).codePoint == icon.codePoint;
+                    
+                    return Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => Navigator.pop(ctx, icon),
+                        borderRadius: BorderRadius.circular(14),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: isSelected 
+                                ? const Color(0xFFFFEBEE) 
+                                : const Color(0xFFF5F7FA),
+                            borderRadius: BorderRadius.circular(14),
+                            border: isSelected 
+                                ? Border.all(color: const Color(0xFFE53935), width: 2.5)
+                                : Border.all(color: const Color(0xFFE0E0E0), width: 1),
+                          ),
+                          child: Icon(
+                            icon,
+                            color: isSelected 
+                                ? const Color(0xFFE53935) 
+                                : const Color(0xFF6F7789),
+                            size: 28,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (selectedIcon != null) {
+      setState(() {
+        _taskIcons[task.id] = selectedIcon.codePoint;
+        // Remove custom icon when switching to predefined icon
+        _taskCustomIcons.remove(task.id);
+      });
+      await _saveTaskIcons();
+      await _saveTaskCustomIcons();
+    }
+  }
+
+  Future<void> _pickCustomTaskIcon(String taskId, BuildContext dialogContext) async {
+    final picker = ImagePicker();
+    final image = await picker.pickImage(source: ImageSource.gallery);
+    
+    if (image != null) {
+      try {
+        final directory = await getApplicationDocumentsDirectory();
+        final fileName = 'task_icon_${taskId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        final filePath = '${directory.path}/$fileName';
+        
+        final savedImage = await File(image.path).copy(filePath);
+        
+        setState(() {
+          _taskCustomIcons[taskId] = savedImage.path;
+          // Remove standard icon when custom image is set
+          _taskIcons.remove(taskId);
+        });
+        
+        await _saveTaskCustomIcons();
+        await _saveTaskIcons();
+        
+        if (dialogContext.mounted) {
+          Navigator.pop(dialogContext);
+        }
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Custom icon saved!')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error saving image: $e')),
+          );
+        }
+      }
+    }
   }
 
   Future<void> _showHighestStreak(DailyTask task) async {
@@ -1828,11 +2098,19 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                     color: color.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(
-                    iconData,
-                    color: color,
-                    size: 24,
-                  ),
+                  child: _taskCustomIcons[task.id] != null
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.file(
+                            File(_taskCustomIcons[task.id]!),
+                            fit: BoxFit.cover,
+                          ),
+                        )
+                      : Icon(
+                          _getTaskIcon(task.id),
+                          color: color,
+                          size: 24,
+                        ),
                 ),
                 const SizedBox(width: 16),
                 // Content

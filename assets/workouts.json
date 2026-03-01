@@ -63,13 +63,6 @@
     "muscles": ["Obliques", "Core"]
   },
   {
-    "id": "cable_twist",
-    "name": "Cable Twist",
-    "description": "Standing cable trunk rotation. Focus on obliques and overall core control.",
-    "icon": "fitness_center",
-    "muscles": ["Obliques", "Core"]
-  },
-  {
     "id": "calf_raise_machine",
     "name": "Calf Raises (Standing Machine)",
     "description": "Standing calf raises at the machine. Focus on the gastrocnemius.",
@@ -164,7 +157,7 @@
     "id": "lateral_neck_flexion",
     "name": "Lateral Neck Flexion",
     "description": "Side-to-side neck flexion. Use light resistance and slow tempo.",
-    "icon": "fitness_center",
+    "icon": "assets/images/exercises/lateral_neck_flexion.png",
     "muscles": ["Neck (Lateral Flexors: SCM, Scalenes)"]
   },
   {
@@ -206,14 +199,14 @@
     "id": "neck_curls",
     "name": "Neck Curls",
     "description": "Neck flexion against resistance. Keep range controlled and avoid jerking.",
-    "icon": "fitness_center",
+    "icon": "assets/images/exercises/neck_curls.png",
     "muscles": ["Neck Flexors (SCM, Longus Colli)"]
   },
   {
     "id": "neck_extension",
     "name": "Neck Extension",
     "description": "Neck extension against resistance to strengthen posterior neck.",
-    "icon": "fitness_center",
+    "icon": "assets/images/exercises/neck_extension.png",
     "muscles": ["Neck Extensors (Upper Traps, Splenius, Erector Cervicis)"]
   },
   {
@@ -309,10 +302,10 @@
     "muscles": ["Triceps"]
   },
   {
-    "id": "tricep_extension_rope_isolated",
-    "name": "Tricep Extension (Rope, Isolated)",
-    "description": "Cable rope triceps extension with strict form and end-range flare for isolation.",
-    "icon": "fitness_center",
+    "id": "tricep_extension_cabel_isolated",
+    "name": "Tricep Extension (Cabel, Isolated)",
+    "description": "Cable cabel triceps extension with strict form and end-range flare for isolation.",
+    "icon": "assets/images/exercises/tricep_extension_cabel_isolated.png",
     "muscles": ["Triceps"]
   },
   {
