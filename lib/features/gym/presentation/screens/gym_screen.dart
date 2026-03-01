@@ -1075,6 +1075,397 @@ class _GymScreenState extends State<GymScreen> {
     );
   }
 
+  // ----------------------------- Rename Day -----------------------------
+  Future<void> _renameDayDialog(String oldDayName) async {
+    final controller = TextEditingController(text: oldDayName);
+    
+    final newName = await showDialog<String>(
+      context: context,
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFEBEE),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.edit,
+                      color: Color(0xFFE53935),
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Rename Workout Day',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1A1D1F),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              TextField(
+                controller: controller,
+                autofocus: true,
+                decoration: InputDecoration(
+                  labelText: 'New name',
+                  hintText: 'Enter new workout day name',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFFE53935), width: 2),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                ),
+                onSubmitted: (value) {
+                  if (value.trim().isNotEmpty) {
+                    Navigator.pop(ctx, value.trim());
+                  }
+                },
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    ),
+                    child: const Text(
+                      'Cancel',
+                      style: TextStyle(color: Color(0xFF6F7789)),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () {
+                      final value = controller.text.trim();
+                      if (value.isNotEmpty && value != oldDayName) {
+                        Navigator.pop(ctx, value);
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFE53935),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: const Text(
+                      'Rename',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (newName == null || newName.isEmpty || newName == oldDayName) return;
+
+    // Check if new name already exists
+    if (_assignmentsByDay.containsKey(newName)) {
+      if (!mounted) return;
+      await showDialog<void>(
+        context: context,
+        builder: (_) => Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFFFF3E0),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.warning_rounded,
+                    color: Color(0xFFFF9800),
+                    size: 32,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Name already exists',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1A1D1F),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'A workout day named "$newName" already exists. Please choose a different name.',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF6F7789),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFE53935),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: const Text(
+                      'OK',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      return;
+    }
+
+    // Ask if tracked workouts should also be renamed
+    if (!mounted) return;
+    final renameTracked = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFE3F2FD),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.history,
+                  color: Color(0xFF2196F3),
+                  size: 32,
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'Rename tracked workouts?',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1A1D1F),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Do you want to rename all tracked workouts from "$oldDayName" to "$newName" in the calendar history?',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF6F7789),
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF5F7FA),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Column(
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.check_circle, color: Color(0xFF4CAF50), size: 20),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Yes: Update all history',
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(Icons.cancel, color: Color(0xFFFF9800), size: 20),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'No: Only for future entries',
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        side: const BorderSide(color: Color(0xFFE0E0E0)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'No',
+                        style: TextStyle(
+                          color: Color(0xFF6F7789),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFE53935),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        'Yes',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (renameTracked == null) return;
+
+    // Perform the rename
+    await _performDayRename(oldDayName, newName, renameTracked);
+  }
+
+  Future<void> _performDayRename(String oldName, String newName, bool renameTracked) async {
+    setState(() {
+      // 1. Rename in assignments
+      final assignments = _assignmentsByDay.remove(oldName);
+      if (assignments != null) {
+        _assignmentsByDay[newName] = assignments;
+      }
+
+      // 2. Rename in order by day
+      final order = _orderByDay.remove(oldName);
+      if (order != null) {
+        _orderByDay[newName] = order;
+      }
+
+      // 3. Rename in order days list
+      final dayIndex = _orderDays.indexOf(oldName);
+      if (dayIndex >= 0) {
+        _orderDays[dayIndex] = newName;
+      }
+
+      // 4. Rename in day colors
+      final color = _dayColors.remove(oldName);
+      if (color != null) {
+        _dayColors[newName] = color;
+      }
+
+      if (renameTracked) {
+        // 5. Rename in calendar entries (tracked workouts)
+        _calendarByDate.forEach((dateKey, daySet) {
+          if (daySet.contains(oldName)) {
+            daySet.remove(oldName);
+            daySet.add(newName);
+          }
+        });
+
+        // 6. Rename in workout logs
+        _logs.forEach((workoutId, logList) {
+          for (int i = 0; i < logList.length; i++) {
+            final log = logList[i];
+            if (log.day == oldName) {
+              logList[i] = WorkoutLog(
+                dateTime: log.dateTime,
+                day: newName,
+                sets: log.sets,
+              );
+            }
+          }
+        });
+      }
+    });
+
+    // Save all changes
+    await _saveAssignments();
+    await _saveOrderByDay();
+    await _saveOrderDays();
+    await _saveDayColors();
+    if (renameTracked) {
+      await _saveCalendar();
+      await _saveLogs();
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Renamed "$oldName" to "$newName"${renameTracked ? ' (including tracked workouts)' : ''}')),
+      );
+    }
+  }
+
   // ----------------------------- Charts -----------------------------
   void _openProgressChartDialog(Workout w) {
     final isDuration = _isDurationWorkout(w);
@@ -1897,6 +2288,7 @@ class _GymScreenState extends State<GymScreen> {
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () => _openDayDetail(day),
+          onLongPress: () => _renameDayDialog(day),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
