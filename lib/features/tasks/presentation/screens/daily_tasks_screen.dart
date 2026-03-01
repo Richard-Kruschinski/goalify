@@ -158,12 +158,19 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   static const _kOneOffByDateKey =
       'daily_oneoff_by_date_v1'; // Map<dateKey, List<task>>
 
+  // Task History: stores snapshots of all tasks (keep + one-offs) for last 7 days
+  static const _kTasksHistoryKey =
+      'daily_tasks_history_v1'; // Map<dateKey, List<task snapshots>>
+
   // Shared with gym_screen: creatine intake per date
   static const _kCreatineKey = 'gym_creatine_intake_v1';
 
   // State
   final List<DailyTask> _keepTasks = []; // keep=true
   final Map<String, List<DailyTask>> _oneOffByDate = {}; // keep=false by date
+
+  // Task History (last 7 days) - snapshots of all tasks per date
+  final Map<String, List<DailyTask>> _tasksHistory = {};
 
   // legacy/local orders
   List<String> _orderKeep = [];
@@ -341,6 +348,20 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
       });
     }
 
+    // Load task history (last 7 days)
+    final historyRaw = await LocalStorage.loadJson(_kTasksHistoryKey, fallback: {});
+    _tasksHistory.clear();
+    if (historyRaw is Map) {
+      historyRaw.forEach((k, v) {
+        if (v is List) {
+          final list = v
+              .map((e) => DailyTask.fromMap(Map<String, dynamic>.from(e)))
+              .toList();
+          _tasksHistory[k.toString()] = list;
+        }
+      });
+    }
+
     await _dailyRolloverIfNeeded(); // apply rollover
     _recalcTodayPoints();
     await _saveProgressToday();
@@ -370,6 +391,14 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
 
   Future<void> _saveOrderCombined() async =>
       LocalStorage.saveJson(_kOrderCombinedKey, _orderCombined);
+
+  Future<void> _saveTasksHistory() async {
+    final map = <String, List<Map<String, dynamic>>>{};
+    _tasksHistory.forEach((k, v) {
+      map[k] = v.map((t) => t.toMap()).toList();
+    });
+    await LocalStorage.saveJson(_kTasksHistoryKey, map);
+  }
 
   Future<void> _saveFreezeState() async {
     await LocalStorage.saveJson(_kFreezeTokensKey, _freezeTokens);
@@ -468,7 +497,17 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
 
   /// Visible list for current context:
   /// SINGLE combined order per date (keep + one-offs interleavable)
+  /// For past dates: loads from history
   List<DailyTask> _orderedTasksFor(String dateKey) {
+    final today = _todayKey();
+    
+    // For past dates: load from history
+    if (_isPastDate(dateKey, today)) {
+      final historyTasks = _tasksHistory[dateKey] ?? const <DailyTask>[];
+      return List<DailyTask>.from(historyTasks);
+    }
+    
+    // For today or future: normal logic
     _syncCombinedForDate(dateKey);
 
     // Build id -> task map of all tasks visible that day
@@ -494,6 +533,19 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     return result;
   }
 
+  /// Check if dateKey is in the past (before today)
+  bool _isPastDate(String dateKey, String todayKey) {
+    try {
+      final parts = dateKey.split('-').map(int.parse).toList();
+      final date = DateTime(parts[0], parts[1], parts[2]);
+      final todayParts = todayKey.split('-').map(int.parse).toList();
+      final today = DateTime(todayParts[0], todayParts[1], todayParts[2]);
+      return date.isBefore(today);
+    } catch (e) {
+      return false;
+    }
+  }
+
   // ===============================================================
   // Daily rollover + streak/freeze logic (keep tasks)
   // ===============================================================
@@ -517,6 +569,9 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     if (last == today) return;
 
     final yesterday = _yesterdayKey();
+
+    // --- SNAPSHOT: Save yesterday's tasks to history BEFORE modifying them ---
+    await _saveTaskSnapshotToHistory(yesterday);
 
     // --- Streak update (evaluate yesterday) ---
     for (final t in _keepTasks) {
@@ -551,6 +606,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     }
 
     // 2) one-offs: drop yesterday's bucket entirely (completed or not)
+    // (They're now saved in history, so we can safely remove them)
     if (_oneOffByDate.containsKey(yesterday)) {
       _oneOffByDate.remove(yesterday);
       _orderByDate.remove(yesterday);
@@ -570,6 +626,9 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     _resetCombinedOrderToOriginal(yesterday);
     _resetCombinedOrderToOriginal(today);
 
+    // --- Cleanup old history (older than 7 days) ---
+    await _cleanupOldHistory();
+
     _recalcTodayPoints();
     await _markRolloverDoneForToday();
     await _saveProgressToday();
@@ -579,6 +638,69 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     if (changedKeep) {
       await _saveKeepTasks();
       if (mounted) setState(() {});
+    }
+  }
+
+  /// Save a snapshot of all tasks (keep + one-offs) for a specific date to history
+  Future<void> _saveTaskSnapshotToHistory(String dateKey) async {
+    // Collect all tasks for this date
+    final snapshot = <DailyTask>[];
+    
+    // Add keep tasks (with their current done state)
+    for (final t in _keepTasks) {
+      snapshot.add(DailyTask(
+        id: t.id,
+        title: t.title,
+        description: t.description,
+        category: t.category,
+        points: t.points,
+        keep: t.keep,
+        done: t.done,
+        streak: t.streak,
+        bestStreak: t.bestStreak,
+        lastDoneKey: t.lastDoneKey,
+      ));
+    }
+    
+    // Add one-off tasks for this date
+    final oneOffs = _oneOffByDate[dateKey] ?? const <DailyTask>[];
+    for (final t in oneOffs) {
+      snapshot.add(DailyTask(
+        id: t.id,
+        title: t.title,
+        description: t.description,
+        category: t.category,
+        points: t.points,
+        keep: t.keep,
+        done: t.done,
+      ));
+    }
+    
+    // Store in history
+    _tasksHistory[dateKey] = snapshot;
+    await _saveTasksHistory();
+  }
+
+  /// Remove history entries older than 7 days
+  Future<void> _cleanupOldHistory() async {
+    final today = DateTime.now();
+    final cutoffDate = today.subtract(const Duration(days: 7));
+    final cutoffKey = _dateKey(cutoffDate);
+    
+    final keysToRemove = <String>[];
+    for (final key in _tasksHistory.keys) {
+      if (_isPastDate(key, cutoffKey) || key == cutoffKey) {
+        // This date is 8+ days old, remove it
+        keysToRemove.add(key);
+      }
+    }
+    
+    for (final key in keysToRemove) {
+      _tasksHistory.remove(key);
+    }
+    
+    if (keysToRemove.isNotEmpty) {
+      await _saveTasksHistory();
     }
   }
 
@@ -643,6 +765,17 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   // Create / Toggle / Delete / Freeze / Reorder / Actions
   // ===============================================================
   Future<void> _openCreateTaskSheet({required String forDateKey}) async {
+    // Block creating tasks for past dates
+    if (_isPastDate(forDateKey, _todayKey())) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          duration: Duration(seconds: 2),
+          content: Text('Cannot create tasks for past dates.'),
+        ),
+      );
+      return;
+    }
+    
     final created = await showModalBottomSheet<_CreateResult>(
       context: context,
       isScrollControlled: true,
@@ -687,6 +820,17 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   }
 
   Future<void> _toggleDone(DailyTask t, {required String dateKey}) async {
+    // Block changes to past dates (read-only history)
+    if (_isPastDate(dateKey, _todayKey())) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          duration: Duration(seconds: 2),
+          content: Text('Cannot modify tasks from past dates.'),
+        ),
+      );
+      return;
+    }
+    
     if (t.keep && dateKey != _todayKey()) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -749,6 +893,17 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
 
 
   Future<void> _deleteAt(int indexInOrdered, {required String dateKey}) async {
+    // Block deleting tasks from past dates
+    if (_isPastDate(dateKey, _todayKey())) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          duration: Duration(seconds: 2),
+          content: Text('Cannot delete tasks from past dates.'),
+        ),
+      );
+      return;
+    }
+    
     final list = _orderedTasksFor(dateKey);
     if (indexInOrdered < 0 || indexInOrdered >= list.length) return;
     final t = list[indexInOrdered];
@@ -797,6 +952,11 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
 
   // NEW: single combined reorder across keep + one-off
   void _onReorder(int oldIndex, int newIndex, {required String dateKey}) {
+    // Block reordering for past dates
+    if (_isPastDate(dateKey, _todayKey())) {
+      return;
+    }
+    
     _syncCombinedForDate(dateKey);
     if (newIndex > oldIndex) newIndex -= 1;
     final ids = _orderCombined[dateKey] ?? <String>[];
@@ -812,6 +972,17 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
 
   Future<void> _openTaskActions(
       DailyTask t, int indexInOrdered, String dateKey) async {
+    // For past dates, show read-only info
+    if (_isPastDate(dateKey, _todayKey())) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          duration: Duration(seconds: 2),
+          content: Text('Tasks from past dates are read-only.'),
+        ),
+      );
+      return;
+    }
+    
     final frozenToday = _wasFrozenOn(_todayKey(), t.id);
 
     await showModalBottomSheet<void>(
@@ -1211,12 +1382,16 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
           ],
         ),
       ),
-      floatingActionButton: _buildModernFAB(dateKey),
+      floatingActionButton: _isPastDate(dateKey, _todayKey()) 
+          ? null 
+          : _buildModernFAB(dateKey),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 
   Widget _buildModernHeader(BuildContext context, bool isToday) {
+    final isPast = _isPastDate(_selectedKey(), _todayKey());
+    
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -1236,13 +1411,35 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                isToday ? 'Today' : _formatDate(_selectedDate),
-                style: const TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1A1D1F),
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    isToday ? 'Today' : _formatDate(_selectedDate),
+                    style: const TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1A1D1F),
+                    ),
+                  ),
+                  if (isPast) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      children: const [
+                        Icon(Icons.history, size: 14, color: Color(0xFF9CA3AF)),
+                        SizedBox(width: 4),
+                        Text(
+                          'History (read-only)',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF9CA3AF),
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
               ),
               Row(
                 children: [
@@ -1472,6 +1669,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     final iconData = _getIconForCategory(task.category);
     final color = _getColorForCategory(task.category);
     final isDone = _isDoneForDate(task, dateKey);
+    final isPastDate = _isPastDate(dateKey, _todayKey());
 
     return Container(
       key: ValueKey(task.id),
@@ -1497,16 +1695,17 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                // Drag Handle
-                ReorderableDragStartListener(
-                  index: index,
-                  child: const Icon(
-                    Icons.drag_indicator,
-                    color: Color(0xFFD1D5DB),
-                    size: 20,
+                // Drag Handle (only for today/future dates)
+                if (!isPastDate)
+                  ReorderableDragStartListener(
+                    index: index,
+                    child: const Icon(
+                      Icons.drag_indicator,
+                      color: Color(0xFFD1D5DB),
+                      size: 20,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 12),
+                if (!isPastDate) const SizedBox(width: 12),
                 // Icon
                 Container(
                   width: 48,
