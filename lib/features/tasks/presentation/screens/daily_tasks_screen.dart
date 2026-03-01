@@ -1,4 +1,4 @@
-// Daily Tasks screen with "Congrats" overlay when all tasks are done.
+﻿// Daily Tasks screen with "Congrats" overlay when all tasks are done.
 // NOTE: add this to your pubspec.yaml dependencies:
 //   confetti: ^0.7.0
 
@@ -11,6 +11,67 @@ import '../../../progress/presentation/screens/progress_screen.dart';
 /// ===============================================================
 /// Model
 /// ===============================================================
+
+/// Repeat pattern for recurring tasks
+enum TaskRepeatPattern {
+  daily,
+  every_2_days,
+  every_3_days,
+  every_7_days,
+  biweekly,
+  monthly,
+  custom;
+
+  String get label {
+    switch (this) {
+      case TaskRepeatPattern.daily:
+        return 'Daily';
+      case TaskRepeatPattern.every_2_days:
+        return 'Every 2 days';
+      case TaskRepeatPattern.every_3_days:
+        return 'Every 3 days';
+      case TaskRepeatPattern.every_7_days:
+        return 'Weekly';
+      case TaskRepeatPattern.biweekly:
+        return 'Biweekly';
+      case TaskRepeatPattern.monthly:
+        return 'Monthly';
+      case TaskRepeatPattern.custom:
+        return 'Custom days...';
+    }
+  }
+
+  int get intervalDays {
+    switch (this) {
+      case TaskRepeatPattern.daily:
+        return 1;
+      case TaskRepeatPattern.every_2_days:
+        return 2;
+      case TaskRepeatPattern.every_3_days:
+        return 3;
+      case TaskRepeatPattern.every_7_days:
+        return 7;
+      case TaskRepeatPattern.biweekly:
+        return 14;
+      case TaskRepeatPattern.monthly:
+        return 30;
+      case TaskRepeatPattern.custom:
+        return 1; // fallback, use customDays instead
+    }
+  }
+
+  static TaskRepeatPattern fromString(String? str) {
+    if (str == null) return TaskRepeatPattern.daily;
+    try {
+      return TaskRepeatPattern.values.firstWhere((e) => e.name == str);
+    } catch (_) {
+      return TaskRepeatPattern.daily;
+    }
+  }
+
+  String toStorageString() => name;
+}
+
 class DailyTask {
   final String id;
   final String title;
@@ -18,6 +79,10 @@ class DailyTask {
   final String? category; // e.g. Gym, Work, Leisure
   final int points;
   final bool keep; // true = persists across days, false = one-off for a date
+
+  // --- Repeat pattern (for keep tasks only) ---
+  final TaskRepeatPattern repeatPattern;
+  final int customDays; // used when repeatPattern == custom
 
   // --- Streaks (for keep tasks only) ---
   int streak; // current streak length (days)
@@ -33,11 +98,21 @@ class DailyTask {
     this.category,
     this.points = 1,
     this.keep = false,
+    this.repeatPattern = TaskRepeatPattern.daily,
+    this.customDays = 1,
     this.streak = 0,
     this.bestStreak = 0,
     this.lastDoneKey,
     this.done = false,
   });
+
+  /// Get the effective interval in days for this task
+  int get effectiveIntervalDays {
+    if (repeatPattern == TaskRepeatPattern.custom) {
+      return customDays;
+    }
+    return repeatPattern.intervalDays;
+  }
 
   Map<String, dynamic> toMap() => {
     'id': id,
@@ -50,6 +125,8 @@ class DailyTask {
     'streak': streak,
     'bestStreak': bestStreak,
     'lastDoneKey': lastDoneKey,
+    'repeatPattern': repeatPattern.toStorageString(),
+    'customDays': customDays,
   };
 
   factory DailyTask.fromMap(Map<String, dynamic> m) => DailyTask(
@@ -63,6 +140,8 @@ class DailyTask {
     streak: (m['streak'] ?? 0) as int,
     bestStreak: (m['bestStreak'] ?? 0) as int,
     lastDoneKey: m['lastDoneKey'] as String?,
+    repeatPattern: TaskRepeatPattern.fromString(m['repeatPattern'] as String?),
+    customDays: (m['customDays'] ?? 1) as int,
   );
 }
 
@@ -511,8 +590,11 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     _syncCombinedForDate(dateKey);
 
     // Build id -> task map of all tasks visible that day
+    // Filter keep tasks by repeat pattern - only show if active on this date
     final map = <String, DailyTask>{
-      for (final t in _keepTasks) t.id: t,
+      for (final t in _keepTasks)
+        if (_isTaskActiveOnDate(t, dateKey))
+          t.id: t,
       for (final t in (_oneOffByDate[dateKey] ?? const <DailyTask>[])) t.id: t,
     };
 
@@ -531,6 +613,32 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     result.addAll(map.values);
 
     return result;
+  }
+
+  /// Check if a recurring task should be active on a given date based on its repeat pattern
+  bool _isTaskActiveOnDate(DailyTask task, String dateKey) {
+    // One-off tasks are always active on their scheduled date
+    if (!task.keep) return true;
+    
+    // If no lastDoneKey, task is active (never completed before)
+    if (task.lastDoneKey == null || task.lastDoneKey!.isEmpty) return true;
+    
+    try {
+      // Parse dates
+      final dateParts = dateKey.split('-').map(int.parse).toList();
+      final checkDate = DateTime(dateParts[0], dateParts[1], dateParts[2]);
+      
+      final lastParts = task.lastDoneKey!.split('-').map(int.parse).toList();
+      final lastDone = DateTime(lastParts[0], lastParts[1], lastParts[2]);
+      
+      // Calculate days since last completion
+      final daysSince = checkDate.difference(lastDone).inDays;
+      
+      // Task is active if enough days have passed according to its interval
+      return daysSince >= task.effectiveIntervalDays;
+    } catch (e) {
+      return true; // If parsing fails, show the task
+    }
   }
 
   /// Check if dateKey is in the past (before today)
@@ -655,6 +763,8 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
         category: t.category,
         points: t.points,
         keep: t.keep,
+        repeatPattern: t.repeatPattern,
+        customDays: t.customDays,
         done: t.done,
         streak: t.streak,
         bestStreak: t.bestStreak,
@@ -1138,6 +1248,8 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                               category: data.category,
                               points: data.points,
                               keep: true,
+                              repeatPattern: data.repeatPattern,
+                              customDays: data.customDays,
                               streak: _keepTasks[idx].streak,
                               bestStreak: _keepTasks[idx].bestStreak,
                               lastDoneKey: _keepTasks[idx].lastDoneKey,
@@ -1182,6 +1294,8 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                       category: t.category,
                       points: t.points,
                       keep: t.keep,
+                      repeatPattern: t.repeatPattern,
+                      customDays: t.customDays,
                       streak: t.keep ? 0 : 0,
                       bestStreak: t.keep ? 0 : 0,
                       lastDoneKey: null,
@@ -2019,6 +2133,10 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
   String? _category;
   int _points = 1;
   bool _keep = false;
+  
+  // Repeat pattern fields
+  TaskRepeatPattern _repeatPattern = TaskRepeatPattern.daily;
+  int _customDays = 1;
 
   late DateTime _scheduledDate;
 
@@ -2050,6 +2168,170 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
   String _dateKey(DateTime d) =>
       '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
+  Future<int?> _showCustomDaysDialog() async {
+    final controller = TextEditingController(text: _customDays.toString());
+    return showDialog<int>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        backgroundColor: Colors.white,
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 400),
+          padding: const EdgeInsets.all(28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Icon Header
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFEBEE),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.schedule,
+                  size: 40,
+                  color: Color(0xFFE53935),
+                ),
+              ),
+              const SizedBox(height: 20),
+              // Title
+              const Text(
+                'Custom Repeat Interval',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1A1D1F),
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              // Subtitle
+              const Text(
+                'How many days between each repeat?',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF6F7789),
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              // Input Field
+              TextField(
+                controller: controller,
+                keyboardType: TextInputType.number,
+                autofocus: true,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFFE53935),
+                ),
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: const Color(0xFFF5F7FA),
+                  hintText: '7',
+                  hintStyle: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFFE53935).withOpacity(0.3),
+                  ),
+                  suffixIcon: const Padding(
+                    padding: EdgeInsets.only(right: 16, top: 12),
+                    child: Text(
+                      'days',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Color(0xFF6F7789),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: const BorderSide(color: Color(0xFFE53935), width: 2),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                ),
+              ),
+              const SizedBox(height: 28),
+              // Action Buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Color(0xFFE0E0E0), width: 1.5),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      child: const Text(
+                        'Cancel',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF6F7789),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        final value = int.tryParse(controller.text);
+                        if (value != null && value > 0) {
+                          Navigator.pop(context, value);
+                        } else {
+                          // Show error feedback
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Please enter a valid number (1 or greater)'),
+                              backgroundColor: Color(0xFFE53935),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFE53935),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      child: const Text(
+                        'Confirm',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
 
@@ -2060,6 +2342,8 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
       category: (_category?.trim().isEmpty ?? true) ? null : _category!.trim(),
       points: _points,
       keep: _keep,
+      repeatPattern: _keep ? _repeatPattern : TaskRepeatPattern.daily,
+      customDays: _keep ? _customDays : 1,
     );
 
     Navigator.pop(context, _CreateResult(t, _keep ? null : _dateKey(_scheduledDate)));
@@ -2068,7 +2352,6 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.of(context).viewInsets.bottom;
-    final today = DateTime.now();
 
     return Container(
       decoration: const BoxDecoration(
@@ -2331,6 +2614,63 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
                   ],
                 ),
               ),
+              // Repeat pattern selector (only for recurring tasks)
+              if (_keep) ...[
+                const SizedBox(height: 20),
+                const Text(
+                  'Repeat Pattern',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF6F7789),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: TaskRepeatPattern.values.map((pattern) {
+                    final selected = _repeatPattern == pattern;
+                    return GestureDetector(
+                      onTap: () async {
+                        if (pattern == TaskRepeatPattern.custom) {
+                          // Show custom days dialog
+                          final customDays = await _showCustomDaysDialog();
+                          if (customDays != null && customDays > 0) {
+                            setState(() {
+                              _repeatPattern = pattern;
+                              _customDays = customDays;
+                            });
+                          }
+                        } else {
+                          setState(() => _repeatPattern = pattern);
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: selected ? const Color(0xFFE53935) : Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: selected ? const Color(0xFFE53935) : const Color(0xFFE0E0E0),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Text(
+                          pattern == TaskRepeatPattern.custom && _repeatPattern == TaskRepeatPattern.custom
+                              ? 'Every $_customDays days'
+                              : pattern.label,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: selected ? Colors.white : const Color(0xFF6F7789),
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
               if (!_keep) ...[
                 const SizedBox(height: 16),
                 // Date picker only for one-offs
@@ -2424,12 +2764,17 @@ class _TaskFormData {
   final String? category;
   final int points;
   final bool keep;
+  final TaskRepeatPattern repeatPattern;
+  final int customDays;
+  
   const _TaskFormData({
     required this.title,
     this.description,
     this.category,
     required this.points,
     required this.keep,
+    required this.repeatPattern,
+    required this.customDays,
   });
 }
 
@@ -2448,6 +2793,10 @@ class _EditDailyTaskSheetState extends State<_EditDailyTaskSheet> {
   String? _category;
   int _points = 1;
   bool _keep = false;
+  
+  // Repeat pattern fields
+  late TaskRepeatPattern _repeatPattern;
+  late int _customDays;
 
   static const _suggestedCategories = [
     'Gym',
@@ -2467,6 +2816,8 @@ class _EditDailyTaskSheetState extends State<_EditDailyTaskSheet> {
     _category = widget.task.category;
     _points = widget.task.points;
     _keep = widget.task.keep; // kept for completeness; not used to migrate
+    _repeatPattern = widget.task.repeatPattern;
+    _customDays = widget.task.customDays;
   }
 
   @override
@@ -2474,6 +2825,170 @@ class _EditDailyTaskSheetState extends State<_EditDailyTaskSheet> {
     _titleCtrl.dispose();
     _descCtrl.dispose();
     super.dispose();
+  }
+
+  Future<int?> _showCustomDaysDialog() async {
+    final controller = TextEditingController(text: _customDays.toString());
+    return showDialog<int>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        backgroundColor: Colors.white,
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 400),
+          padding: const EdgeInsets.all(28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Icon Header
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFEBEE),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.schedule,
+                  size: 40,
+                  color: Color(0xFFE53935),
+                ),
+              ),
+              const SizedBox(height: 20),
+              // Title
+              const Text(
+                'Custom Repeat Interval',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1A1D1F),
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              // Subtitle
+              const Text(
+                'How many days between each repeat?',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF6F7789),
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              // Input Field
+              TextField(
+                controller: controller,
+                keyboardType: TextInputType.number,
+                autofocus: true,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFFE53935),
+                ),
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: const Color(0xFFF5F7FA),
+                  hintText: '7',
+                  hintStyle: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFFE53935).withOpacity(0.3),
+                  ),
+                  suffixIcon: const Padding(
+                    padding: EdgeInsets.only(right: 16, top: 12),
+                    child: Text(
+                      'days',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Color(0xFF6F7789),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: const BorderSide(color: Color(0xFFE53935), width: 2),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                ),
+              ),
+              const SizedBox(height: 28),
+              // Action Buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Color(0xFFE0E0E0), width: 1.5),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      child: const Text(
+                        'Cancel',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF6F7789),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        final value = int.tryParse(controller.text);
+                        if (value != null && value > 0) {
+                          Navigator.pop(context, value);
+                        } else {
+                          // Show error feedback
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Please enter a valid number (1 or greater)'),
+                              backgroundColor: Color(0xFFE53935),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFE53935),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      child: const Text(
+                        'Confirm',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   void _submit() {
@@ -2487,6 +3002,8 @@ class _EditDailyTaskSheetState extends State<_EditDailyTaskSheet> {
         category: (_category?.trim().isEmpty ?? true) ? null : _category!.trim(),
         points: _points,
         keep: _keep,
+        repeatPattern: _repeatPattern,
+        customDays: _customDays,
       ),
     );
   }
@@ -2713,6 +3230,63 @@ class _EditDailyTaskSheetState extends State<_EditDailyTaskSheet> {
                   onChanged: (v) => setState(() => _keep = v),
                 ),
               ),
+              // Repeat pattern selector (only for recurring tasks)
+              if (_keep) ...[
+                const SizedBox(height: 16),
+                const Text(
+                  'Repeat Pattern',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF6F7789),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: TaskRepeatPattern.values.map((pattern) {
+                    final selected = _repeatPattern == pattern;
+                    return GestureDetector(
+                      onTap: () async {
+                        if (pattern == TaskRepeatPattern.custom) {
+                          // Show custom days dialog
+                          final customDays = await _showCustomDaysDialog();
+                          if (customDays != null && customDays > 0) {
+                            setState(() {
+                              _repeatPattern = pattern;
+                              _customDays = customDays;
+                            });
+                          }
+                        } else {
+                          setState(() => _repeatPattern = pattern);
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: selected ? const Color(0xFFE53935) : Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: selected ? const Color(0xFFE53935) : const Color(0xFFE0E0E0),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Text(
+                          pattern == TaskRepeatPattern.custom && _repeatPattern == TaskRepeatPattern.custom
+                              ? 'Every $_customDays days'
+                              : pattern.label,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: selected ? Colors.white : const Color(0xFF6F7789),
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
               const SizedBox(height: 20),
               Row(
                 children: [

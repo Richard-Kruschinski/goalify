@@ -709,19 +709,7 @@ class _GymScreenState extends State<GymScreen> {
     return '${set.weightKg.toStringAsFixed(1)} kg × ${set.reps}';
   }
 
-  double _chartYValue(Workout workout, WorkoutLog log) =>
-      _isDurationWorkout(workout)
-          ? log.longestDurationSeconds.toDouble()
-          : log.maxWeightKg;
-
   String _chartYAxisLabel(Workout workout) => _isDurationWorkout(workout) ? 's' : 'kg';
-
-  String _tooltipValue(Workout workout, double yValue, WorkoutLog log) {
-    if (_isDurationWorkout(workout)) {
-      return _formatDurationShort(log.longestDurationSeconds);
-    }
-    return '${yValue.toStringAsFixed(1)} kg × ${log.heaviestSetReps} reps';
-  }
 
   void _addLog(String workoutId, WorkoutLog result) {
     final now = DateTime.now();
