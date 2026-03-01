@@ -267,6 +267,97 @@ class _GymScreenState extends State<GymScreen> {
   static const _kDayCustomIconsKey = 'gym_day_custom_icons_v1';
   static const _kCreatineKey = 'gym_creatine_intake_v1';
 
+  // Available icons for day selection
+  static const List<IconData> _availableIcons = [
+    Icons.fitness_center,
+    Icons.sports_gymnastics,
+    Icons.sports_martial_arts,
+    Icons.sports_kabaddi,
+    Icons.accessibility_new,
+    Icons.self_improvement,
+    Icons.directions_run,
+    Icons.directions_walk,
+    Icons.downhill_skiing,
+    Icons.pool,
+    Icons.sports_baseball,
+    Icons.sports_basketball,
+    Icons.sports_cricket,
+    Icons.sports_esports,
+    Icons.sports_football,
+    Icons.sports_golf,
+    Icons.sports_handball,
+    Icons.sports_hockey,
+    Icons.sports_mma,
+    Icons.sports_motorsports,
+    Icons.sports_rugby,
+    Icons.sports_soccer,
+    Icons.sports_tennis,
+    Icons.sports_volleyball,
+    Icons.sports,
+    Icons.rowing,
+    Icons.kayaking,
+    Icons.surfing,
+    Icons.sailing,
+    Icons.kitesurfing,
+    Icons.snowboarding,
+    Icons.skateboarding,
+    Icons.sledding,
+    Icons.icecream,
+    Icons.event_note,
+    Icons.calendar_today,
+    Icons.today,
+    Icons.calendar_month,
+    Icons.schedule,
+    Icons.access_time,
+    Icons.timer,
+    Icons.alarm,
+    Icons.favorite,
+    Icons.star,
+    Icons.grade,
+    Icons.local_fire_department,
+    Icons.bolt,
+    Icons.flash_on,
+    Icons.wb_sunny,
+    Icons.nights_stay,
+    Icons.emoji_events,
+    Icons.military_tech,
+    Icons.workspace_premium,
+    Icons.diamond,
+    Icons.verified,
+    Icons.shield,
+    Icons.security,
+    Icons.lock,
+    Icons.vpn_key,
+    Icons.flag,
+    Icons.outlined_flag,
+    Icons.assistant_photo,
+    Icons.api,
+    Icons.adb,
+    Icons.power,
+    Icons.power_settings_new,
+    Icons.label,
+    Icons.label_important,
+    Icons.bookmark,
+    Icons.push_pin,
+    Icons.whatshot,
+    Icons.where_to_vote,
+    Icons.trip_origin,
+    Icons.adjust,
+    Icons.animation,
+    Icons.auto_awesome,
+    Icons.attractions,
+    Icons.celebration,
+    Icons.account_circle,
+    Icons.face,
+    Icons.mood,
+    Icons.sentiment_very_satisfied,
+    Icons.psychology,
+    Icons.trending_up,
+    Icons.show_chart,
+    Icons.insights,
+    Icons.analytics,
+  ];
+
   ViewMode _mode = ViewMode.byExercise;
 
   // Workouts from JSON
@@ -1515,7 +1606,15 @@ class _GymScreenState extends State<GymScreen> {
   IconData _getDayIcon(String day) {
     final stored = _dayIcons[day];
     if (stored != null) {
-      return IconData(stored, fontFamily: 'MaterialIcons');
+      // Find icon in available icons by codePoint
+      try {
+        return _availableIcons.firstWhere(
+          (icon) => icon.codePoint == stored,
+          orElse: () => Icons.event_note,
+        );
+      } catch (_) {
+        return Icons.event_note;
+      }
     }
     return Icons.event_note;
   }
@@ -1737,96 +1836,6 @@ class _GymScreenState extends State<GymScreen> {
   }
 
   Future<void> _changeIconDialog(String day) async {
-    final availableIcons = [
-      Icons.fitness_center,
-      Icons.sports_gymnastics,
-      Icons.sports_martial_arts,
-      Icons.sports_kabaddi,
-      Icons.accessibility_new,
-      Icons.self_improvement,
-      Icons.directions_run,
-      Icons.directions_walk,
-      Icons.downhill_skiing,
-      Icons.pool,
-      Icons.sports_baseball,
-      Icons.sports_basketball,
-      Icons.sports_cricket,
-      Icons.sports_esports,
-      Icons.sports_football,
-      Icons.sports_golf,
-      Icons.sports_handball,
-      Icons.sports_hockey,
-      Icons.sports_mma,
-      Icons.sports_motorsports,
-      Icons.sports_rugby,
-      Icons.sports_soccer,
-      Icons.sports_tennis,
-      Icons.sports_volleyball,
-      Icons.sports,
-      Icons.rowing,
-      Icons.kayaking,
-      Icons.surfing,
-      Icons.sailing,
-      Icons.kitesurfing,
-      Icons.snowboarding,
-      Icons.skateboarding,
-      Icons.sledding,
-      Icons.icecream,
-      Icons.event_note,
-      Icons.calendar_today,
-      Icons.today,
-      Icons.calendar_month,
-      Icons.schedule,
-      Icons.access_time,
-      Icons.timer,
-      Icons.alarm,
-      Icons.favorite,
-      Icons.star,
-      Icons.grade,
-      Icons.local_fire_department,
-      Icons.bolt,
-      Icons.flash_on,
-      Icons.wb_sunny,
-      Icons.nights_stay,
-      Icons.emoji_events,
-      Icons.military_tech,
-      Icons.workspace_premium,
-      Icons.diamond,
-      Icons.verified,
-      Icons.shield,
-      Icons.security,
-      Icons.lock,
-      Icons.vpn_key,
-      Icons.flag,
-      Icons.outlined_flag,
-      Icons.assistant_photo,
-      Icons.api,
-      Icons.adb,
-      Icons.power,
-      Icons.power_settings_new,
-      Icons.label,
-      Icons.label_important,
-      Icons.bookmark,
-      Icons.push_pin,
-      Icons.whatshot,
-      Icons.where_to_vote,
-      Icons.trip_origin,
-      Icons.adjust,
-      Icons.animation,
-      Icons.auto_awesome,
-      Icons.attractions,
-      Icons.celebration,
-      Icons.account_circle,
-      Icons.face,
-      Icons.mood,
-      Icons.sentiment_very_satisfied,
-      Icons.psychology,
-      Icons.trending_up,
-      Icons.show_chart,
-      Icons.insights,
-      Icons.analytics,
-    ];
-
     final selectedIcon = await showDialog<IconData>(
       context: context,
       builder: (ctx) => Dialog(
@@ -1891,10 +1900,10 @@ class _GymScreenState extends State<GymScreen> {
                     mainAxisSpacing: 14,
                     crossAxisSpacing: 14,
                   ),
-                  itemCount: availableIcons.length + 1,
+                  itemCount: _availableIcons.length + 1,
                   itemBuilder: (_, index) {
                     // Plus button at the end
-                    if (index == availableIcons.length) {
+                    if (index == _availableIcons.length) {
                       return Material(
                         color: Colors.transparent,
                         child: InkWell(
@@ -1919,7 +1928,7 @@ class _GymScreenState extends State<GymScreen> {
                       );
                     }
 
-                    final icon = availableIcons[index];
+                    final icon = _availableIcons[index];
                     final isSelected = _getDayIcon(day).codePoint == icon.codePoint;
                     
                     return Material(
