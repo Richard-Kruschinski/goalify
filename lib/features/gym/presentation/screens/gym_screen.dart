@@ -1,8 +1,11 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // rootBundle, SystemChrome, DeviceOrientation
 import 'package:fl_chart/fl_chart.dart';
 import 'dart:math' as math;
+import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../../../core/utils/local_storage.dart'; // saveJson/loadJson
 import '../../../tasks/presentation/screens/daily_tasks_screen.dart'; // for markGymTaskDoneForToday
 
@@ -260,6 +263,8 @@ class _GymScreenState extends State<GymScreen> {
   // Kalender-Storage (Map<yyyy-MM-dd, Set<DayName>>)
   static const _kCalendarKey = 'gym_calendar_v1';
   static const _kDayColorsKey = 'gym_day_colors_v1';
+  static const _kDayIconsKey = 'gym_day_icons_v1';
+  static const _kDayCustomIconsKey = 'gym_day_custom_icons_v1';
   static const _kCreatineKey = 'gym_creatine_intake_v1';
 
   ViewMode _mode = ViewMode.byExercise;
@@ -282,6 +287,10 @@ class _GymScreenState extends State<GymScreen> {
   final Map<String, Set<String>> _calendarByDate = <String, Set<String>>{};
   // Farbe je Workout-Tag
   final Map<String, int> _dayColors = <String, int>{};
+  // Icon je Workout-Tag (codePoint)
+  final Map<String, int> _dayIcons = <String, int>{};
+  // Custom Icons je Workout-Tag (file path)
+  final Map<String, String> _dayCustomIcons = <String, String>{};
   // Creatine intake per date (yyyy-MM-dd)
   final Set<String> _creatineDates = <String>{};
 
@@ -377,6 +386,24 @@ class _GymScreenState extends State<GymScreen> {
       });
     }
 
+    // Day icons
+    final iconsRaw = await LocalStorage.loadJson(_kDayIconsKey, fallback: {});
+    _dayIcons.clear();
+    if (iconsRaw is Map) {
+      iconsRaw.forEach((k, v) {
+        if (v is num) _dayIcons[k.toString()] = v.toInt();
+      });
+    }
+
+    // Day custom icons
+    final customIconsRaw = await LocalStorage.loadJson(_kDayCustomIconsKey, fallback: {});
+    _dayCustomIcons.clear();
+    if (customIconsRaw is Map) {
+      customIconsRaw.forEach((k, v) {
+        _dayCustomIcons[k.toString()] = v.toString();
+      });
+    }
+
     // Order der Days
     final orderDaysRaw =
     await LocalStorage.loadJson(_kOrderDaysKey, fallback: []);
@@ -403,8 +430,12 @@ class _GymScreenState extends State<GymScreen> {
       LocalStorage.saveJson(_kAssignmentsKey, _assignmentsByDay);
   Future<void> _saveOrderDays() async =>
       LocalStorage.saveJson(_kOrderDaysKey, _orderDays);
-    Future<void> _saveDayColors() async =>
+  Future<void> _saveDayColors() async =>
       LocalStorage.saveJson(_kDayColorsKey, _dayColors);
+  Future<void> _saveDayIcons() async =>
+      LocalStorage.saveJson(_kDayIconsKey, _dayIcons);
+  Future<void> _saveDayCustomIcons() async =>
+      LocalStorage.saveJson(_kDayCustomIconsKey, _dayCustomIcons);
 
   // ----------------------------- Kalender: Load/Save -----------------------------
   Future<void> _loadCalendar() async {
@@ -1424,8 +1455,20 @@ class _GymScreenState extends State<GymScreen> {
         _dayColors[newName] = color;
       }
 
+      // 5. Rename in day icons
+      final icon = _dayIcons.remove(oldName);
+      if (icon != null) {
+        _dayIcons[newName] = icon;
+      }
+
+      // 6. Rename in day custom icons
+      final customIcon = _dayCustomIcons.remove(oldName);
+      if (customIcon != null) {
+        _dayCustomIcons[newName] = customIcon;
+      }
+
       if (renameTracked) {
-        // 5. Rename in calendar entries (tracked workouts)
+        // 7. Rename in calendar entries (tracked workouts)
         _calendarByDate.forEach((dateKey, daySet) {
           if (daySet.contains(oldName)) {
             daySet.remove(oldName);
@@ -1433,7 +1476,7 @@ class _GymScreenState extends State<GymScreen> {
           }
         });
 
-        // 6. Rename in workout logs
+        // 8. Rename in workout logs
         _logs.forEach((workoutId, logList) {
           for (int i = 0; i < logList.length; i++) {
             final log = logList[i];
@@ -1454,6 +1497,8 @@ class _GymScreenState extends State<GymScreen> {
     await _saveOrderByDay();
     await _saveOrderDays();
     await _saveDayColors();
+    await _saveDayIcons();
+    await _saveDayCustomIcons();
     if (renameTracked) {
       await _saveCalendar();
       await _saveLogs();
@@ -1463,6 +1508,459 @@ class _GymScreenState extends State<GymScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Renamed "$oldName" to "$newName"${renameTracked ? ' (including tracked workouts)' : ''}')),
       );
+    }
+  }
+
+  // ----------------------------- Day Icon Management -----------------------------
+  IconData _getDayIcon(String day) {
+    final stored = _dayIcons[day];
+    if (stored != null) {
+      return IconData(stored, fontFamily: 'MaterialIcons');
+    }
+    return Icons.event_note;
+  }
+
+  Widget _getDayIconWidget(String day) {
+    final customPath = _dayCustomIcons[day];
+    if (customPath != null && customPath.isNotEmpty) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Image.file(
+          File(customPath),
+          fit: BoxFit.cover,
+        ),
+      );
+    }
+    return Icon(
+      _getDayIcon(day),
+      color: const Color(0xFFE53935),
+      size: 24,
+    );
+  }
+
+  Future<void> _pickCustomIcon(String day, BuildContext dialogContext) async {
+    final picker = ImagePicker();
+    final image = await picker.pickImage(source: ImageSource.gallery);
+    
+    if (image != null) {
+      try {
+        final directory = await getApplicationDocumentsDirectory();
+        final fileName = 'day_icon_${day.replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        final filePath = '${directory.path}/$fileName';
+        
+        final savedImage = await File(image.path).copy(filePath);
+        
+        setState(() {
+          _dayCustomIcons[day] = savedImage.path;
+          // Remove standard icon when custom image is set
+          _dayIcons.remove(day);
+        });
+        
+        await _saveDayCustomIcons();
+        await _saveDayIcons();
+        
+        if (dialogContext.mounted) {
+          Navigator.pop(dialogContext);
+        }
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Custom icon saved!')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error saving image: $e')),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _showDayOptionsMenu(String day) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.only(top: 16, bottom: 24, left: 20, right: 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 48,
+              height: 4,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE0E0E0),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 28),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                children: [
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _renameDayDialog(day);
+                      },
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE3F2FD),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.edit,
+                                color: Color(0xFF2196F3),
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Rename',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF1A1D1F),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  const Text(
+                                    'Change the workout day name',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Color(0xFF6F7789),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(
+                              Icons.chevron_right,
+                              color: Color(0xFFD1D5DB),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  Container(
+                    height: 1,
+                    color: const Color(0xFFF0F4F8),
+                  ),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _changeIconDialog(day);
+                      },
+                      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFEBEE),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.emoji_emotions,
+                                color: Color(0xFFE53935),
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Change Icon',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF1A1D1F),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  const Text(
+                                    'Choose a different icon or image',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Color(0xFF6F7789),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(
+                              Icons.chevron_right,
+                              color: Color(0xFFD1D5DB),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _changeIconDialog(String day) async {
+    final availableIcons = [
+      Icons.fitness_center,
+      Icons.sports_gymnastics,
+      Icons.sports_martial_arts,
+      Icons.sports_kabaddi,
+      Icons.accessibility_new,
+      Icons.self_improvement,
+      Icons.directions_run,
+      Icons.directions_walk,
+      Icons.downhill_skiing,
+      Icons.pool,
+      Icons.sports_baseball,
+      Icons.sports_basketball,
+      Icons.sports_cricket,
+      Icons.sports_esports,
+      Icons.sports_football,
+      Icons.sports_golf,
+      Icons.sports_handball,
+      Icons.sports_hockey,
+      Icons.sports_mma,
+      Icons.sports_motorsports,
+      Icons.sports_rugby,
+      Icons.sports_soccer,
+      Icons.sports_tennis,
+      Icons.sports_volleyball,
+      Icons.sports,
+      Icons.rowing,
+      Icons.kayaking,
+      Icons.surfing,
+      Icons.sailing,
+      Icons.kitesurfing,
+      Icons.snowboarding,
+      Icons.skateboarding,
+      Icons.sledding,
+      Icons.icecream,
+      Icons.event_note,
+      Icons.calendar_today,
+      Icons.today,
+      Icons.calendar_month,
+      Icons.schedule,
+      Icons.access_time,
+      Icons.timer,
+      Icons.alarm,
+      Icons.favorite,
+      Icons.star,
+      Icons.grade,
+      Icons.local_fire_department,
+      Icons.bolt,
+      Icons.flash_on,
+      Icons.wb_sunny,
+      Icons.nights_stay,
+      Icons.emoji_events,
+      Icons.military_tech,
+      Icons.workspace_premium,
+      Icons.diamond,
+      Icons.verified,
+      Icons.shield,
+      Icons.security,
+      Icons.lock,
+      Icons.vpn_key,
+      Icons.flag,
+      Icons.outlined_flag,
+      Icons.assistant_photo,
+      Icons.api,
+      Icons.adb,
+      Icons.power,
+      Icons.power_settings_new,
+      Icons.label,
+      Icons.label_important,
+      Icons.bookmark,
+      Icons.push_pin,
+      Icons.whatshot,
+      Icons.where_to_vote,
+      Icons.trip_origin,
+      Icons.adjust,
+      Icons.animation,
+      Icons.auto_awesome,
+      Icons.attractions,
+      Icons.celebration,
+      Icons.account_circle,
+      Icons.face,
+      Icons.mood,
+      Icons.sentiment_very_satisfied,
+      Icons.psychology,
+      Icons.trending_up,
+      Icons.show_chart,
+      Icons.insights,
+      Icons.analytics,
+    ];
+
+    final selectedIcon = await showDialog<IconData>(
+      context: context,
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+          ),
+          padding: const EdgeInsets.all(24),
+          constraints: const BoxConstraints(maxHeight: 650),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFEBEE),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.emoji_emotions,
+                      color: Color(0xFFE53935),
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      'Choose an Icon',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1A1D1F),
+                      ),
+                    ),
+                  ),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => Navigator.pop(ctx),
+                      borderRadius: BorderRadius.circular(8),
+                      child: const Padding(
+                        padding: EdgeInsets.all(8),
+                        child: Icon(
+                          Icons.close,
+                          color: Color(0xFF6F7789),
+                          size: 24,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              Expanded(
+                child: GridView.builder(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 6,
+                    mainAxisSpacing: 14,
+                    crossAxisSpacing: 14,
+                  ),
+                  itemCount: availableIcons.length + 1,
+                  itemBuilder: (_, index) {
+                    // Plus button at the end
+                    if (index == availableIcons.length) {
+                      return Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () => _pickCustomIcon(day, ctx),
+                          borderRadius: BorderRadius.circular(14),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF5F7FA),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: const Color(0xFFE0E0E0),
+                                width: 2.5,
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.add,
+                              color: Color(0xFFE53935),
+                              size: 32,
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+
+                    final icon = availableIcons[index];
+                    final isSelected = _getDayIcon(day).codePoint == icon.codePoint;
+                    
+                    return Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => Navigator.pop(ctx, icon),
+                        borderRadius: BorderRadius.circular(14),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: isSelected 
+                                ? const Color(0xFFFFEBEE) 
+                                : const Color(0xFFF5F7FA),
+                            borderRadius: BorderRadius.circular(14),
+                            border: isSelected 
+                                ? Border.all(color: const Color(0xFFE53935), width: 2.5)
+                                : Border.all(color: const Color(0xFFE0E0E0), width: 1),
+                          ),
+                          child: Icon(
+                            icon,
+                            color: isSelected 
+                                ? const Color(0xFFE53935) 
+                                : const Color(0xFF6F7789),
+                            size: 28,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (selectedIcon != null) {
+      setState(() {
+        _dayIcons[day] = selectedIcon.codePoint;
+      });
+      await _saveDayIcons();
     }
   }
 
@@ -2288,7 +2786,7 @@ class _GymScreenState extends State<GymScreen> {
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () => _openDayDetail(day),
-          onLongPress: () => _renameDayDialog(day),
+          onLongPress: () => _showDayOptionsMenu(day),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
@@ -2309,11 +2807,7 @@ class _GymScreenState extends State<GymScreen> {
                     color: const Color(0xFFFFEBEE),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(
-                    Icons.event_note,
-                    color: Color(0xFFE53935),
-                    size: 24,
-                  ),
+                  child: _getDayIconWidget(day),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
