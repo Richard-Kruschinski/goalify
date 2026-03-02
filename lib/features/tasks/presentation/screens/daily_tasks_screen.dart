@@ -1500,24 +1500,6 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     return Icons.check_circle_outline;
   }
 
-  Widget _getTaskIconWidget(String taskId) {
-    final customPath = _taskCustomIcons[taskId];
-    if (customPath != null && customPath.isNotEmpty) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(6),
-        child: Image.file(
-          File(customPath),
-          fit: BoxFit.cover,
-        ),
-      );
-    }
-    return Icon(
-      _getTaskIcon(taskId),
-      color: const Color(0xFFE53935),
-      size: 20,
-    );
-  }
-
   Future<void> _changeTaskIconDialog(DailyTask task) async {
     final selectedIcon = await showDialog<IconData>(
       context: context,
@@ -2050,7 +2032,6 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
 
   Widget _buildModernTaskCard(DailyTask task, int index, String dateKey) {
     final frozenToday = _wasFrozenOn(_todayKey(), task.id);
-    final iconData = _getIconForCategory(task.category);
     final color = _getColorForCategory(task.category);
     final isDone = _isDoneForDate(task, dateKey);
     final isPastDate = _isPastDate(dateKey, _todayKey());
@@ -2244,46 +2225,6 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
         ),
       ),
     );
-  }
-
-  IconData _getIconForCategory(String? category) {
-    if (category == null) return Icons.task_alt;
-    switch (category.toLowerCase()) {
-      case 'gym':
-      case 'fitness':
-      case 'workout':
-      case 'exercise':
-        return Icons.fitness_center;
-      case 'work':
-        return Icons.work_outline;
-      case 'leisure':
-      case 'fun':
-        return Icons.celebration;
-      case 'health':
-      case 'water':
-      case 'drink':
-        return Icons.water_drop;
-      case 'morning':
-      case 'routine':
-        return Icons.wb_sunny;
-      case 'read':
-      case 'book':
-        return Icons.menu_book;
-      case 'study':
-      case 'learning':
-        return Icons.school;
-      case 'food':
-      case 'meal':
-        return Icons.restaurant;
-      case 'chores':
-      case 'chore':
-        return Icons.cleaning_services;
-      case 'creatin':
-      case 'creatine':
-        return Icons.medication_liquid;
-      default:
-        return Icons.task_alt;
-    }
   }
 
   Color _getColorForCategory(String? category) {

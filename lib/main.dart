@@ -3,7 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'features/progress/presentation/screens/progress_screen.dart';
 import 'features/tasks/presentation/screens/daily_tasks_screen.dart';
 import 'features/gym/presentation/screens/gym_screen.dart';
-import 'features/profile/presentation/screens/profile_screen.dart';
+import 'features/functions/presentation/screens/functions_screen.dart';
 
 void main() {
   runApp(const GoalifyApp());
@@ -40,15 +40,14 @@ class MainNav extends StatefulWidget {
 }
 
 class _MainNavState extends State<MainNav> {
-  // 0:Groups, 1:Daily, 2:Progress, 3:Gym, 4:Profile
+  // 0:Progress, 1:Daily, 2:Gym, 3:Functions
   int currentIndex = 2;
 
   final _screens = const [
-    //GroupListScreen(),
     ProgressScreen(),
     DailyTasksScreen(),
     GymScreen(),
-    ProfileScreen(),
+    FunctionsScreen(),
   ];
 
   @override
@@ -61,11 +60,10 @@ class _MainNavState extends State<MainNav> {
         onTap: (i) => setState(() => currentIndex = i),
         selectedItemColor: Colors.pink,
         items: const [
-         //BottomNavigationBarItem(icon: Icon(Icons.group),          label: 'Groups'),
           BottomNavigationBarItem(icon: Icon(Icons.show_chart),     label: 'Progress'),
           BottomNavigationBarItem(icon: Icon(Icons.check_circle),   label: 'Daily'),
           BottomNavigationBarItem(icon: Icon(Icons.fitness_center), label: 'Gym'),
-          BottomNavigationBarItem(icon: Icon(Icons.person),         label: 'Profile'),
+          BottomNavigationBarItem(icon: Icon(Icons.settings),       label: 'Funktionen'),
         ],
       ),
     );

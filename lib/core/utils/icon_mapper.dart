@@ -8,14 +8,6 @@ class IconMapper {
   static final List<IconData> _cache = [];
   static bool _isInitialized = false;
 
-  /// Icons die nur für Gym Days zur Verfügung stehen
-  static const List<String> _gymOnlyIcons = [
-    'kitesurfing',
-    'snowboarding',
-    'skateboarding',
-    'sledding',
-  ];
-
   /// Alle verfügbaren Icons laden (aus assets/icons.json)
   static Future<List<IconData>> loadAvailableIcons() async {
     if (_isInitialized) return _cache;
