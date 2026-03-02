@@ -939,8 +939,47 @@ class _GymScreenState extends State<GymScreen> {
     _saveLogs();
   }
 
-  void _deleteExerciseEverywhere(String workoutId) {
+  String _calendarTrackingKeyForLog(WorkoutLog log) =>
+      '${_dateKey(log.dateTime)}|${log.day}';
+
+  void _removeCalendarTrackingForDeletedLogs(List<WorkoutLog> deletedLogs) {
+    if (deletedLogs.isEmpty) return;
+
+    final deletedPairs = deletedLogs
+        .map(_calendarTrackingKeyForLog)
+        .toSet();
+
+    final remainingPairs = <String>{};
+    _logs.forEach((_, logList) {
+      for (final log in logList) {
+        remainingPairs.add(_calendarTrackingKeyForLog(log));
+      }
+    });
+
+    for (final pair in deletedPairs) {
+      if (remainingPairs.contains(pair)) continue;
+
+      final separator = pair.indexOf('|');
+      if (separator <= 0 || separator >= pair.length - 1) continue;
+
+      final dateKey = pair.substring(0, separator);
+      final day = pair.substring(separator + 1);
+
+      final days = _calendarByDate[dateKey];
+      if (days == null) continue;
+
+      days.remove(day);
+      if (days.isEmpty) _calendarByDate.remove(dateKey);
+    }
+  }
+
+  void _deleteExerciseEverywhere(String workoutId, {bool removeTrackedCalendar = false}) {
+    final deletedLogs = List<WorkoutLog>.from(_logs[workoutId] ?? const <WorkoutLog>[]);
     _logs.remove(workoutId);
+
+    if (removeTrackedCalendar) {
+      _removeCalendarTrackingForDeletedLogs(deletedLogs);
+    }
 
     _assignmentsByDay.forEach((day, list) => list.remove(workoutId));
     _assignmentsByDay.removeWhere((_, list) => list.isEmpty);
@@ -956,6 +995,9 @@ class _GymScreenState extends State<GymScreen> {
     _saveOrderActive();
     _saveOrderByDay();
     _saveOrderDays();
+    if (removeTrackedCalendar) {
+      _saveCalendar();
+    }
 
     setState(() {});
   }
@@ -985,29 +1027,70 @@ class _GymScreenState extends State<GymScreen> {
     );
   }
 
-  void _confirmDeleteExercise(Workout w) {
-    showDialog<void>(
+  Future<void> _confirmDeleteExercise(Workout w) async {
+    final removeTrackedCalendar = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
         title: Text('Remove "${w.name}" everywhere?'),
         content: const Text(
-          'This will delete all logs and remove the exercise from every workout plan. '
-              'This cannot be undone.',
+          'This will delete all logs and remove the exercise from every workout plan.\n\n'
+          'Also remove tracked past entries from the calendar?',
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => Navigator.pop(context, null),
               child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Delete only workout'),
+          ),
           FilledButton(
             onPressed: () {
-              Navigator.pop(context);
-              _deleteExerciseEverywhere(w.id);
+              Navigator.pop(context, true);
             },
-            child: const Text('Delete'),
+            child: const Text('Delete + calendar'),
           ),
         ],
       ),
     );
+
+    if (removeTrackedCalendar == null) return;
+    _deleteExerciseEverywhere(
+      w.id,
+      removeTrackedCalendar: removeTrackedCalendar,
+    );
+  }
+
+  Future<void> _openWorkoutLongPressMenu(Workout w) async {
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.show_chart),
+              title: const Text('Show progress chart'),
+              onTap: () => Navigator.pop(ctx, 'chart'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete_outline),
+              title: const Text('Delete exercise…'),
+              onTap: () => Navigator.pop(ctx, 'delete'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (action == 'chart') {
+      _openProgressChartDialog(w);
+    } else if (action == 'delete') {
+      _confirmDeleteExercise(w);
+    }
   }
 
   void _deleteWorkoutLogsForDay(String workoutId, String day) {
@@ -1690,7 +1773,6 @@ class _GymScreenState extends State<GymScreen> {
                         Navigator.pop(ctx);
                         _changeIconDialog(day);
                       },
-                      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
                       child: Padding(
                         padding: const EdgeInsets.all(16),
                         child: Row(
@@ -1740,10 +1822,214 @@ class _GymScreenState extends State<GymScreen> {
                       ),
                     ),
                   ),
+                  Container(
+                    height: 1,
+                    color: const Color(0xFFF0F4F8),
+                  ),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _confirmDeleteWorkoutDay(day);
+                      },
+                      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFEBEE),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.delete_outline,
+                                color: Color(0xFFE53935),
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Delete Workout Day',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF1A1D1F),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  const Text(
+                                    'Remove this day from plan (optional: remove tracked history)',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Color(0xFF6F7789),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _confirmDeleteWorkoutDay(String day) async {
+    final removeTracked = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFEBEE),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.delete_outline,
+                      color: Color(0xFFE53935),
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Delete workout day "$day"?',
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1A1D1F),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Do you also want to remove tracked entries from the past (calendar/history)?',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF6F7789),
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, null),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    ),
+                    child: const Text(
+                      'Cancel',
+                      style: TextStyle(color: Color(0xFF6F7789)),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    ),
+                    child: const Text(
+                      'Delete only day',
+                      style: TextStyle(color: Color(0xFF6F7789), fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFE53935),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: const Text(
+                      'Delete + tracked',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (removeTracked == null) return;
+    await _deleteWorkoutDay(day, removeTrackedHistory: removeTracked);
+  }
+
+  Future<void> _deleteWorkoutDay(String day, {required bool removeTrackedHistory}) async {
+    _assignmentsByDay.remove(day);
+    _orderByDay.remove(day);
+    _orderDays.remove(day);
+    _dayColors.remove(day);
+    _dayIcons.remove(day);
+    _dayCustomIcons.remove(day);
+
+    if (removeTrackedHistory) {
+      _calendarByDate.forEach((_, days) => days.remove(day));
+      _calendarByDate.removeWhere((_, days) => days.isEmpty);
+
+      _logs.forEach((workoutId, list) {
+        list.removeWhere((log) => log.day == day);
+      });
+      _logs.removeWhere((_, list) => list.isEmpty);
+    }
+
+    await _saveAssignments();
+    await _saveOrderByDay();
+    await _saveOrderDays();
+    await _saveDayColors();
+    await _saveDayIcons();
+    await _saveDayCustomIcons();
+    if (removeTrackedHistory) {
+      await _saveCalendar();
+      await _saveLogs();
+    }
+
+    if (!mounted) return;
+    setState(() {});
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          removeTrackedHistory
+              ? 'Workout day "$day" deleted (including tracked history).'
+              : 'Workout day "$day" deleted.',
         ),
       ),
     );
@@ -2529,7 +2815,7 @@ class _GymScreenState extends State<GymScreen> {
             if (outcome == null) return;
             if (outcome.log != null) _addLog(w.id, outcome.log!);
           },
-          onLongPress: () => _openProgressChartDialog(w),
+          onLongPress: () => _openWorkoutLongPressMenu(w),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
