@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../pomodoro/presentation/screens/pomodoro_screen.dart';
 
 class FunctionsScreen extends StatelessWidget {
   const FunctionsScreen({super.key});
@@ -23,29 +24,37 @@ class FunctionsScreen extends StatelessWidget {
       backgroundColor: const Color(0xFFF5F6FA),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-        children: const [
-          FunctionCard(
+        children: [
+          const FunctionCard(
             title: 'Distraction Blocker',
             subtitle: 'Block distracting apps and stay focused',
             icon: Icons.block,
             iconBackgroundColor: Color(0xFFE8D6F7),
           ),
-          SizedBox(height: 16),
-          FunctionCard(
+          const SizedBox(height: 16),
+          const FunctionCard(
             title: 'Music Timer',
             subtitle: 'Play music with a countdown timer',
             icon: Icons.music_note,
             iconBackgroundColor: Color(0xFFFEE8D1),
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           FunctionCard(
             title: 'Pomodoro Timer',
             subtitle: 'Work in focused intervals with breaks',
             icon: Icons.timer,
-            iconBackgroundColor: Color(0xFFFFE8E8),
+            iconBackgroundColor: const Color(0xFFFFE8E8),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const PomodoroScreen(),
+                ),
+              );
+            },
           ),
-          SizedBox(height: 16),
-          FunctionCard(
+          const SizedBox(height: 16),
+          const FunctionCard(
             title: 'Deep Work Mode',
             subtitle: 'Eliminate distractions and enter flow state',
             icon: Icons.psychology,
@@ -62,6 +71,7 @@ class FunctionCard extends StatelessWidget {
   final String subtitle;
   final IconData icon;
   final Color iconBackgroundColor;
+  final VoidCallback? onTap;
 
   const FunctionCard({
     super.key,
@@ -69,6 +79,7 @@ class FunctionCard extends StatelessWidget {
     required this.subtitle,
     required this.icon,
     required this.iconBackgroundColor,
+    this.onTap,
   });
 
   @override
@@ -77,9 +88,9 @@ class FunctionCard extends StatelessWidget {
       color: Colors.white,
       borderRadius: BorderRadius.circular(20),
       elevation: 2,
-      shadowColor: Colors.black.withOpacity(0.08),
+      shadowColor: Colors.black.withValues(alpha: 0.08),
       child: InkWell(
-        onTap: () {
+        onTap: onTap ?? () {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Coming Soon')),
           );

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Goalify</string>
+    <string name="accessibility_service_description">
+        Dieser Dienst überwacht die App-Nutzung während Fokus-Sessions und blockiert ablenkende Apps, 
+        damit Sie produktiv bleiben. Aktivieren Sie diesen Dienst, um den Fokus-Modus und Pomodoro-Funktionen zu nutzen.
+    </string>
+</resources>
