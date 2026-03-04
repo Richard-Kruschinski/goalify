@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'app_blocking_config.dart';
 
@@ -35,10 +36,16 @@ class PlatformChannelService {
       
       _isBlockingActive = result == true;
       return _isBlockingActive;
-    } on PlatformException catch (_) {
+    } on PlatformException catch (e) {
+      if (kDebugMode) {
+        print('PlatformException while starting app blocking: ${e.code} - ${e.message}');
+      }
       _isBlockingActive = false;
       return false;
-    } catch (_) {
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error starting app blocking: $e');
+      }
       _isBlockingActive = false;
       return false;
     }

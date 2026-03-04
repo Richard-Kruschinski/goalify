@@ -67,12 +67,18 @@ class AppBlockingForegroundService : Service() {
     private fun startBlocking(blockedApps: List<String>) {
         Log.d(TAG, "Starting app blocking for ${blockedApps.size} apps")
         
-        // Update accessibility service
-        AppBlockingAccessibilityService.setBlockingEnabled(true, blockedApps)
-        
-        // Start foreground with notification
-        val notification = createNotification()
-        startForeground(NOTIFICATION_ID, notification)
+        try {
+            // Update accessibility service
+            AppBlockingAccessibilityService.setBlockingEnabled(true, blockedApps)
+            
+            // Start foreground with notification
+            val notification = createNotification()
+            startForeground(NOTIFICATION_ID, notification)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error starting foreground service: ${e.message}", e)
+            // If we can't start foreground, stop the service
+            stopSelf()
+        }
     }
 
     private fun stopBlocking() {

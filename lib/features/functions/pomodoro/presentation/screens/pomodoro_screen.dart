@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../../controllers/pomodoro_controller.dart';
 import '../../models/pomodoro_stats.dart';
 
@@ -26,16 +27,32 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> {
   @override
   void initState() {
     super.initState();
-    // Show permission request dialog if needed
+    // Show permission request dialogs if needed
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final controller = context.read<PomodoroController>();
       if (controller.isAppBlockingSupported) {
-        _checkAndRequestAccessibilityPermission();
+        _checkPermissions();
       } else {
         // Show iOS dialog
         _showIOSDialog(context);
       }
     });
+  }
+
+  Future<void> _checkPermissions() async {
+    // First check notification permission (required on Android 13+)
+    await _checkAndRequestNotificationPermission();
+    
+    // Then check accessibility permission
+    await _checkAndRequestAccessibilityPermission();
+  }
+
+  Future<void> _checkAndRequestNotificationPermission() async {
+    final status = await Permission.notification.status;
+    
+    if (status.isDenied && mounted) {
+      _showNotificationPermissionDialog();
+    }
   }
 
   Future<void> _checkAndRequestAccessibilityPermission() async {
@@ -45,6 +62,123 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> {
     if (!isEnabled && mounted) {
       _showAccessibilityPermissionDialog();
     }
+  }
+
+  void _showNotificationPermissionDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Icon
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFF6B6B).withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.notifications_active,
+                  color: Color(0xFFFF6B6B),
+                  size: 48,
+                ),
+              ),
+              const SizedBox(height: 20),
+              // Title
+              const Text(
+                'Benachrichtigungen erforderlich',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              // Content
+              Text(
+                'Um Sie während Ihrer Fokus-Sessions zu informieren, benötigt Goalify die Berechtigung, Benachrichtigungen anzuzeigen.',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                  height: 1.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              // Buttons
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: () async {
+                    Navigator.pop(context);
+                    await Permission.notification.request();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFF6B6B),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: const Text(
+                    'Erlauben',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.grey[700],
+                    side: BorderSide(color: Colors.grey[300]!),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: const Text(
+                    'Später',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   void _showAccessibilityPermissionDialog() {
@@ -477,6 +611,23 @@ class _ControlButtons extends StatelessWidget {
 
   const _ControlButtons({required this.controller});
 
+  Future<void> _handlePlayPause(BuildContext context) async {
+    if (controller.timerState == PomodoroTimerState.running) {
+      controller.pause();
+    } else {
+      final success = await controller.start();
+      if (!success && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Benachrichtigungsberechtigung erforderlich. Bitte erlauben Sie Benachrichtigungen in den Einstellungen.'),
+            duration: Duration(seconds: 4),
+            backgroundColor: Color(0xFFFF6B6B),
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -496,9 +647,7 @@ class _ControlButtons extends StatelessWidget {
           icon: controller.timerState == PomodoroTimerState.running
               ? Icons.pause
               : Icons.play_arrow,
-          onPressed: controller.timerState == PomodoroTimerState.running
-              ? controller.pause
-              : controller.start,
+          onPressed: () => _handlePlayPause(context),
           color: controller.currentPhase == PomodoroPhase.work
               ? const Color(0xFFFF6B6B)
               : const Color(0xFF51CF66),

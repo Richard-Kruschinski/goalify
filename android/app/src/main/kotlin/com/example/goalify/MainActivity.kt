@@ -1,8 +1,12 @@
 package com.example.goalify
 
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.provider.Settings
 import android.util.Log
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -29,6 +33,15 @@ class MainActivity : FlutterActivity() {
                             Log.w(TAG, "Accessibility service is not enabled")
                             result.error("SERVICE_NOT_ENABLED", "Accessibility service is not enabled", null)
                             return@setMethodCallHandler
+                        }
+                        
+                        // Check notification permission on Android 13+ (API 33+)
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            if (!hasNotificationPermission()) {
+                                Log.w(TAG, "Notification permission is not granted")
+                                result.error("NOTIFICATION_PERMISSION_DENIED", "Notification permission is required to start foreground service", null)
+                                return@setMethodCallHandler
+                            }
                         }
                         
                         // Start the foreground service
@@ -97,5 +110,20 @@ class MainActivity : FlutterActivity() {
         ) ?: return false
         
         return enabledServices.contains(serviceName)
+    }
+    
+    /**
+     * Check if notification permission is granted (Android 13+)
+     */
+    private fun hasNotificationPermission(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ContextCompat.checkSelfPermission(
+                this,
+                android.Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+        } else {
+            // Before Android 13, notification permission is not required
+            true
+        }
     }
 }

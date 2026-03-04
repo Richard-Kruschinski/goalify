@@ -302,10 +302,10 @@
     "muscles": ["Triceps"]
   },
   {
-    "id": "tricep_extension_cabel_isolated",
-    "name": "Tricep Extension (Cabel, Isolated)",
-    "description": "Cable cabel triceps extension with strict form and end-range flare for isolation.",
-    "icon": "assets/images/exercises/tricep_extension_cabel_isolated.png",
+    "id": "tricep_pushdown_cabel_isolated",
+    "name": "Tricep Pushdown (Cabel, Isolated)",
+    "description": "One-arm cable triceps pushdown with strict form and end-range flare for isolation.",
+    "icon": "assets/images/exercises/tricep_pushdown_cabel_isolated.png",
     "muscles": ["Triceps"]
   },
   {

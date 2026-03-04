@@ -356,6 +356,231 @@ class BestSetCache {
 }
 
 /// ===============================================================
+/// Modern Confirmation Dialog Helper
+/// ===============================================================
+Future<bool> _showModernConfirmationDialog({
+  required BuildContext context,
+  required String title,
+  required String message,
+  required String confirmButtonText,
+  String cancelButtonText = 'Cancel',
+  required Color iconColor,
+  required IconData icon,
+  bool isDangerous = false,
+}) async {
+  final result = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: isDangerous 
+                      ? const Color(0xFFFFEBEE)
+                      : const Color(0xFFE3F2FD),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: iconColor,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1A1D1F),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              message,
+              style: const TextStyle(
+                fontSize: 14,
+                color: Color(0xFF6F7789),
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  ),
+                  child: Text(
+                    cancelButtonText,
+                    style: const TextStyle(color: Color(0xFF6F7789)),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: iconColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: Text(
+                    confirmButtonText,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+
+  return result ?? false;
+}
+
+/// Modern Confirmation Dialog with multiple options
+Future<T?> _showModernConfirmationDialogWithOptions<T>({
+  required BuildContext context,
+  required String title,
+  required String message,
+  required Color iconColor,
+  required IconData icon,
+  bool isDangerous = false,
+  required Map<String, T> options,
+}) async {
+  final result = await showDialog<T>(
+    context: context,
+    builder: (ctx) => Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: isDangerous 
+                      ? const Color(0xFFFFEBEE)
+                      : const Color(0xFFE3F2FD),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: iconColor,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1A1D1F),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              message,
+              style: const TextStyle(
+                fontSize: 14,
+                color: Color(0xFF6F7789),
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                ...List.generate(
+                  options.entries.length,
+                  (index) {
+                    final entry = options.entries.elementAt(index);
+                    final isFirst = index == 0;
+                    final isLast = index == options.entries.length - 1;
+                    
+                    if (isFirst) {
+                      return TextButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        ),
+                        child: Text(
+                          entry.key,
+                          style: const TextStyle(color: Color(0xFF6F7789)),
+                        ),
+                      );
+                    }
+                    
+                    return Padding(
+                      padding: const EdgeInsets.only(left: 8),
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pop(ctx, entry.value),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: isLast ? iconColor : const Color(0xFFF0F4F8),
+                          foregroundColor: isLast ? Colors.white : const Color(0xFF6F7789),
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: Text(
+                          entry.key,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+
+  return result;
+}
+
+/// ===============================================================
 /// Gym Screen
 /// ===============================================================
 class GymScreen extends StatefulWidget {
@@ -1171,63 +1396,42 @@ class _GymScreenState extends State<GymScreen> {
     setState(() {});
   }
 
-  void _confirmClearHistoryAll(Workout w) {
-    showDialog<void>(
+  void _confirmClearHistoryAll(Workout w) async {
+    final confirmed = await _showModernConfirmationDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: Text('Delete all logs for "${w.name}"?'),
-        content: const Text(
-          'This will remove the complete history for this exercise. '
-              'Assignments in your workout plan remain.',
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel')),
-          FilledButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _deleteWorkoutLogsAll(w.id);
-            },
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
+      title: 'Clear all history?',
+      message: 'This will remove the complete history for "${w.name}".\nAssignments in your workout plan remain.',
+      confirmButtonText: 'Delete',
+      icon: Icons.delete_outline,
+      iconColor: const Color(0xFFE53935),
+      isDangerous: true,
     );
+
+    if (confirmed) {
+      _deleteWorkoutLogsAll(w.id);
+    }
   }
 
   Future<void> _confirmDeleteExercise(Workout w) async {
-    final removeTrackedCalendar = await showDialog<bool>(
+    final result = await _showModernConfirmationDialogWithOptions<String>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: Text('Remove "${w.name}" everywhere?'),
-        content: const Text(
-          'This will delete all logs and remove the exercise from every workout plan.\n\n'
-          'Also remove tracked past entries from the calendar?',
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context, null),
-              child: const Text('Cancel')),
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Delete only workout'),
-          ),
-          FilledButton(
-            onPressed: () {
-              Navigator.pop(context, true);
-            },
-            child: const Text('Delete + calendar'),
-          ),
-        ],
-      ),
+      title: 'Remove "${w.name}"?',
+      message: 'This will delete all logs and remove the exercise from every workout plan.\n\nAlso remove tracked past entries from the calendar?',
+      icon: Icons.delete_forever,
+      iconColor: const Color(0xFFE53935),
+      isDangerous: true,
+      options: {
+        'Cancel': 'cancel',
+        'Delete only': 'delete_only',
+        'Delete + Calendar': 'delete_all',
+      },
     );
 
-    if (removeTrackedCalendar == null) return;
-    _deleteExerciseEverywhere(
-      w.id,
-      removeTrackedCalendar: removeTrackedCalendar,
-    );
+    if (result == 'delete_only') {
+      _deleteExerciseEverywhere(w.id, removeTrackedCalendar: false);
+    } else if (result == 'delete_all') {
+      _deleteExerciseEverywhere(w.id, removeTrackedCalendar: true);
+    }
   }
 
   Future<void> _openWorkoutLongPressMenu(Workout w) async {
@@ -1522,8 +1726,79 @@ class _GymScreenState extends State<GymScreen> {
     if (assignedDays.isEmpty) {
       showDialog<void>(
         context: context,
-        builder: (_) => const AlertDialog(
-          content: Text('This exercise is not part of any workout plan yet.'),
+        builder: (_) => Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE3F2FD),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.remove_circle_outline,
+                        color: Color(0xFF2196F3),
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text(
+                        'Exercise not assigned',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1A1D1F),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'This exercise is not part of any workout plan yet.',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF6F7789),
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF2196F3),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        'OK',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
         ),
       );
       return;
@@ -1533,53 +1808,124 @@ class _GymScreenState extends State<GymScreen> {
     await showDialog<void>(
       context: context,
       builder: (_) => StatefulBuilder(
-        builder: (ctx, setS) => AlertDialog(
-          title: Text('Remove "${w.name}" from plan'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Align(
-                alignment: Alignment.centerLeft,
-                child: Text('Choose days to remove (history stays):'),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 6,
-                children: assignedDays.map((d) {
-                  final isSel = selected.contains(d);
-                  return FilterChip(
-                    label: Text(d),
-                    selected: isSel,
-                    onSelected: (v) => setS(() {
-                      if (v) {
-                        selected.add(d);
-                      } else {
-                        selected.remove(d);
-                      }
-                    }),
-                  );
-                }).toList(),
-              ),
-            ],
+        builder: (ctx, setS) => Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE3F2FD),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.remove_circle_outline,
+                        color: Color(0xFF2196F3),
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Remove "${w.name}"',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1A1D1F),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Choose days to remove (history stays):',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF6F7789),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: assignedDays.map((d) {
+                    final isSel = selected.contains(d);
+                    return FilterChip(
+                      label: Text(d),
+                      selected: isSel,
+                      selectedColor: const Color(0xFF2196F3),
+                      labelStyle: TextStyle(
+                        color: isSel ? Colors.white : const Color(0xFF6F7789),
+                        fontWeight: FontWeight.w500,
+                      ),
+                      side: BorderSide(
+                        color: isSel ? const Color(0xFF2196F3) : const Color(0xFFD1D5DB),
+                      ),
+                      onSelected: (v) => setS(() {
+                        if (v) {
+                          selected.add(d);
+                        } else {
+                          selected.remove(d);
+                        }
+                      }),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      ),
+                      child: const Text(
+                        'Cancel',
+                        style: TextStyle(color: Color(0xFF6F7789)),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      onPressed: selected.isEmpty
+                          ? null
+                          : () {
+                        for (final d in selected) {
+                          _removeAssignmentForDay(d, w.id);
+                        }
+                        Navigator.pop(ctx);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF2196F3),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                        disabledBackgroundColor: const Color(0xFFF0F4F8),
+                      ),
+                      child: const Text(
+                        'Remove',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: selected.isEmpty
-                  ? null
-                  : () {
-                for (final d in selected) {
-                  _removeAssignmentForDay(d, w.id);
-                }
-                Navigator.pop(ctx);
-              },
-              child: const Text('Remove'),
-            ),
-          ],
         ),
       ),
     );

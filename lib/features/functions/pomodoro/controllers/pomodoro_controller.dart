@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../models/pomodoro_stats.dart';
 import '../services/platform_channel_service.dart';
 import '../../../../core/utils/local_storage.dart';
@@ -111,15 +113,66 @@ class PomodoroController extends ChangeNotifier {
     return score > 100 ? 100 : score;
   }
 
+  // Check and request notification permission (Android 13+)
+  Future<bool> checkAndRequestNotificationPermission() async {
+    if (!_platformService.isAndroid) {
+      return true; // iOS doesn't need this permission for our use case
+    }
+
+    final status = await Permission.notification.status;
+    if (status.isGranted) {
+      return true;
+    }
+
+    if (status.isDenied) {
+      final result = await Permission.notification.request();
+      return result.isGranted;
+    }
+
+    // Permanently denied - user needs to go to settings
+    return false;
+  }
+
   // Start the timer
-  void start() async {
-    if (_timerState == PomodoroTimerState.running) return;
+  Future<bool> start() async {
+    if (_timerState == PomodoroTimerState.running) return true;
+
+    // Check notification permission before starting
+    if (_platformService.isAndroid) {
+      if (kDebugMode) {
+        print('Checking notification permission...');
+      }
+      final hasPermission = await checkAndRequestNotificationPermission();
+      if (!hasPermission) {
+        if (kDebugMode) {
+          print('Notification permission not granted');
+        }
+        // Permission not granted - return false to indicate failure
+        return false;
+      }
+      if (kDebugMode) {
+        print('Notification permission granted');
+      }
+    }
 
     _timerState = PomodoroTimerState.running;
     
     // Start app blocking if in work phase and on Android
     if (_currentPhase == PomodoroPhase.work && _platformService.isAndroid) {
-      await _platformService.startAppBlocking();
+      if (kDebugMode) {
+        print('Starting app blocking...');
+      }
+      final blockingStarted = await _platformService.startAppBlocking();
+      if (!blockingStarted) {
+        // App blocking failed, but timer can still work
+        if (kDebugMode) {
+          print('App blocking failed to start, but timer will continue');
+        }
+      } else {
+        if (kDebugMode) {
+          print('App blocking started successfully');
+        }
+      }
     }
 
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -132,6 +185,7 @@ class PomodoroController extends ChangeNotifier {
     });
 
     notifyListeners();
+    return true;
   }
 
   // Pause the timer
