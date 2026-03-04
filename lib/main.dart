@@ -43,17 +43,21 @@ class _MainNavState extends State<MainNav> {
   // 0:Progress, 1:Daily, 2:Gym, 3:Functions
   int currentIndex = 2;
 
-  final _screens = const [
-    ProgressScreen(),
-    DailyTasksScreen(),
-    GymScreen(),
-    FunctionsScreen(),
-  ];
-
   @override
   Widget build(BuildContext context) {
+    final screens = [
+      const ProgressScreen(),
+      DailyTasksScreen(
+        onNavigateToTab: (index) {
+          setState(() => currentIndex = index);
+        },
+      ),
+      const GymScreen(),
+      const FunctionsScreen(),
+    ];
+
     return Scaffold(
-      body: _screens[currentIndex],
+      body: screens[currentIndex],
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: currentIndex,

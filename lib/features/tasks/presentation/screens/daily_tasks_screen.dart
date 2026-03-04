@@ -1,16 +1,13 @@
 ﻿// Daily Tasks screen with "Congrats" overlay when all tasks are done.
-// NOTE: add this to your pubspec.yaml dependencies:
-//   confetti: ^0.7.0
 
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:confetti/confetti.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../../../core/utils/local_storage.dart';
 import '../../../../core/utils/icon_mapper.dart'; // IconMapper für zentrale Icon-Verwaltung
-import '../../../progress/presentation/screens/progress_screen.dart';
+import '../../../progress/presentation/screens/congrats_screen.dart';
 
 /// ===============================================================
 /// Model
@@ -210,7 +207,10 @@ class DailyTasksHelper {
 /// Screen
 /// ===============================================================
 class DailyTasksScreen extends StatefulWidget {
-  const DailyTasksScreen({super.key});
+  const DailyTasksScreen({super.key, this.onNavigateToTab});
+
+  final ValueChanged<int>? onNavigateToTab;
+
   @override
   State<DailyTasksScreen> createState() => _DailyTasksScreenState();
 }
@@ -902,9 +902,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
         barrierColor: Colors.black54,
         pageBuilder: (_, __, ___) => CongratsScreen(
           onSeeProgress: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const ProgressScreen()),
-            );
+            widget.onNavigateToTab?.call(0);
           },
         ),
         transitionsBuilder: (_, anim, __, child) =>
@@ -3551,206 +3549,6 @@ class _EditDailyTaskSheetState extends State<_EditDailyTaskSheet> {
     );
   }
 }
-
-/// ===============================================================
-/// Congrats overlay
-/// ===============================================================
-class CongratsScreen extends StatefulWidget {
-  const CongratsScreen({
-    super.key,
-    this.title = 'CONGRATS!',
-    this.subtitle = 'You finished all tasks for today',
-    this.detail = 'Well done — keep up the streaks!',
-    this.onSeeProgress,
-  });
-
-  final String title;
-  final String subtitle;
-  final String detail;
-  final VoidCallback? onSeeProgress;
-
-  @override
-  State<CongratsScreen> createState() => _CongratsScreenState();
-}
-
-class _CongratsScreenState extends State<CongratsScreen>
-    with SingleTickerProviderStateMixin {
-  late final ConfettiController _confetti;
-  late final AnimationController _scale;
-
-  @override
-  void initState() {
-    super.initState();
-    _confetti = ConfettiController(duration: const Duration(seconds: 2))..play();
-    _scale =
-    AnimationController(vsync: this, duration: const Duration(milliseconds: 450))
-      ..forward();
-  }
-
-  @override
-  void dispose() {
-    _confetti.dispose();
-    _scale.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return Scaffold(
-      backgroundColor: Colors.black54,
-      body: Stack(
-        children: [
-          // Centered card
-          Positioned.fill(
-            child: Center(
-              child: ScaleTransition(
-                scale: CurvedAnimation(parent: _scale, curve: Curves.easeOutBack),
-                child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 24),
-                  padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
-                  decoration: BoxDecoration(
-                    color: cs.surface,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x33000000),
-                        blurRadius: 20,
-                        offset: Offset(0, 10),
-                      ),
-                    ],
-                  ),
-                  constraints: const BoxConstraints(maxWidth: 380),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.emoji_events, size: 72, color: cs.primary),
-                      const SizedBox(height: 10),
-                      Container(
-                        padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: cs.primaryContainer,
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        child: Text(
-                          widget.title,
-                          style: TextStyle(
-                            color: cs.onPrimaryContainer,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        widget.subtitle,
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context)
-                            .textTheme
-                            .titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w600),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(widget.detail, textAlign: TextAlign.center),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          OutlinedButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text('Close'),
-                          ),
-                          const SizedBox(width: 12),
-                          FilledButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                              if (widget.onSeeProgress != null) {
-                                widget.onSeeProgress!.call();
-                              } else {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (_) => const ProgressScreen(),
-                                  ),
-                                );
-                              }
-                            },
-                            child: const Text('See progress'),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          // Confetti overlay
-          Positioned.fill(
-            child: IgnorePointer(
-              child: ConfettiWidget(
-                confettiController: _confetti,
-                blastDirectionality: BlastDirectionality.explosive,
-                shouldLoop: true,
-                numberOfParticles: 20,
-                emissionFrequency: 0.06,
-                gravity: 0.35,
-                minBlastForce: 6,
-                maxBlastForce: 20,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// ===============================================================
-/// Modern Date Picker Dialog
-/// ===============================================================
-class _ModernDatePickerDialog extends StatefulWidget {
-  final DateTime initialDate;
-  final ValueChanged<DateTime> onDateSelected;
-
-  const _ModernDatePickerDialog({
-    required this.initialDate,
-    required this.onDateSelected,
-  });
-
-  @override
-  State<_ModernDatePickerDialog> createState() => _ModernDatePickerDialogState();
-}
-
-class _ModernDatePickerDialogState extends State<_ModernDatePickerDialog> {
-  late DateTime _currentMonth;
-  double? _dragStartX;
-  bool _dragHandled = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _currentMonth = DateTime(widget.initialDate.year, widget.initialDate.month);
-  }
-
-  String _dateKey(DateTime dt) {
-    final y = dt.year.toString().padLeft(4, '0');
-    final m = dt.month.toString().padLeft(2, '0');
-    final d = dt.day.toString().padLeft(2, '0');
-    return '$y-$m-$d';
-  }
-
-  int _daysInMonth(DateTime date) {
-    return DateTime(date.year, date.month + 1, 0).day;
-  }
-
-  void _prevMonth() {
-    setState(() {
-      _currentMonth = DateTime(_currentMonth.year, _currentMonth.month - 1);
-    });
-  }
 
   void _nextMonth() {
     setState(() {
