@@ -1262,6 +1262,220 @@ class _GymScreenState extends State<GymScreen> {
     }
   }
 
+  Future<void> _showExerciseOptionsMenu(Workout w) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.only(top: 16, bottom: 24, left: 20, right: 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 48,
+              height: 4,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE0E0E0),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 28),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                children: [
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () async {
+                        Navigator.pop(ctx);
+                        await _openUnassignDialog(w);
+                      },
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE3F2FD),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.remove_circle_outline,
+                                color: Color(0xFF2196F3),
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            const Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Remove from this plan',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF1A1D1F),
+                                    ),
+                                  ),
+                                  SizedBox(height: 4),
+                                  Text(
+                                    'Keep progress history',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Color(0xFF6F7789),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Icon(
+                              Icons.chevron_right,
+                              color: Color(0xFFD1D5DB),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  Container(
+                    height: 1,
+                    color: const Color(0xFFF0F4F8),
+                  ),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _confirmClearHistoryAll(w);
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFEBEE),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.delete_outline,
+                                color: Color(0xFFE53935),
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            const Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Clear all history',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF1A1D1F),
+                                    ),
+                                  ),
+                                  SizedBox(height: 4),
+                                  Text(
+                                    'Remove all logs for this exercise',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Color(0xFF6F7789),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Icon(
+                              Icons.chevron_right,
+                              color: Color(0xFFD1D5DB),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  Container(
+                    height: 1,
+                    color: const Color(0xFFF0F4F8),
+                  ),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _confirmDeleteExercise(w);
+                      },
+                      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFEBEE),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.delete_forever,
+                                color: Color(0xFFE53935),
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            const Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Delete exercise',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF1A1D1F),
+                                    ),
+                                  ),
+                                  SizedBox(height: 4),
+                                  Text(
+                                    'Remove from plan and history',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Color(0xFF6F7789),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _deleteWorkoutLogsForDay(String workoutId, String day) {
     final list = _logs[workoutId];
     if (list == null) return;
@@ -3204,34 +3418,12 @@ class _GymScreenState extends State<GymScreen> {
                   icon: const Icon(Icons.history, color: Color(0xFF6F7789)),
                   onPressed: () => _openHistoryDialog(w),
                 ),
-                PopupMenuButton<String>(
+                IconButton(
+                  tooltip: 'More options',
                   icon: const Icon(Icons.more_vert, color: Color(0xFF6F7789)),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  onSelected: (value) async {
-                    if (value == 'remove_plan') {
-                      await _openUnassignDialog(w);
-                    } else if (value == 'clear_history') {
-                      _confirmClearHistoryAll(w);
-                    } else if (value == 'delete_everywhere') {
-                      _confirmDeleteExercise(w);
-                    }
+                  onPressed: () {
+                    _showExerciseOptionsMenu(w);
                   },
-                  itemBuilder: (_) => const [
-                    PopupMenuItem(
-                      value: 'remove_plan',
-                      child: Text('Remove from plan…'),
-                    ),
-                    PopupMenuItem(
-                      value: 'clear_history',
-                      child: Text('Clear all history'),
-                    ),
-                    PopupMenuItem(
-                      value: 'delete_everywhere',
-                      child: Text('Delete exercise…'),
-                    ),
-                  ],
                 ),
               ],
             ),
