@@ -3422,83 +3422,243 @@ class _GymScreenState extends State<GymScreen> {
 
   Widget _buildHistoryDialog(Workout w) {
     final list = _logs[w.id] ?? <WorkoutLog>[];
+    final isDuration = _isDurationWorkout(w);
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
     if (list.isEmpty) {
-      return AlertDialog(
-        backgroundColor: const Color(0xFFF5F7FA),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        titlePadding: const EdgeInsets.fromLTRB(20, 20, 16, 0),
-        contentPadding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFEBEE),
-                borderRadius: BorderRadius.circular(12),
+      return Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 560),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFAFAFC),
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.12),
+                blurRadius: 30,
+                offset: const Offset(0, 12),
               ),
-              child: const Icon(Icons.history, color: Color(0xFFE53935)),
-            ),
-            const SizedBox(width: 12),
-            const Expanded(
-              child: Text(
-                'No History',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        ),
-        content: const Text(
-          'No tracked workouts yet. Start logging to see your history here.',
-          style: TextStyle(color: Color(0xFF6F7789)),
-        ),
-        actions: [
-          FilledButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Got it'),
+            ],
           ),
-        ],
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF1F3F7),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.history_rounded, color: Color(0xFF4B5565)),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'No History',
+                      style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'No tracked workouts yet. Start logging to see your history here.',
+                  style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+                ),
+                const SizedBox(height: 16),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: FilledButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Got it'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       );
     }
 
-    return AlertDialog(
-      title: Text('History – ${w.name}'),
-      content: SizedBox(
-        width: double.maxFinite,
-        child: ListView.separated(
-          shrinkWrap: true,
-          itemCount: list.length,
-          separatorBuilder: (_, __) => const Divider(height: 0),
-          itemBuilder: (_, i) {
-            final log = list[i];
-            return ListTile(
-              leading: const Icon(Icons.history),
-              title: Text('${log.setCount} Sets  •  ${_formatDate(log.dateTime)}'),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+    final history = List<WorkoutLog>.from(list)
+      ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
+    final bestSet = _bestSetCache.getBest(w.id) ?? _bestSetCache.findBest(list);
+
+    bool isBestWorkout(WorkoutLog log) {
+      if (bestSet == null) return false;
+
+      final isSameDate = log.dateTime.year == bestSet.dateTime.year &&
+          log.dateTime.month == bestSet.dateTime.month &&
+          log.dateTime.day == bestSet.dateTime.day;
+
+      if (!isSameDate) return false;
+      if (isDuration) return true;
+
+      final sameWeight = (log.maxWeightKg - bestSet.maxWeight).abs() < 0.01;
+      final sameReps = log.heaviestSetReps == bestSet.maxReps;
+      return sameWeight && sameReps;
+    }
+
+    final estimatedHeight = 180 + (history.length * 118);
+    final dialogHeight = estimatedHeight.clamp(260, 560).toDouble();
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      child: Container(
+        height: dialogHeight,
+        constraints: const BoxConstraints(maxWidth: 680),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFAFAFC),
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.14),
+              blurRadius: 34,
+              offset: const Offset(0, 14),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
                 children: [
-                  Text(log.day),
-                  const SizedBox(height: 6),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 4,
-                    children: log.sets
-                        .map((s) => Chip(
-                              label: Text(_formatSetValue(w, s)),
-                              visualDensity: VisualDensity.compact,
-                              padding: EdgeInsets.zero,
-                            ))
-                        .toList(),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F3F7),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.history_rounded, color: Color(0xFF4B5565)),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'History – ${w.name}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+                    ),
                   ),
                 ],
               ),
-              trailing: const SizedBox.shrink(),
-            );
-          },
+              const SizedBox(height: 6),
+              Text(
+                '${history.length} logs',
+                style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+              ),
+              const SizedBox(height: 14),
+              Expanded(
+                child: ListView.separated(
+                  itemCount: history.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  itemBuilder: (_, i) {
+                    final log = history[i];
+                    final best = isBestWorkout(log);
+
+                    return Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: best
+                            ? const Color(0xFFFFF8E1)
+                            : const Color(0xFFFFFFFF),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: best ? const Color(0xFFE7B835) : const Color(0xFFE6E9EF),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                best ? Icons.emoji_events_rounded : Icons.history_rounded,
+                                color: best ? const Color(0xFFC58A00) : const Color(0xFF7A828F),
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  '${log.setCount} Sets • ${_formatDate(log.dateTime)}',
+                                  style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                                ),
+                              ),
+                              if (best)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFFE9A8),
+                                    borderRadius: BorderRadius.circular(999),
+                                    border: Border.all(color: const Color(0xFFE7B835)),
+                                  ),
+                                  child: Text(
+                                    'Best Workout',
+                                    style: tt.labelMedium?.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      color: const Color(0xFF7A5900),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            log.day,
+                            style: tt.bodyMedium?.copyWith(
+                              color: cs.onSurfaceVariant,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: log.sets
+                                .map((s) => Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFFFFFFF),
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(color: const Color(0xFFE3E7EE)),
+                                      ),
+                                      child: Text(
+                                        _formatSetValue(w, s),
+                                        style: tt.bodySmall?.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                          color: const Color(0xFF3F495A),
+                                        ),
+                                      ),
+                                    ))
+                                .toList(),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 12),
+              Align(
+                alignment: Alignment.centerRight,
+                child: FilledButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('OK'),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK'))
-      ],
     );
   }
 
