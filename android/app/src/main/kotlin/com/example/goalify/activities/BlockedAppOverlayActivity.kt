@@ -4,8 +4,7 @@ import android.app.Activity
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
+import android.util.Log
 import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
@@ -20,16 +19,20 @@ import com.example.goalify.MainActivity
  */
 class BlockedAppOverlayActivity : Activity() {
 
-    private val autoCloseHandler = Handler(Looper.getMainLooper())
-    private val autoCloseRunnable = Runnable {
-        returnToMainApp()
+    companion object {
+        private const val TAG = "BlockedAppOverlay"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // Make it fullscreen
+        Log.d(TAG, "BlockedAppOverlayActivity created")
+        
+        // Make it fullscreen and keep it on top
         window.apply {
+            addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED)
+            addFlags(WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD)
             setFlags(
                 WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
                 WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
@@ -46,9 +49,6 @@ class BlockedAppOverlayActivity : Activity() {
         
         // Create UI programmatically
         setContentView(createBlockedAppView())
-        
-        // Auto-close after 2 seconds and return to main app
-        autoCloseHandler.postDelayed(autoCloseRunnable, 2000)
     }
 
     private fun createBlockedAppView(): View {
@@ -57,6 +57,8 @@ class BlockedAppOverlayActivity : Activity() {
             gravity = Gravity.CENTER
             setBackgroundColor(Color.parseColor("#FF6B6B")) // Red background
             setPadding(48, 48, 48, 48)
+            isClickable = true
+            isFocusable = true
         }
 
         // Icon (using emoji as text for simplicity)
@@ -69,7 +71,7 @@ class BlockedAppOverlayActivity : Activity() {
 
         // Title
         val title = TextView(this).apply {
-            text = "App Blocked"
+            text = "App Blockiert"
             textSize = 32f
             setTextColor(Color.WHITE)
             gravity = Gravity.CENTER
@@ -79,7 +81,7 @@ class BlockedAppOverlayActivity : Activity() {
 
         // Message
         val message = TextView(this).apply {
-            text = "This app is blocked during Focus Mode.\nStay focused on your work!"
+            text = "Diese App ist während der Fokus-Session blockiert.\nBleiben Sie konzentriert!"
             textSize = 18f
             setTextColor(Color.WHITE)
             gravity = Gravity.CENTER
@@ -90,12 +92,13 @@ class BlockedAppOverlayActivity : Activity() {
 
         // Return button
         val button = Button(this).apply {
-            text = "Return to Goalify"
+            text = "Zurück zu Goalify"
             textSize = 16f
             setBackgroundColor(Color.WHITE)
             setTextColor(Color.parseColor("#FF6B6B"))
             setPadding(64, 32, 64, 32)
             setOnClickListener {
+                Log.d(TAG, "Return button clicked")
                 returnToMainApp()
             }
         }
@@ -105,12 +108,14 @@ class BlockedAppOverlayActivity : Activity() {
     }
 
     private fun returnToMainApp() {
-        autoCloseHandler.removeCallbacks(autoCloseRunnable)
+        Log.d(TAG, "Returning to main app")
         
-        // Launch main app
+        // Launch main app with clear task
         val intent = Intent(this, MainActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
         }
         startActivity(intent)
         finish()
@@ -118,11 +123,32 @@ class BlockedAppOverlayActivity : Activity() {
 
     override fun onBackPressed() {
         // Don't allow back button to escape
+        Log.d(TAG, "Back button pressed - redirecting to Goalify")
         returnToMainApp()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        Log.d(TAG, "Activity paused")
+    }
+
+    override fun onResume() {
+        super.onResume()
+        Log.d(TAG, "Activity resumed")
+        
+        // Ensure UI stays visible
+        window.decorView.systemUiVisibility = (
+            View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+            or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+            or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+            or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+            or View.SYSTEM_UI_FLAG_FULLSCREEN
+            or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+        )
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        autoCloseHandler.removeCallbacks(autoCloseRunnable)
+        Log.d(TAG, "Activity destroyed")
     }
 }
