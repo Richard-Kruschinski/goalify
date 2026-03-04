@@ -202,7 +202,7 @@ class WorkoutLog {
     if (totalDropsets > 0) {
       return 'Dropset (${sets.length} + $totalDropsets)';
     }
-    return '${maxWeightKg.toStringAsFixed(1)} kg × ${heaviestSetReps} reps';
+    return '${maxWeightKg.toStringAsFixed(1)} kg × $heaviestSetReps reps';
   }
 
   Map<String, dynamic> toMap() => {
@@ -279,7 +279,7 @@ class _GymScreenState extends State<GymScreen> {
   // Logs & Order
   final Map<String, List<WorkoutLog>> _logs = <String, List<WorkoutLog>>{};
   List<String> _orderActive = <String>[];
-  Map<String, List<String>> _orderByDay = <String, List<String>>{};
+  final Map<String, List<String>> _orderByDay = <String, List<String>>{};
 
   // Zuweisungen „Übung gehört zu Day“, auch ohne History
   final Map<String, List<String>> _assignmentsByDay = <String, List<String>>{};
@@ -577,7 +577,7 @@ class _GymScreenState extends State<GymScreen> {
       // Ensure the day has a color for calendar display
       if (!_dayColors.containsKey(dayName)) {
         final cs = Theme.of(context).colorScheme;
-        _dayColors[dayName] = _resolveDayColor(dayName, cs).value;
+        _dayColors[dayName] = _resolveDayColor(dayName, cs).toARGB32();
         await _saveDayColors();
       }
       
@@ -600,7 +600,7 @@ class _GymScreenState extends State<GymScreen> {
   }
 
   Future<void> _setDayColor(String day, Color color) async {
-    _dayColors[day] = color.value;
+    _dayColors[day] = color.toARGB32();
     await _saveDayColors();
     if (mounted) setState(() {});
   }
@@ -727,7 +727,9 @@ class _GymScreenState extends State<GymScreen> {
     final out = <String>{};
     final list = _logs[workoutId];
     if (list != null) {
-      for (final l in list) out.add(l.day);
+      for (final l in list) {
+        out.add(l.day);
+      }
     }
     _assignmentsByDay.forEach((day, ids) {
       if (ids.contains(workoutId)) out.add(day);
@@ -794,7 +796,7 @@ class _GymScreenState extends State<GymScreen> {
       // Ensure the day has a color for calendar display
       if (!_dayColors.containsKey(result.day)) {
         final cs = Theme.of(context).colorScheme;
-        _dayColors[result.day] = _resolveDayColor(result.day, cs).value;
+        _dayColors[result.day] = _resolveDayColor(result.day, cs).toARGB32();
         _saveDayColors();
       }
       _saveCalendar();
@@ -2236,15 +2238,25 @@ class _GymScreenState extends State<GymScreen> {
       final double f = range / exp; // 1..10
       double nf;
       if (round) {
-        if (f < 1.5) nf = 1;
-        else if (f < 3) nf = 2;
-        else if (f < 7) nf = 5;
-        else nf = 10;
+        if (f < 1.5) {
+          nf = 1;
+        } else if (f < 3) {
+          nf = 2;
+        } else if (f < 7) {
+          nf = 5;
+        } else {
+          nf = 10;
+        }
       } else {
-        if (f <= 1) nf = 1;
-        else if (f <= 2) nf = 2;
-        else if (f <= 5) nf = 5;
-        else nf = 10;
+        if (f <= 1) {
+          nf = 1;
+        } else if (f <= 2) {
+          nf = 2;
+        } else if (f <= 5) {
+          nf = 5;
+        } else {
+          nf = 10;
+        }
       }
       return nf * exp;
     }
@@ -2266,8 +2278,24 @@ class _GymScreenState extends State<GymScreen> {
     String fmtDate(DateTime d) =>
         '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.${d.year}';
     String fmtTooltip(DateTime d) => fmtDate(d);
-    String valueLabel(double y) =>
-      isDuration ? _formatDurationShort(y.round()) : '${y.toStringAsFixed(1)} kg';
+    WorkoutLog? logForSpotX(double x) {
+      final target = x.round();
+      for (final log in logs) {
+        if (log.dateTime.millisecondsSinceEpoch == target) {
+          return log;
+        }
+      }
+      return null;
+    }
+
+    String valueLabelForSet(double y, WorkoutLog? log, int setIndex) {
+      if (isDuration) return _formatDurationShort(y.round());
+      final reps = (log != null && setIndex >= 0 && setIndex < log.sets.length)
+          ? log.sets[setIndex].reps
+          : 0;
+      return '${y.toStringAsFixed(1)} kg x $reps';
+    }
+
     Color seriesColor(int index) {
       final palette = Colors.primaries;
       return palette[index % palette.length].shade400;
@@ -2427,7 +2455,8 @@ class _GymScreenState extends State<GymScreen> {
                     final dt = DateTime.fromMillisecondsSinceEpoch(t.x.round());
                     final dateStr = fmtTooltip(dt);
                     final setIndex = seriesSetIndices[t.barIndex];
-                    final valueStr = valueLabel(t.y);
+                    final log = logForSpotX(t.x);
+                    final valueStr = valueLabelForSet(t.y, log, setIndex);
 
                     return LineTooltipItem(
                       '$dateStr\n',
@@ -3124,7 +3153,7 @@ class _GymScreenState extends State<GymScreen> {
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('${log.day}'),
+                  Text(log.day),
                   const SizedBox(height: 6),
                   Wrap(
                     spacing: 8,
@@ -3855,7 +3884,7 @@ class _LogInputDialogState extends State<LogInputDialog> {
   }
 
   bool _anyNumberFilled() {
-    bool _checkField(_SetInputField field) {
+    bool checkField(_SetInputField field) {
       if (_isDurationWorkout) {
         if (field.durationController.text.trim().isNotEmpty) return true;
       } else {
@@ -3865,10 +3894,10 @@ class _LogInputDialogState extends State<LogInputDialog> {
         }
       }
       // Check dropsets
-      return field.dropsets.any((d) => _checkField(d));
+      return field.dropsets.any((d) => checkField(d));
     }
 
-    return _setFields.any((f) => _checkField(f));
+    return _setFields.any((f) => checkField(f));
   }
 
   bool _validateForTracking() {
@@ -3880,7 +3909,7 @@ class _LogInputDialogState extends State<LogInputDialog> {
     }
 
     // Validiere alle Sets (inkl. Dropsets)
-    bool _validateField(int setNum, int dropsetNum, _SetInputField field) {
+    bool validateField(int setNum, int dropsetNum, _SetInputField field) {
       if (_isDurationWorkout) {
         final duration = int.tryParse(field.durationController.text);
         if (duration == null || duration <= 0) {
@@ -3915,7 +3944,7 @@ class _LogInputDialogState extends State<LogInputDialog> {
 
       // Validiere Dropsets rekursiv
       for (int i = 0; i < field.dropsets.length; i++) {
-        if (!_validateField(setNum, i + 1, field.dropsets[i])) {
+        if (!validateField(setNum, i + 1, field.dropsets[i])) {
           return false;
         }
       }
@@ -3924,7 +3953,7 @@ class _LogInputDialogState extends State<LogInputDialog> {
     }
 
     for (int i = 0; i < _setFields.length; i++) {
-      if (!_validateField(i + 1, 0, _setFields[i])) {
+      if (!validateField(i + 1, 0, _setFields[i])) {
         return false;
       }
     }
@@ -4098,7 +4127,7 @@ class _LogInputDialogState extends State<LogInputDialog> {
           final index = entry.key;
           final field = entry.value;
           return _buildSetRow(index, field);
-        }).toList(),
+        }),
         const SizedBox(height: 8),
         ElevatedButton.icon(
           onPressed: _addSet,
@@ -4528,13 +4557,40 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
   double _yValueForLog(WorkoutLog log) =>
       _durationBased ? log.longestDurationSeconds.toDouble() : log.maxWeightKg;
 
-  String _tooltipValue(double yValue, WorkoutLog log) {
-    if (_durationBased) return _formatDurationShort(log.longestDurationSeconds);
-    return '${yValue.toStringAsFixed(1)} kg × ${log.heaviestSetReps} reps';
+  WorkoutLog? _logForSpotX(List<WorkoutLog> source, double x) {
+    final target = x.round();
+    for (final log in source) {
+      if (log.dateTime.millisecondsSinceEpoch == target) {
+        return log;
+      }
+    }
+    return null;
   }
 
-  String _valueLabel(double y) =>
-      _durationBased ? _formatDurationShort(y.round()) : '${y.toStringAsFixed(1)} kg';
+  int _repsForFilter(WorkoutLog log) {
+    if (!_filterBy.startsWith('Set ')) {
+      return log.heaviestSetReps;
+    }
+
+    if (_filterBy.contains('•')) {
+      final parts = _filterBy.split('•');
+      final setNum = int.tryParse(parts[0].trim().split(' ')[1]) ?? 1;
+      final dropsetNum = int.tryParse(parts[1].trim().split(' ')[1]) ?? 1;
+      if (setNum <= 0 || setNum > log.sets.length) return 0;
+      final set = log.sets[setNum - 1];
+      if (dropsetNum <= 0 || dropsetNum > set.dropsets.length) return 0;
+      return set.dropsets[dropsetNum - 1].reps;
+    }
+
+    final setNum = int.tryParse(_filterBy.split(' ')[1]) ?? 1;
+    if (setNum <= 0 || setNum > log.sets.length) return 0;
+    return log.sets[setNum - 1].reps;
+  }
+
+  String _tooltipValue(double yValue, WorkoutLog log) {
+    if (_durationBased) return _formatDurationShort(log.longestDurationSeconds);
+    return '${yValue.toStringAsFixed(1)} kg x ${_repsForFilter(log)}';
+  }
 
   Color _seriesColor(int index) {
     final palette = Colors.primaries;
@@ -4765,15 +4821,25 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
       final double f = range / exp;
       double nf;
       if (round) {
-        if (f < 1.5) nf = 1;
-        else if (f < 3) nf = 2;
-        else if (f < 7) nf = 5;
-        else nf = 10;
+        if (f < 1.5) {
+          nf = 1;
+        } else if (f < 3) {
+          nf = 2;
+        } else if (f < 7) {
+          nf = 5;
+        } else {
+          nf = 10;
+        }
       } else {
-        if (f <= 1) nf = 1;
-        else if (f <= 2) nf = 2;
-        else if (f <= 5) nf = 5;
-        else nf = 10;
+        if (f <= 1) {
+          nf = 1;
+        } else if (f <= 2) {
+          nf = 2;
+        } else if (f <= 5) {
+          nf = 5;
+        } else {
+          nf = 10;
+        }
       }
       return nf * exp;
     }
@@ -4910,7 +4976,13 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
                   final dateStr = fmtTooltip(dt);
                   if (useMulti) {
                     final setIndex = seriesSetIndices[t.barIndex];
-                    final valueStr = _valueLabel(t.y);
+                    final log = _logForSpotX(dateFilteredLogs, t.x);
+                    final reps = (log != null && setIndex >= 0 && setIndex < log.sets.length)
+                        ? log.sets[setIndex].reps
+                        : 0;
+                    final valueStr = _durationBased
+                        ? _formatDurationShort(t.y.round())
+                        : '${t.y.toStringAsFixed(1)} kg x $reps';
                     return LineTooltipItem(
                       '$dateStr\n',
                       const TextStyle(color: Color(0xFF1A1D1F), fontWeight: FontWeight.w700),
@@ -5233,7 +5305,7 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
                       contentPadding: EdgeInsets.zero,
                       title: const Text('Creatine taken'),
                       subtitle: const Text('Show red dot in calendar'),
-                      activeColor: const Color(0xFFE53935),
+                      activeThumbColor: const Color(0xFFE53935),
                       value: tookCreatine,
                       onChanged: (v) async {
                         setSheetState(() => tookCreatine = v);
@@ -5290,7 +5362,7 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
                                   ),
                                 ),
                               ))
-                          .toList(),
+                          ,
                   ],
                 ),
               ),
@@ -5955,7 +6027,7 @@ class ModernDateRangePicker extends StatefulWidget {
   final DateTime firstDate;
   final DateTime lastDate;
 
-  const ModernDateRangePicker({
+  const ModernDateRangePicker({super.key, 
     this.initialStart,
     this.initialEnd,
     required this.firstDate,

@@ -1,4 +1,4 @@
-﻿// Daily Tasks screen with "Congrats" overlay when all tasks are done.
+// Daily Tasks screen with "Congrats" overlay when all tasks are done.
 
 import 'dart:async';
 import 'dart:io';
@@ -265,7 +265,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
 
   // legacy/local orders
   List<String> _orderKeep = [];
-  Map<String, List<String>> _orderByDate = {};
+  final Map<String, List<String>> _orderByDate = {};
 
   // combined per date
   final Map<String, List<String>> _orderCombined = {};
@@ -3550,6 +3550,44 @@ class _EditDailyTaskSheetState extends State<_EditDailyTaskSheet> {
   }
 }
 
+class _ModernDatePickerDialog extends StatefulWidget {
+  const _ModernDatePickerDialog({
+    required this.initialDate,
+    required this.onDateSelected,
+  });
+
+  final DateTime initialDate;
+  final ValueChanged<DateTime> onDateSelected;
+
+  @override
+  State<_ModernDatePickerDialog> createState() => _ModernDatePickerDialogState();
+}
+
+class _ModernDatePickerDialogState extends State<_ModernDatePickerDialog> {
+  late DateTime _currentMonth;
+  double? _dragStartX;
+  bool _dragHandled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentMonth = DateTime(widget.initialDate.year, widget.initialDate.month, 1);
+  }
+
+  String _dateKey(DateTime dt) =>
+      '${dt.year.toString().padLeft(4, '0')}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+
+  int _daysInMonth(DateTime month) {
+    final next = DateTime(month.year, month.month + 1, 1);
+    return next.subtract(const Duration(days: 1)).day;
+  }
+
+  void _prevMonth() {
+    setState(() {
+      _currentMonth = DateTime(_currentMonth.year, _currentMonth.month - 1);
+    });
+  }
+
   void _nextMonth() {
     setState(() {
       _currentMonth = DateTime(_currentMonth.year, _currentMonth.month + 1);
@@ -3609,140 +3647,140 @@ class _EditDailyTaskSheetState extends State<_EditDailyTaskSheet> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Row(
-                children: [
-                  InkWell(
-                    onTap: () => Navigator.pop(context),
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Color(0x14000000),
-                            blurRadius: 10,
-                            offset: Offset(0, 3),
-                          )
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: Row(
+                  children: [
+                    InkWell(
+                      onTap: () => Navigator.pop(context),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0x14000000),
+                              blurRadius: 10,
+                              offset: Offset(0, 3),
+                            )
+                          ],
+                        ),
+                        child: const Icon(Icons.arrow_back, color: Color(0xFF374151)),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            titleLabel,
+                            style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: -0.2,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Select a date',
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontSize: 12,
+                            ),
+                          ),
                         ],
                       ),
-                      child: const Icon(Icons.arrow_back, color: Color(0xFF374151)),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          titleLabel,
-                          style: const TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: -0.2,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Select a date',
-                          style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  _MonthIconButton(icon: Icons.chevron_left, onTap: _prevMonth),
-                  const SizedBox(width: 8),
-                  _MonthIconButton(icon: Icons.chevron_right, onTap: _nextMonth, isPrimary: true),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  _Dow('Mon'), _Dow('Tue'), _Dow('Wed'),
-                  _Dow('Thu'), _Dow('Fri'), _Dow('Sat'), _Dow('Sun'),
-                ],
-              ),
-            ),
-            const Divider(height: 0),
-            Padding(
-              padding: const EdgeInsets.all(8),
-              child: GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 7,
-                  mainAxisSpacing: 6,
-                  crossAxisSpacing: 6,
-                  childAspectRatio: 0.9,
+                    const SizedBox(width: 12),
+                    _MonthIconButton(icon: Icons.chevron_left, onTap: _prevMonth),
+                    const SizedBox(width: 8),
+                    _MonthIconButton(icon: Icons.chevron_right, onTap: _nextMonth, isPrimary: true),
+                  ],
                 ),
-                itemCount: rows * 7,
-                itemBuilder: (_, idx) {
-                  if (idx < leadingEmpty || idx >= leadingEmpty + days) {
-                    return const SizedBox.shrink();
-                  }
-                  final dayNum = idx - leadingEmpty + 1;
-                  final date = DateTime(_currentMonth.year, _currentMonth.month, dayNum);
-                  final isToday = _dateKey(date) == _dateKey(now);
-                  final isSelected = _dateKey(date) == _dateKey(widget.initialDate);
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: const [
+                    _Dow('Mon'), _Dow('Tue'), _Dow('Wed'),
+                    _Dow('Thu'), _Dow('Fri'), _Dow('Sat'), _Dow('Sun'),
+                  ],
+                ),
+              ),
+              const Divider(height: 0),
+              Padding(
+                padding: const EdgeInsets.all(8),
+                child: GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 7,
+                    mainAxisSpacing: 6,
+                    crossAxisSpacing: 6,
+                    childAspectRatio: 0.9,
+                  ),
+                  itemCount: rows * 7,
+                  itemBuilder: (_, idx) {
+                    if (idx < leadingEmpty || idx >= leadingEmpty + days) {
+                      return const SizedBox.shrink();
+                    }
+                    final dayNum = idx - leadingEmpty + 1;
+                    final date = DateTime(_currentMonth.year, _currentMonth.month, dayNum);
+                    final isToday = _dateKey(date) == _dateKey(now);
+                    final isSelected = _dateKey(date) == _dateKey(widget.initialDate);
 
-                  return GestureDetector(
-                    onTap: () => widget.onDateSelected(date),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? const Color(0xFFEF4444)
-                            : isToday
-                                ? const Color(0xFFFEE2E2)
-                                : Colors.white,
-                        border: isToday && !isSelected
-                            ? Border.all(color: const Color(0xFFEF4444), width: 1.5)
-                            : null,
-                        borderRadius: BorderRadius.circular(10),
-                        boxShadow: isSelected
-                            ? const [
-                                BoxShadow(
-                                  color: Color(0x33EF4444),
-                                  blurRadius: 8,
-                                  offset: Offset(0, 2),
-                                )
-                              ]
-                            : const [
-                                BoxShadow(
-                                  color: Color(0x0A000000),
-                                  blurRadius: 4,
-                                  offset: Offset(0, 1),
-                                )
-                              ],
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        dayNum.toString(),
-                        style: TextStyle(
-                          fontWeight: isSelected || isToday ? FontWeight.w600 : FontWeight.w500,
-                          fontSize: 14,
+                    return GestureDetector(
+                      onTap: () => widget.onDateSelected(date),
+                      child: Container(
+                        decoration: BoxDecoration(
                           color: isSelected
-                              ? Colors.white
+                              ? const Color(0xFFEF4444)
                               : isToday
-                                  ? const Color(0xFFEF4444)
-                                  : Colors.black,
+                                  ? const Color(0xFFFEE2E2)
+                                  : Colors.white,
+                          border: isToday && !isSelected
+                              ? Border.all(color: const Color(0xFFEF4444), width: 1.5)
+                              : null,
+                          borderRadius: BorderRadius.circular(10),
+                          boxShadow: isSelected
+                              ? const [
+                                  BoxShadow(
+                                    color: Color(0x33EF4444),
+                                    blurRadius: 8,
+                                    offset: Offset(0, 2),
+                                  )
+                                ]
+                              : const [
+                                  BoxShadow(
+                                    color: Color(0x0A000000),
+                                    blurRadius: 4,
+                                    offset: Offset(0, 1),
+                                  )
+                                ],
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          dayNum.toString(),
+                          style: TextStyle(
+                            fontWeight: isSelected || isToday ? FontWeight.w600 : FontWeight.w500,
+                            fontSize: 14,
+                            color: isSelected
+                                ? Colors.white
+                                : isToday
+                                    ? const Color(0xFFEF4444)
+                                    : Colors.black,
+                          ),
                         ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
         ),
       ),
     );
