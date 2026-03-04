@@ -4045,41 +4045,233 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
                   onPressed: () => widget.onShowHistory(w),
                   icon: const Icon(Icons.history, color: Color(0xFF6F7789)),
                 ),
-                PopupMenuButton<String>(
+                IconButton(
+                  tooltip: 'More options',
                   icon: const Icon(Icons.more_vert, color: Color(0xFF6F7789)),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  onSelected: (value) {
-                    if (value == 'delete_day') {
-                      widget.onDeleteForDay(w);
-                    }
-                    if (value == 'remove_plan') {
-                      widget.onUnassignFromDay(w);
-                      setState(() {
-                        _list.removeWhere((x) => x.id == w.id);
-                      });
-                    }
-                    if (value == 'delete_all') {
-                      widget.onDeleteAll(w);
-                    }
+                  onPressed: () {
+                    _showExerciseOptionsMenuForDay(w);
                   },
-                  itemBuilder: (_) => const [
-                    PopupMenuItem(
-                      value: 'delete_day',
-                      child: Text('Delete today’s logs only'),
-                    ),
-                    PopupMenuItem(
-                      value: 'remove_plan',
-                      child: Text('Remove from this plan (keep history)'),
-                    ),
-                    PopupMenuItem(
-                      value: 'delete_all',
-                      child: Text('Delete all logs for this exercise'),
-                    ),
-                  ],
                 ),
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showExerciseOptionsMenuForDay(Workout w) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.only(top: 16, bottom: 24, left: 20, right: 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 48,
+              height: 4,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE0E0E0),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 28),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                children: [
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        widget.onDeleteForDay(w);
+                      },
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFEBEE),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.delete_outline,
+                                color: Color(0xFFE53935),
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Delete today\'s logs only',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF1A1D1F),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  const Text(
+                                    'Remove logs from this date',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Color(0xFF6F7789),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(
+                              Icons.chevron_right,
+                              color: Color(0xFFD1D5DB),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  Container(
+                    height: 1,
+                    color: const Color(0xFFF0F4F8),
+                  ),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        widget.onUnassignFromDay(w);
+                        setState(() {
+                          _list.removeWhere((x) => x.id == w.id);
+                        });
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE3F2FD),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.remove_circle_outline,
+                                color: Color(0xFF2196F3),
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Remove from this plan',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF1A1D1F),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  const Text(
+                                    'Keep progress history',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Color(0xFF6F7789),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(
+                              Icons.chevron_right,
+                              color: Color(0xFFD1D5DB),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  Container(
+                    height: 1,
+                    color: const Color(0xFFF0F4F8),
+                  ),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        widget.onDeleteAll(w);
+                      },
+                      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFEBEE),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.delete_forever,
+                                color: Color(0xFFE53935),
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Delete all logs',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF1A1D1F),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  const Text(
+                                    'Remove all progress for this exercise',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Color(0xFF6F7789),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
