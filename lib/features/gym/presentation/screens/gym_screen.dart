@@ -244,6 +244,118 @@ class LogOutcome {
 }
 
 /// ===============================================================
+/// Best Set Tracking & Scoring
+/// ===============================================================
+
+/// Speichert Informationen über den besten Satz für eine Übung
+class BestSetRecord {
+  final DateTime dateTime;      // Wann war dieser beste Satz?
+  final double maxWeight;       // Höchstes Gewicht in allen Sets
+  final int maxReps;           // Reps beim höchsten Gewicht
+  final int setCount;          // Wie viele Sets insgesamt
+  final double score;          // Numerischer Score zur Sortierung
+
+  const BestSetRecord({
+    required this.dateTime,
+    required this.maxWeight,
+    required this.maxReps,
+    required this.setCount,
+    required this.score,
+  });
+
+  Map<String, dynamic> toMap() => {
+    'dateTime': dateTime.toIso8601String(),
+    'maxWeight': maxWeight,
+    'maxReps': maxReps,
+    'setCount': setCount,
+    'score': score,
+  };
+
+  factory BestSetRecord.fromMap(Map<String, dynamic> m) {
+    return BestSetRecord(
+      dateTime: DateTime.parse(m['dateTime'] as String),
+      maxWeight: (m['maxWeight'] as num?)?.toDouble() ?? 0.0,
+      maxReps: (m['maxReps'] as num?)?.toInt() ?? 0,
+      setCount: (m['setCount'] as num?)?.toInt() ?? 0,
+      score: (m['score'] as num?)?.toDouble() ?? 0.0,
+    );
+  }
+}
+
+/// Manager für Best-Set-Caching pro Übung
+class BestSetCache {
+  final Map<String, BestSetRecord> _cache = {};
+
+  /// Berechnet den Score eines Satzes nach Priorität:
+  /// 1. Höchstes Gewicht über alle Logs
+  /// 2. Bei gleich hohem Gewicht: höchste Reps
+  /// 3. Bei gleich hohem Gewicht+Reps: frühestes Datum gewinnt
+  static double _calculateScore(WorkoutLog log) {
+    // Score = weight * 10000 + reps * 100 - (days_since_epoch / 100000)
+    // So dass höheres Gewicht und Reps gewinnen, aber bei Gleichheit das frühere Datum
+    final daysSinceEpoch = log.dateTime.difference(DateTime(1970)).inDays;
+    return (log.maxWeightKg * 10000) + (log.heaviestSetReps * 100) - (daysSinceEpoch / 100000);
+  }
+
+  /// Findet den besten Satz aus einer Liste von Logs
+  BestSetRecord? findBest(List<WorkoutLog> logs) {
+    if (logs.isEmpty) return null;
+
+    // Sortiere nach Score (höher = besser)
+    final sorted = [...logs]..sort(
+      (a, b) => _calculateScore(b).compareTo(_calculateScore(a)),
+    );
+
+    final bestLog = sorted.first;
+    return BestSetRecord(
+      dateTime: bestLog.dateTime,
+      maxWeight: bestLog.maxWeightKg,
+      maxReps: bestLog.heaviestSetReps,
+      setCount: bestLog.setCount,
+      score: _calculateScore(bestLog),
+    );
+  }
+
+  /// Aktualisiert den Cache für eine Übung
+  void updateBest(String workoutId, BestSetRecord? best) {
+    if (best != null) {
+      _cache[workoutId] = best;
+    } else {
+      _cache.remove(workoutId);
+    }
+  }
+
+  /// Holt den aktuellen Best-Set aus dem Cache
+  BestSetRecord? getBest(String workoutId) {
+    return _cache[workoutId];
+  }
+
+  /// Lädt den Cache aus Daten
+  void loadFromMap(Map<String, dynamic> data) {
+    _cache.clear();
+    data.forEach((key, value) {
+      if (value is Map<String, dynamic>) {
+        _cache[key] = BestSetRecord.fromMap(value);
+      }
+    });
+  }
+
+  /// Speichert den Cache als Map
+  Map<String, dynamic> toMap() {
+    final result = <String, dynamic>{};
+    _cache.forEach((key, value) {
+      result[key] = value.toMap();
+    });
+    return result;
+  }
+
+  /// Leert den Cache
+  void clear() {
+    _cache.clear();
+  }
+}
+
+/// ===============================================================
 /// Gym Screen
 /// ===============================================================
 class GymScreen extends StatefulWidget {
@@ -267,6 +379,9 @@ class _GymScreenState extends State<GymScreen> {
   static const _kDayIconsKey = 'gym_day_icons_v1';
   static const _kDayCustomIconsKey = 'gym_day_custom_icons_v1';
   static const _kCreatineKey = 'gym_creatine_intake_v1';
+  
+  // Best-Set-Cache Storage
+  static const _kBestSetCacheKey = 'gym_best_set_cache_v1';
 
   // Available icons (loaded dynamically from IconMapper)
   late List<IconData> _availableIcons = [];
@@ -297,6 +412,9 @@ class _GymScreenState extends State<GymScreen> {
   final Map<String, String> _dayCustomIcons = <String, String>{};
   // Creatine intake per date (yyyy-MM-dd)
   final Set<String> _creatineDates = <String>{};
+  
+  // Best-Set Cache pro Übung
+  final BestSetCache _bestSetCache = BestSetCache();
 
   @override
   void initState() {
@@ -310,6 +428,7 @@ class _GymScreenState extends State<GymScreen> {
     await _loadState();
     await _loadCalendar();
     await _loadCreatineIntake();
+    await _loadBestSetCache();
     if (mounted) setState(() {});
   }
 
@@ -473,6 +592,17 @@ class _GymScreenState extends State<GymScreen> {
     await LocalStorage.saveJson(_kCreatineKey, _creatineDates.toList());
   }
 
+  Future<void> _loadBestSetCache() async {
+    final raw = await LocalStorage.loadJson(_kBestSetCacheKey, fallback: {});
+    if (raw is Map<String, dynamic>) {
+      _bestSetCache.loadFromMap(raw);
+    }
+  }
+
+  Future<void> _saveBestSetCache() async {
+    await LocalStorage.saveJson(_kBestSetCacheKey, _bestSetCache.toMap());
+  }
+
   String _dateKey(DateTime dt) =>
       '${dt.year.toString().padLeft(4, '0')}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
 
@@ -606,59 +736,85 @@ class _GymScreenState extends State<GymScreen> {
   }
 
   Future<Color?> _pickColorForDay(String day) async {
-    final cs = Theme.of(context).colorScheme;
     final selected = await showDialog<Color>(
       context: context,
-      builder: (_) {
-        const List<MaterialColor> options = <MaterialColor>[
-          Colors.blue,
-          Colors.lightBlue,
-          Colors.indigo,
-          Colors.deepPurple,
-          Colors.purple,
-          Colors.pink,
-          Colors.red,
-          Colors.deepOrange,
-          Colors.orange,
-          Colors.amber,
-          Colors.lime,
-          Colors.lightGreen,
-          Colors.green,
-          Colors.teal,
-          Colors.cyan,
-          Colors.blueGrey,
-          Colors.brown,
-          Colors.grey,
-        ];
-
-        return AlertDialog(
-          title: Text('Color for "$day"'),
-          content: Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: options
-                .map((c) => GestureDetector(
-              onTap: () => Navigator.pop(context, c.shade400),
-              child: Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: c.shade400,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: cs.onSurface.withValues(alpha: 0.1)),
-                ),
-              ),
-            ))
-                .toList(),
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-          ],
-        );
-      },
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFEBEE),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.palette,
+                      color: Color(0xFFE53935),
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Color for "$day"',
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1A1D1F),
+                      ),
+                    ),
+                  ),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => Navigator.pop(ctx),
+                      borderRadius: BorderRadius.circular(8),
+                      child: const Padding(
+                        padding: EdgeInsets.all(8),
+                        child: Icon(
+                          Icons.close,
+                          color: Color(0xFF6F7789),
+                          size: 24,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              _ColorPickerGrid(
+                onColorSelected: (color) => Navigator.pop(ctx, color),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    ),
+                    child: const Text(
+                      'Cancel',
+                      style: TextStyle(color: Color(0xFF6F7789)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
     );
 
     if (selected != null) {
@@ -800,8 +956,13 @@ class _GymScreenState extends State<GymScreen> {
         _saveDayColors();
       }
       _saveCalendar();
+      
+      // Aktualisiere Best-Set-Cache für diese Übung
+      final bestRecord = _bestSetCache.findBest(list);
+      _bestSetCache.updateBest(workoutId, bestRecord);
     });
     _saveLogs();
+    _saveBestSetCache(); // Speichere den aktualisieren Cache
     
     // Mark gym task as done in daily screen if logged today
     if (isToday) {
@@ -937,8 +1098,12 @@ class _GymScreenState extends State<GymScreen> {
 
   // ----------------------------- Delete + Dialoge -----------------------------
   void _deleteWorkoutLogsAll(String workoutId) {
-    setState(() => _logs.remove(workoutId));
+    setState(() {
+      _logs.remove(workoutId);
+      _bestSetCache.updateBest(workoutId, null); // Lösche Best-Set aus Cache
+    });
     _saveLogs();
+    _saveBestSetCache();
   }
 
   String _calendarTrackingKeyForLog(WorkoutLog log) =>
@@ -978,6 +1143,7 @@ class _GymScreenState extends State<GymScreen> {
   void _deleteExerciseEverywhere(String workoutId, {bool removeTrackedCalendar = false}) {
     final deletedLogs = List<WorkoutLog>.from(_logs[workoutId] ?? const <WorkoutLog>[]);
     _logs.remove(workoutId);
+    _bestSetCache.updateBest(workoutId, null); // Lösche Best-Set aus Cache
 
     if (removeTrackedCalendar) {
       _removeCalendarTrackingForDeletedLogs(deletedLogs);
@@ -997,6 +1163,7 @@ class _GymScreenState extends State<GymScreen> {
     _saveOrderActive();
     _saveOrderByDay();
     _saveOrderDays();
+    _saveBestSetCache();
     if (removeTrackedCalendar) {
       _saveCalendar();
     }
@@ -1100,9 +1267,17 @@ class _GymScreenState extends State<GymScreen> {
     if (list == null) return;
     setState(() {
       list.removeWhere((log) => log.day == day);
-      if (list.isEmpty) _logs.remove(workoutId);
+      if (list.isEmpty) {
+        _logs.remove(workoutId);
+        _bestSetCache.updateBest(workoutId, null); // Lösche Best-Set aus Cache
+      } else {
+        // Aktualisiere Best-Set-Cache nach Löschen von Logs
+        final bestRecord = _bestSetCache.findBest(list);
+        _bestSetCache.updateBest(workoutId, bestRecord);
+      }
     });
     _saveLogs();
+    _saveBestSetCache();
   }
 
   void _confirmDeleteForDay(Workout w, String day) {
@@ -2186,11 +2361,49 @@ class _GymScreenState extends State<GymScreen> {
     if (logs.isEmpty) {
       showDialog<void>(
         context: context,
-        builder: (_) => const AlertDialog(content: Text('No entries available')),
+        builder: (_) => AlertDialog(
+          backgroundColor: const Color(0xFFF5F7FA),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          titlePadding: const EdgeInsets.fromLTRB(20, 20, 16, 0),
+          contentPadding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFEBEE),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.bar_chart, color: Color(0xFFE53935)),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'No Data Yet',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          content: const Text(
+            'Start tracking your workouts to see your progress chart here.',
+            style: TextStyle(color: Color(0xFF6F7789)),
+          ),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Got it'),
+            ),
+          ],
+        ),
       );
       return;
     }
     logs.sort((a, b) => a.dateTime.compareTo(b.dateTime));
+    
+    // Hole den besten Satz aus dem Cache
+    final bestSet = _bestSetCache.getBest(w.id);
+    
     final int maxSets = logs.fold<int>(
       0,
       (m, l) => math.max(m, l.sets.length),
@@ -2223,7 +2436,41 @@ class _GymScreenState extends State<GymScreen> {
     if (allSpots.isEmpty) {
       showDialog<void>(
         context: context,
-        builder: (_) => const AlertDialog(content: Text('No entries available')),
+        builder: (_) => AlertDialog(
+          backgroundColor: const Color(0xFFF5F7FA),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          titlePadding: const EdgeInsets.fromLTRB(20, 20, 16, 0),
+          contentPadding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFEBEE),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.bar_chart, color: Color(0xFFE53935)),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'No Data Yet',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          content: const Text(
+            'Start tracking your workouts to see your progress chart here.',
+            style: TextStyle(color: Color(0xFF6F7789)),
+          ),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Got it'),
+            ),
+          ],
+        ),
       );
       return;
     }
@@ -2299,6 +2546,30 @@ class _GymScreenState extends State<GymScreen> {
     Color seriesColor(int index) {
       final palette = Colors.primaries;
       return palette[index % palette.length].shade400;
+    }
+    
+    // Prüfe ob ein Punkt der beste ist
+    bool isBestSet(FlSpot spot) {
+      if (bestSet == null) return false;
+      
+      final log = logForSpotX(spot.x);
+      if (log == null) return false;
+      
+      // Der beste ist wenn:
+      // 1. Das maxWeight gleich ist wie bestSet.maxWeight
+      // 2. AND die Reps gleich sind OR
+      // 3. Das Datum aus dem Log gleich ist wie bestSet.dateTime
+      
+      final isSameWeight = (log.maxWeightKg - bestSet.maxWeight).abs() < 0.01;
+      final isSameDate = log.dateTime.year == bestSet.dateTime.year &&
+                         log.dateTime.month == bestSet.dateTime.month &&
+                         log.dateTime.day == bestSet.dateTime.day;
+      
+      if (isDuration) {
+        return isSameDate;
+      }
+      
+      return isSameWeight && isSameDate;
     }
 
     const double kLeftAxisSpaceToLine = 4;
@@ -2457,16 +2728,21 @@ class _GymScreenState extends State<GymScreen> {
                     final setIndex = seriesSetIndices[t.barIndex];
                     final log = logForSpotX(t.x);
                     final valueStr = valueLabelForSet(t.y, log, setIndex);
+                    
+                    final isBest = isBestSet(FlSpot(t.x, t.y));
 
                     return LineTooltipItem(
                       '$dateStr\n',
                       const TextStyle(color: Color(0xFF1A1D1F), fontWeight: FontWeight.w700),
                       children: [
                         TextSpan(
-                          text: 'Set ${setIndex + 1}: $valueStr',
+                          text: isBest 
+                            ? 'Set ${setIndex + 1}: $valueStr ✨ BEST'
+                            : 'Set ${setIndex + 1}: $valueStr',
                           style: TextStyle(
                             color: const Color(0xFF1A1D1F),
                             fontWeight: FontWeight.w500,
+                            backgroundColor: isBest ? const Color(0xFFFFD700).withValues(alpha: 0.3) : null,
                           ),
                         ),
                       ],
@@ -2486,6 +2762,19 @@ class _GymScreenState extends State<GymScreen> {
                     dotData: FlDotData(
                       show: true,
                       getDotPainter: (spot, percent, bar, index) {
+                        final isBest = isBestSet(spot);
+                        
+                        if (isBest) {
+                          // Gold-Punkt für den besten Satz
+                          return FlDotCirclePainter(
+                            radius: 5.0,
+                            color: const Color(0xFFFFD700), // Gold
+                            strokeWidth: 2.0,
+                            strokeColor: const Color(0xFFFFA500), // Orange border
+                          );
+                        }
+                        
+                        // Normale Punkte
                         return FlDotCirclePainter(
                           radius: 3.0,
                           color: color,
@@ -3134,7 +3423,41 @@ class _GymScreenState extends State<GymScreen> {
   Widget _buildHistoryDialog(Workout w) {
     final list = _logs[w.id] ?? <WorkoutLog>[];
     if (list.isEmpty) {
-      return const AlertDialog(content: Text('No entries available'));
+      return AlertDialog(
+        backgroundColor: const Color(0xFFF5F7FA),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        titlePadding: const EdgeInsets.fromLTRB(20, 20, 16, 0),
+        contentPadding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFEBEE),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.history, color: Color(0xFFE53935)),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'No History',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          'No tracked workouts yet. Start logging to see your history here.',
+          style: TextStyle(color: Color(0xFF6F7789)),
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Got it'),
+          ),
+        ],
+      );
     }
 
     return AlertDialog(
@@ -6447,5 +6770,74 @@ class _ModernDateRangePickerState extends State<ModernDateRangePicker> {
       'Dezember',
     ];
     return '${months[date.month]} ${date.year}';
+  }
+}
+
+/// ===============================================================
+/// Color Picker Grid Widget
+/// ===============================================================
+class _ColorPickerGrid extends StatelessWidget {
+  final Function(Color) onColorSelected;
+
+  const _ColorPickerGrid({
+    required this.onColorSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const List<MaterialColor> colorOptions = <MaterialColor>[
+      Colors.blue,
+      Colors.lightBlue,
+      Colors.indigo,
+      Colors.deepPurple,
+      Colors.purple,
+      Colors.pink,
+      Colors.red,
+      Colors.deepOrange,
+      Colors.orange,
+      Colors.amber,
+      Colors.lime,
+      Colors.lightGreen,
+      Colors.green,
+      Colors.teal,
+      Colors.cyan,
+      Colors.blueGrey,
+      Colors.brown,
+      Colors.grey,
+    ];
+
+    return SizedBox(
+      width: double.maxFinite,
+      child: Wrap(
+        spacing: 16,
+        runSpacing: 16,
+        alignment: WrapAlignment.center,
+        children: colorOptions.map((colorOption) {
+          final color = colorOption.shade400;
+          return Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => onColorSelected(color),
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: color.withValues(alpha: 0.25),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
   }
 }
