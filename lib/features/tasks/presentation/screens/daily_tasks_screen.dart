@@ -834,9 +834,10 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   }
 
   /// Remove history entries older than 7 days
+  /// Keeps: today + 7 previous days = max 8 entries
   Future<void> _cleanupOldHistory() async {
     final today = DateTime.now();
-    final cutoffDate = today.subtract(const Duration(days: 7));
+    final cutoffDate = today.subtract(const Duration(days: 8));
     final cutoffKey = _dateKey(cutoffDate);
     
     final keysToRemove = <String>[];
