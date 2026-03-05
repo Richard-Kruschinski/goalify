@@ -16,13 +16,35 @@ class AppBlockingConfig {
     // Entertainment
     'com.google.android.youtube',
     'com.netflix.mediaclient',
-    'com.spotify.music',
     'com.amazon.avod.thirdpartyclient', // Prime Video
+    'com.crunchyroll.crunchyroid', // Crunchyroll
     
-    // Games (examples)
-    'com.supercell.clashofclans',
-    'com.king.candycrushsaga',
-    'com.mojang.minecraftpe',
+    // Games
+    'com.supercell.clashofclans', // Clash of Clans
+    'com.supercell.clashroyale', // Clash Royale
+    'com.supercell.brawlstars', // Brawl Stars
+    'com.king.candycrushsaga', // Candy Crush
+    'com.mojang.minecraftpe', // Minecraft
+    'com.tencent.ig', // PUBG Mobile
+    'com.dts.freefireth', // Free Fire
+    'com.innersloth.spacemafia', // Among Us
+    'com.roblox.client', // Roblox
+    'com.miHoYo.GenshinImpact', // Genshin Impact
+    'com.activision.callofduty.shooter', // Call of Duty Mobile
+    'com.ea.gp.fifamobile', // FIFA Mobile
+    'com.riotgames.league.wildrift', // League of Legends: Wild Rift
+    'com.garena.game.codm', // COD Mobile (Garena)
+    'com.supercell.hayday', // Hay Day
+    'com.playrix.homescapes', // Homescapes
+    'com.playrix.gardenscapes', // Gardenscapes
+    'com.king.candycrushsodasaga', // Candy Crush Soda
+    'com.ea.game.simcitymobile_row', // SimCity BuildIt
+    'com.scopely.monopolygo', // Monopoly GO!
+    'com.chess', // Chess.com
+    
+    // Shopping
+    'com.ebay.mobile', // eBay
+    'com.amazon.mShop.android.shopping', // Amazon Shopping
     
     // Browsers (optional - be careful with this)
     // 'com.android.chrome',
