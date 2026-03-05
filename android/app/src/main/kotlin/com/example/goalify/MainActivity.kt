@@ -14,6 +14,8 @@ import com.example.goalify.services.AppBlockingForegroundService
 import com.example.goalify.services.AppBlockingAccessibilityService
 import android.media.AudioManager
 import android.view.KeyEvent
+import android.os.Handler
+import android.os.Looper
 
 class MainActivity : FlutterActivity() {
     
@@ -96,9 +98,12 @@ class MainActivity : FlutterActivity() {
                 
                 "pauseMusic" -> {
                     try {
-                        Log.d(TAG, "Pausing music")
-                        val paused = pauseMusic()
-                        result.success(paused)
+                        val fadeDurationMs = call.argument<Int>("fadeDurationMs") ?: 4000
+                        val restoreDelayMs = call.argument<Int>("restoreDelayMs") ?: 800
+                        Log.d(TAG, "Pausing music with fade (fadeDurationMs=$fadeDurationMs, restoreDelayMs=$restoreDelayMs)")
+                        pauseMusicWithFade(fadeDurationMs, restoreDelayMs) { paused ->
+                            result.success(paused)
+                        }
                     } catch (e: Exception) {
                         Log.e(TAG, "Error pausing music: ${e.message}")
                         result.error("PAUSE_MUSIC_ERROR", e.message, null)
@@ -151,32 +156,63 @@ class MainActivity : FlutterActivity() {
     }
     
     /**
-     * Pause currently playing music by simulating media button press
-     * Works with any media app (YouTube, Spotify, etc.)
+     * Fade out currently playing music, pause it, then restore previous volume.
+     * Works with any media app that responds to media controls.
      */
-    private fun pauseMusic(): Boolean {
-        return try {
+    private fun pauseMusicWithFade(
+        fadeDurationMs: Int,
+        restoreDelayMs: Int,
+        onComplete: (Boolean) -> Unit
+    ) {
+        try {
             val audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
-            
-            // Check if music is actually playing
+
             if (!audioManager.isMusicActive) {
                 Log.d(TAG, "No music is currently playing")
-                return false
+                onComplete(false)
+                return
             }
-            
-            // Send media button PAUSE event
-            val downEvent = KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MEDIA_PAUSE)
-            val upEvent = KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_MEDIA_PAUSE)
-            
-            audioManager.dispatchMediaKeyEvent(downEvent)
-            audioManager.dispatchMediaKeyEvent(upEvent)
-            
-            Log.d(TAG, "Music pause command sent successfully")
-            true
+
+            val originalVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
+            if (originalVolume <= 0) {
+                sendPauseMediaKey(audioManager)
+                onComplete(true)
+                return
+            }
+
+            val safeFadeDuration = fadeDurationMs.coerceAtLeast(300)
+            val stepDelayMs = (safeFadeDuration / originalVolume).coerceAtLeast(50)
+            val handler = Handler(Looper.getMainLooper())
+
+            fun fadeStep(volume: Int) {
+                if (volume > 0) {
+                    audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, volume, 0)
+                    handler.postDelayed({ fadeStep(volume - 1) }, stepDelayMs.toLong())
+                    return
+                }
+
+                audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 0, 0)
+                sendPauseMediaKey(audioManager)
+
+                handler.postDelayed({
+                    audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, originalVolume, 0)
+                    Log.d(TAG, "Music paused and volume restored to $originalVolume")
+                    onComplete(true)
+                }, restoreDelayMs.coerceAtLeast(0).toLong())
+            }
+
+            fadeStep(originalVolume)
         } catch (e: Exception) {
-            Log.e(TAG, "Error pausing music: ${e.message}")
-            false
+            Log.e(TAG, "Error pausing music with fade: ${e.message}")
+            onComplete(false)
         }
+    }
+
+    private fun sendPauseMediaKey(audioManager: AudioManager) {
+        val downEvent = KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MEDIA_PAUSE)
+        val upEvent = KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_MEDIA_PAUSE)
+        audioManager.dispatchMediaKeyEvent(downEvent)
+        audioManager.dispatchMediaKeyEvent(upEvent)
     }
     
     /**

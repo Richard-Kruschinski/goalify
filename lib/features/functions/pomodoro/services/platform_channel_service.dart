@@ -108,6 +108,7 @@ class PlatformChannelService {
 
   /// Pause currently playing music (Android only)
   /// Works with any music app (YouTube, Spotify, etc.)
+  /// Fades volume to zero, pauses playback, then restores previous volume
   /// Returns true if successful
   Future<bool> pauseMusic() async {
     if (!isAndroid) {
@@ -115,7 +116,10 @@ class PlatformChannelService {
     }
 
     try {
-      final result = await _channel.invokeMethod('pauseMusic');
+      final result = await _channel.invokeMethod('pauseMusic', {
+        'fadeDurationMs': 4000,
+        'restoreDelayMs': 800,
+      });
       return result == true;
     } on PlatformException catch (e) {
       if (kDebugMode) {
