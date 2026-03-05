@@ -12,6 +12,8 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import com.example.goalify.services.AppBlockingForegroundService
 import com.example.goalify.services.AppBlockingAccessibilityService
+import android.media.AudioManager
+import android.view.KeyEvent
 
 class MainActivity : FlutterActivity() {
     
@@ -92,6 +94,27 @@ class MainActivity : FlutterActivity() {
                     }
                 }
                 
+                "pauseMusic" -> {
+                    try {
+                        Log.d(TAG, "Pausing music")
+                        val paused = pauseMusic()
+                        result.success(paused)
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Error pausing music: ${e.message}")
+                        result.error("PAUSE_MUSIC_ERROR", e.message, null)
+                    }
+                }
+                
+                "isMusicPlaying" -> {
+                    try {
+                        val playing = isMusicPlaying()
+                        result.success(playing)
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Error checking music status: ${e.message}")
+                        result.success(false)
+                    }
+                }
+                
                 else -> {
                     result.notImplemented()
                 }
@@ -124,6 +147,48 @@ class MainActivity : FlutterActivity() {
         } else {
             // Before Android 13, notification permission is not required
             true
+        }
+    }
+    
+    /**
+     * Pause currently playing music by simulating media button press
+     * Works with any media app (YouTube, Spotify, etc.)
+     */
+    private fun pauseMusic(): Boolean {
+        return try {
+            val audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
+            
+            // Check if music is actually playing
+            if (!audioManager.isMusicActive) {
+                Log.d(TAG, "No music is currently playing")
+                return false
+            }
+            
+            // Send media button PAUSE event
+            val downEvent = KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MEDIA_PAUSE)
+            val upEvent = KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_MEDIA_PAUSE)
+            
+            audioManager.dispatchMediaKeyEvent(downEvent)
+            audioManager.dispatchMediaKeyEvent(upEvent)
+            
+            Log.d(TAG, "Music pause command sent successfully")
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "Error pausing music: ${e.message}")
+            false
+        }
+    }
+    
+    /**
+     * Check if music is currently playing
+     */
+    private fun isMusicPlaying(): Boolean {
+        return try {
+            val audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
+            audioManager.isMusicActive
+        } catch (e: Exception) {
+            Log.e(TAG, "Error checking if music is playing: ${e.message}")
+            false
         }
     }
 }

@@ -5,6 +5,8 @@ import '../../pomodoro/controllers/pomodoro_controller.dart';
 import '../../pomodoro/models/pomodoro_stats.dart';
 import '../../distraction_blocker/presentation/screens/distraction_blocker_screen.dart';
 import '../../distraction_blocker/controllers/distraction_blocker_controller.dart';
+import '../../music_timer/presentation/screens/music_timer_screen.dart';
+import '../../music_timer/controllers/music_timer_controller.dart';
 
 class FunctionsScreen extends StatelessWidget {
   const FunctionsScreen({super.key});
@@ -30,6 +32,29 @@ class FunctionsScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
         children: [
+          Consumer<PomodoroController>(
+            builder: (context, pomodoroController, _) {
+              final isTimerRunning = pomodoroController.timerState == PomodoroTimerState.running;
+              return FunctionCard(
+                title: 'Pomodoro Timer',
+                subtitle: isTimerRunning 
+                    ? 'Timer running: ${pomodoroController.formattedTime}'
+                    : 'Work in focused intervals with breaks',
+                icon: Icons.timer,
+                iconBackgroundColor: const Color(0xFFFFE8E8),
+                isActive: isTimerRunning,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const PomodoroScreen(),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+          const SizedBox(height: 16),
           Consumer<DistractionBlockerController>(
             builder: (context, distractionBlocker, _) {
               final isActive = distractionBlocker.isActive;
@@ -53,29 +78,22 @@ class FunctionsScreen extends StatelessWidget {
             },
           ),
           const SizedBox(height: 16),
-          const FunctionCard(
-            title: 'Music Timer',
-            subtitle: 'Play music with a countdown timer',
-            icon: Icons.music_note,
-            iconBackgroundColor: Color(0xFFFEE8D1),
-          ),
-          const SizedBox(height: 16),
-          Consumer<PomodoroController>(
-            builder: (context, pomodoroController, _) {
-              final isTimerRunning = pomodoroController.timerState == PomodoroTimerState.running;
+          Consumer<MusicTimerController>(
+            builder: (context, musicTimer, _) {
+              final isRunning = musicTimer.isRunning;
               return FunctionCard(
-                title: 'Pomodoro Timer',
-                subtitle: isTimerRunning 
-                    ? 'Timer running: ${pomodoroController.formattedTime}'
-                    : 'Work in focused intervals with breaks',
-                icon: Icons.timer,
-                iconBackgroundColor: const Color(0xFFFFE8E8),
-                isActive: isTimerRunning,
+                title: 'Music Timer',
+                subtitle: isRunning
+                    ? 'Timer: ${musicTimer.formattedTimeWithHours}'
+                    : 'Play music with a countdown timer',
+                icon: Icons.music_note,
+                iconBackgroundColor: const Color(0xFFFEE8D1),
+                isActive: isRunning,
                 onTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const PomodoroScreen(),
+                      builder: (context) => const MusicTimerScreen(),
                     ),
                   );
                 },

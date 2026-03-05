@@ -105,4 +105,44 @@ class PlatformChannelService {
       // Accessibility settings error
     }
   }
+
+  /// Pause currently playing music (Android only)
+  /// Works with any music app (YouTube, Spotify, etc.)
+  /// Returns true if successful
+  Future<bool> pauseMusic() async {
+    if (!isAndroid) {
+      return false;
+    }
+
+    try {
+      final result = await _channel.invokeMethod('pauseMusic');
+      return result == true;
+    } on PlatformException catch (e) {
+      if (kDebugMode) {
+        print('PlatformException while pausing music: ${e.code} - ${e.message}');
+      }
+      return false;
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error pausing music: $e');
+      }
+      return false;
+    }
+  }
+
+  /// Check if music is currently playing (Android only)
+  Future<bool> isMusicPlaying() async {
+    if (!isAndroid) {
+      return false;
+    }
+
+    try {
+      final result = await _channel.invokeMethod('isMusicPlaying');
+      return result == true;
+    } on PlatformException catch (_) {
+      return false;
+    } catch (_) {
+      return false;
+    }
+  }
 }

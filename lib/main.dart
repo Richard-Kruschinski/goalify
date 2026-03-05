@@ -7,6 +7,7 @@ import 'features/gym/presentation/screens/gym_screen.dart';
 import 'features/functions/presentation/screens/functions_screen.dart';
 import 'features/functions/pomodoro/controllers/pomodoro_controller.dart';
 import 'features/functions/distraction_blocker/controllers/distraction_blocker_controller.dart';
+import 'features/functions/music_timer/controllers/music_timer_controller.dart';
 
 void main() {
   runApp(const GoalifyApp());
@@ -26,6 +27,10 @@ class GoalifyApp extends StatelessWidget {
         // Global DistractionBlockerController - persists across navigation
         ChangeNotifierProvider(
           create: (_) => DistractionBlockerController(),
+        ),
+        // Global MusicTimerController - persists across navigation
+        ChangeNotifierProvider(
+          create: (_) => MusicTimerController(),
         ),
       ],
       child: MaterialApp(
