@@ -1,0 +1,210 @@
+import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:async';
+import '../../pomodoro/services/platform_channel_service.dart';
+
+/// Controller for the Distraction Blocker feature
+/// Simple on/off switch that blocks all apps in the blocklist
+class DistractionBlockerController extends ChangeNotifier {
+  bool _isActive = false;
+  DateTime? _activatedAt;
+  int _totalBlockingSeconds = 0; // Total seconds blocked today
+  DateTime? _lastResetDate;
+  Timer? _updateTimer;
+
+  final PlatformChannelService _platformService = PlatformChannelService();
+
+  bool get isActive => _isActive;
+  DateTime? get activatedAt => _activatedAt;
+  int get totalBlockingSeconds => _totalBlockingSeconds;
+
+  /// Get formatted blocking duration for current session
+  String get currentSessionDuration {
+    if (!_isActive || _activatedAt == null) return '00:00:00';
+    
+    final now = DateTime.now();
+    final duration = now.difference(_activatedAt!);
+    
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes.remainder(60);
+    final seconds = duration.inSeconds.remainder(60);
+    
+    return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  /// Get formatted total blocking time for today
+  String get todayTotalDuration {
+    final hours = _totalBlockingSeconds ~/ 3600;
+    final minutes = (_totalBlockingSeconds % 3600) ~/ 60;
+    final seconds = _totalBlockingSeconds % 60;
+    
+    return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  DistractionBlockerController() {
+    _loadState();
+    _checkDayReset();
+  }
+
+  @override
+  void dispose() {
+    _updateTimer?.cancel();
+    super.dispose();
+  }
+
+  /// Start UI update timer
+  void _startUpdateTimer() {
+    _updateTimer?.cancel();
+    _updateTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      notifyListeners(); // Update UI every second
+    });
+  }
+
+  /// Stop UI update timer
+  void _stopUpdateTimer() {
+    _updateTimer?.cancel();
+    _updateTimer = null;
+  }
+
+  /// Load saved state from storage
+  Future<void> _loadState() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _isActive = prefs.getBool('distraction_blocker_active') ?? false;
+      _totalBlockingSeconds = prefs.getInt('distraction_blocker_total_seconds') ?? 0;
+      
+      final activatedAtString = prefs.getString('distraction_blocker_activated_at');
+      if (activatedAtString != null) {
+        _activatedAt = DateTime.parse(activatedAtString);
+      }
+      
+      final lastResetString = prefs.getString('distraction_blocker_last_reset');
+      if (lastResetString != null) {
+        _lastResetDate = DateTime.parse(lastResetString);
+      }
+      
+      // If the blocker was active, restart it
+      if (_isActive) {
+        await _platformService.startAppBlocking();
+        _startUpdateTimer(); // Start UI updates
+      }
+      
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error loading distraction blocker state: $e');
+    }
+  }
+
+  /// Save state to storage
+  Future<void> _saveState() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('distraction_blocker_active', _isActive);
+      await prefs.setInt('distraction_blocker_total_seconds', _totalBlockingSeconds);
+      
+      if (_activatedAt != null) {
+        await prefs.setString('distraction_blocker_activated_at', _activatedAt!.toIso8601String());
+      } else {
+        await prefs.remove('distraction_blocker_activated_at');
+      }
+      
+      if (_lastResetDate != null) {
+        await prefs.setString('distraction_blocker_last_reset', _lastResetDate!.toIso8601String());
+      }
+    } catch (e) {
+      debugPrint('Error saving distraction blocker state: $e');
+    }
+  }
+
+  /// Check if we need to reset daily statistics
+  Future<void> _checkDayReset() async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    
+    if (_lastResetDate == null) {
+      _lastResetDate = today;
+      await _saveState();
+      return;
+    }
+    
+    final lastReset = DateTime(_lastResetDate!.year, _lastResetDate!.month, _lastResetDate!.day);
+    
+    if (today.isAfter(lastReset)) {
+      // New day - reset statistics but keep blocker active if it was on
+      _totalBlockingSeconds = 0;
+      _lastResetDate = today;
+      await _saveState();
+      notifyListeners();
+    }
+  }
+
+  /// Toggle the distraction blocker on/off
+  Future<void> toggle() async {
+    if (_isActive) {
+      await stopBlocking();
+    } else {
+      await startBlocking();
+    }
+  }
+
+  /// Start blocking apps
+  Future<void> startBlocking() async {
+    try {
+      await _checkDayReset();
+      
+      // Start app blocking via platform channel
+      await _platformService.startAppBlocking();
+      
+      _isActive = true;
+      _activatedAt = DateTime.now();
+      
+      _startUpdateTimer(); // Start UI updates
+      
+      await _saveState();
+      notifyListeners();
+      
+      debugPrint('Distraction blocker activated');
+    } catch (e) {
+      debugPrint('Error starting distraction blocker: $e');
+      rethrow;
+    }
+  }
+
+  /// Stop blocking apps
+  Future<void> stopBlocking() async {
+    try {
+      // Stop app blocking via platform channel
+      await _platformService.stopAppBlocking();
+      
+      _stopUpdateTimer(); // Stop UI updates
+      
+      // Calculate session duration and add to total
+      if (_activatedAt != null) {
+        final sessionDuration = DateTime.now().difference(_activatedAt!);
+        _totalBlockingSeconds += sessionDuration.inSeconds;
+      }
+      
+      _isActive = false;
+      _activatedAt = null;
+      
+      await _saveState();
+      notifyListeners();
+      
+      debugPrint('Distraction blocker deactivated');
+    } catch (e) {
+      debugPrint('Error stopping distraction blocker: $e');
+      rethrow;
+    }
+  }
+
+  /// Get current live session duration in seconds
+  int getCurrentSessionSeconds() {
+    if (!_isActive || _activatedAt == null) return 0;
+    return DateTime.now().difference(_activatedAt!).inSeconds;
+  }
+
+  /// Get total blocking seconds including current session
+  int getTotalSecondsToday() {
+    return _totalBlockingSeconds + getCurrentSessionSeconds();
+  }
+}

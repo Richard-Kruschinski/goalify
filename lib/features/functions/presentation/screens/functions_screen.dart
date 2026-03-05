@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../../pomodoro/presentation/screens/pomodoro_screen.dart';
 import '../../pomodoro/controllers/pomodoro_controller.dart';
 import '../../pomodoro/models/pomodoro_stats.dart';
+import '../../distraction_blocker/presentation/screens/distraction_blocker_screen.dart';
+import '../../distraction_blocker/controllers/distraction_blocker_controller.dart';
 
 class FunctionsScreen extends StatelessWidget {
   const FunctionsScreen({super.key});
@@ -28,11 +30,27 @@ class FunctionsScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
         children: [
-          const FunctionCard(
-            title: 'Distraction Blocker',
-            subtitle: 'Block distracting apps and stay focused',
-            icon: Icons.block,
-            iconBackgroundColor: Color(0xFFE8D6F7),
+          Consumer<DistractionBlockerController>(
+            builder: (context, distractionBlocker, _) {
+              final isActive = distractionBlocker.isActive;
+              return FunctionCard(
+                title: 'Distraction Blocker',
+                subtitle: isActive
+                    ? 'Active: ${distractionBlocker.currentSessionDuration}'
+                    : 'Block distracting apps and stay focused',
+                icon: Icons.block,
+                iconBackgroundColor: const Color(0xFFE8D6F7),
+                isActive: isActive,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const DistractionBlockerScreen(),
+                    ),
+                  );
+                },
+              );
+            },
           ),
           const SizedBox(height: 16),
           const FunctionCard(
@@ -63,13 +81,6 @@ class FunctionsScreen extends StatelessWidget {
                 },
               );
             },
-          ),
-          const SizedBox(height: 16),
-          const FunctionCard(
-            title: 'Deep Work Mode',
-            subtitle: 'Eliminate distractions and enter flow state',
-            icon: Icons.psychology,
-            iconBackgroundColor: Color(0xFFD6E8FF),
           ),
         ],
       ),
