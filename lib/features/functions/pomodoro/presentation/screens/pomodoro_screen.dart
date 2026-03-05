@@ -394,83 +394,86 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> {
 
   void _showProfileSelector(BuildContext context) {
     final controller = context.read<PomodoroController>();
+    final parentContext = context;
     
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-        ),
-        child: SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Handle bar
-              Container(
-                margin: const EdgeInsets.only(top: 12, bottom: 8),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
+      builder: (context) => FractionallySizedBox(
+        heightFactor: 0.85,
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              children: [
+                // Handle bar
+                Container(
+                  margin: const EdgeInsets.only(top: 12, bottom: 8),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
-              ),
-              
-              // Header
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Timer-Profil wählen',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
+                
+                // Header
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Timer-Profil wählen',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.add_circle_outline),
-                      onPressed: () {
-                        Navigator.pop(context);
-                        _showCreateProfileDialog(context);
-                      },
-                      color: const Color(0xFFFF6B6B),
-                    ),
-                  ],
+                      IconButton(
+                        icon: const Icon(Icons.add_circle_outline),
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _showCreateProfileDialog(parentContext);
+                        },
+                        color: const Color(0xFFFF6B6B),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
 
-              // Profile list
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: controller.allProfiles.length,
-                itemBuilder: (context, index) {
-                  final profile = controller.allProfiles[index];
-                  final isSelected = profile.id == controller.currentProfile.id;
-                  
-                  return _ProfileTile(
-                    profile: profile,
-                    isSelected: isSelected,
-                    onTap: () async {
-                      await controller.changeProfile(profile);
-                      if (context.mounted) {
-                        Navigator.pop(context);
-                      }
+                // Profile list
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.only(bottom: 20),
+                    itemCount: controller.allProfiles.length,
+                    itemBuilder: (context, index) {
+                      final profile = controller.allProfiles[index];
+                      final isSelected = profile.id == controller.currentProfile.id;
+                      
+                      return _ProfileTile(
+                        profile: profile,
+                        isSelected: isSelected,
+                        onTap: () async {
+                          await controller.changeProfile(profile);
+                          if (context.mounted) {
+                            Navigator.pop(context);
+                          }
+                        },
+                      );
                     },
-                  );
-                },
-              ),
-              
-              const SizedBox(height: 20),
-            ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -483,10 +486,12 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> {
     final shortBreakController = TextEditingController(text: '5');
     final longBreakController = TextEditingController(text: '15');
     final cyclesController = TextEditingController(text: '4');
+    final pomodoroController = context.read<PomodoroController>();
+    final messenger = ScaffoldMessenger.of(context);
     
     showDialog(
       context: context,
-      builder: (context) => Dialog(
+      builder: (dialogContext) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         elevation: 0,
         backgroundColor: Colors.transparent,
@@ -594,7 +599,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> {
                     children: [
                       Expanded(
                         child: OutlinedButton(
-                          onPressed: () => Navigator.pop(context),
+                          onPressed: () => Navigator.pop(dialogContext),
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             side: BorderSide(color: Colors.grey[300]!),
@@ -616,8 +621,8 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> {
                       Expanded(
                         child: ElevatedButton(
                           onPressed: () async {
-                            if (nameController.text.isEmpty) {
-                              ScaffoldMessenger.of(context).showSnackBar(
+                            if (nameController.text.trim().isEmpty) {
+                              messenger.showSnackBar(
                                 const SnackBar(
                                   content: Text('Bitte geben Sie einen Profil-Namen ein'),
                                   backgroundColor: Color(0xFFFF6B6B),
@@ -628,19 +633,18 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> {
                             
                             final profile = PomodoroProfile(
                               id: 'custom_${DateTime.now().millisecondsSinceEpoch}',
-                              name: nameController.text,
+                              name: nameController.text.trim(),
                               workDuration: int.tryParse(workController.text) ?? 25,
                               shortBreakDuration: int.tryParse(shortBreakController.text) ?? 5,
                               longBreakDuration: int.tryParse(longBreakController.text) ?? 15,
                               cyclesBeforeLongBreak: int.tryParse(cyclesController.text) ?? 4,
                             );
                             
-                            final controller = context.read<PomodoroController>();
-                            await controller.addCustomProfile(profile);
+                            await pomodoroController.addCustomProfile(profile);
                             
-                            if (context.mounted) {
-                              Navigator.pop(context);
-                              ScaffoldMessenger.of(context).showSnackBar(
+                            if (dialogContext.mounted) {
+                              Navigator.pop(dialogContext);
+                              messenger.showSnackBar(
                                 SnackBar(
                                   content: Text('Profil "${profile.name}" wurde erstellt'),
                                   backgroundColor: const Color(0xFF51CF66),
