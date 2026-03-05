@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:provider/provider.dart';
 import 'features/progress/presentation/screens/progress_screen.dart';
 import 'features/tasks/presentation/screens/daily_tasks_screen.dart';
 import 'features/gym/presentation/screens/gym_screen.dart';
 import 'features/functions/presentation/screens/functions_screen.dart';
+import 'features/functions/pomodoro/controllers/pomodoro_controller.dart';
 
 void main() {
   runApp(const GoalifyApp());
@@ -14,21 +16,29 @@ class GoalifyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Goalify',
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.pink),
-      ),
-      // German localization to start weeks on Monday and format dates accordingly
-      locale: const Locale('de', 'DE'),
-      supportedLocales: const [Locale('de', 'DE')],
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
+    return MultiProvider(
+      providers: [
+        // Global PomodoroController - persists across navigation
+        ChangeNotifierProvider(
+          create: (_) => PomodoroController(),
+        ),
       ],
-      home: const MainNav(), //LoginScreen() Wenn login screen
+      child: MaterialApp(
+        title: 'Goalify',
+        theme: ThemeData(
+          useMaterial3: true,
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.pink),
+        ),
+        // German localization to start weeks on Monday and format dates accordingly
+        locale: const Locale('de', 'DE'),
+        supportedLocales: const [Locale('de', 'DE')],
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: const MainNav(), //LoginScreen() Wenn login screen
+      ),
     );
   }
 }

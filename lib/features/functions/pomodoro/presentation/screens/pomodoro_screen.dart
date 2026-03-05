@@ -10,10 +10,8 @@ class PomodoroScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => PomodoroController(),
-      child: const _PomodoroScreenContent(),
-    );
+    // Use the global PomodoroController provided by MultiProvider in main.dart
+    return const _PomodoroScreenContent();
   }
 }
 
