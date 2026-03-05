@@ -797,7 +797,10 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     final snapshot = <DailyTask>[];
     
     // Add keep tasks (with their current done state)
+    // Filter by repeat pattern - only include if active on this date
     for (final t in _keepTasks) {
+      if (!_isTaskActiveOnDate(t, dateKey)) continue;
+      
       snapshot.add(DailyTask(
         id: t.id,
         title: t.title,
