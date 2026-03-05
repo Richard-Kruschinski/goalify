@@ -122,9 +122,34 @@ class PomodoroController extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Update custom profile
+  Future<void> updateCustomProfile(PomodoroProfile updatedProfile) async {
+    final index = _customProfiles.indexWhere((p) => p.id == updatedProfile.id);
+    if (index == -1) return;
+
+    _customProfiles[index] = updatedProfile;
+
+    if (_currentProfile.id == updatedProfile.id) {
+      _currentProfile = updatedProfile;
+      _remainingSeconds = totalSecondsForPhase;
+      await _saveProfile();
+    }
+
+    await _saveCustomProfiles();
+    notifyListeners();
+  }
+
   // Delete custom profile
   Future<void> deleteCustomProfile(String profileId) async {
+    final wasCurrentProfile = _currentProfile.id == profileId;
     _customProfiles.removeWhere((p) => p.id == profileId);
+
+    if (wasCurrentProfile) {
+      _currentProfile = PomodoroProfile.classic;
+      _remainingSeconds = totalSecondsForPhase;
+      await _saveProfile();
+    }
+
     await _saveCustomProfiles();
     notifyListeners();
   }

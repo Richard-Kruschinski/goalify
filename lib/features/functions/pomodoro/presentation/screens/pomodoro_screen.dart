@@ -25,6 +25,393 @@ class _PomodoroScreenContent extends StatefulWidget {
 }
 
 class _PomodoroScreenContentState extends State<_PomodoroScreenContent> {
+  bool _isDefaultProfile(PomodoroProfile profile) {
+    return PomodoroProfile.defaultProfiles.any((p) => p.id == profile.id);
+  }
+
+  void _showProfileActions(BuildContext context, PomodoroProfile profile) {
+    final isDefaultProfile = _isDefaultProfile(profile);
+
+    if (isDefaultProfile) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Default profiles cannot be edited or deleted.'),
+          backgroundColor: Color(0xFFFF6B6B),
+        ),
+      );
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.edit, color: Color(0xFFFF6B6B)),
+              title: const Text('Edit'),
+              onTap: () {
+                Navigator.pop(sheetContext);
+                _showEditProfileDialog(context, profile);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete_outline, color: Colors.redAccent),
+              title: const Text('Delete'),
+              onTap: () {
+                Navigator.pop(sheetContext);
+                _showDeleteProfileDialog(context, profile);
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showEditProfileDialog(BuildContext context, PomodoroProfile profile) {
+    final nameController = TextEditingController(text: profile.name);
+    final workController = TextEditingController(text: profile.workDuration.toString());
+    final shortBreakController = TextEditingController(text: profile.shortBreakDuration.toString());
+    final longBreakController = TextEditingController(text: profile.longBreakDuration.toString());
+    final cyclesController = TextEditingController(text: profile.cyclesBeforeLongBreak.toString());
+    final pomodoroController = context.read<PomodoroController>();
+    final messenger = ScaffoldMessenger.of(context);
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 400),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header with icon
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFF6B6B).withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.edit_note,
+                          color: Color(0xFFFF6B6B),
+                          size: 28,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      const Expanded(
+                        child: Text(
+                          'Edit Profile',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  
+                  // Profile Name
+                  _ModernTextField(
+                    controller: nameController,
+                    label: 'Profile Name',
+                    icon: Icons.label_outline,
+                    hint: profile.name,
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Work Duration
+                  _ModernTextField(
+                    controller: workController,
+                    label: 'Work Duration',
+                    icon: Icons.work_outline,
+                    hint: 'Minutes',
+                    keyboardType: TextInputType.number,
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Short Break
+                  _ModernTextField(
+                    controller: shortBreakController,
+                    label: 'Short Break',
+                    icon: Icons.free_breakfast_outlined,
+                    hint: 'Minutes',
+                    keyboardType: TextInputType.number,
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Long Break
+                  _ModernTextField(
+                    controller: longBreakController,
+                    label: 'Long Break',
+                    icon: Icons.spa_outlined,
+                    hint: 'Minutes',
+                    keyboardType: TextInputType.number,
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Cycles
+                  _ModernTextField(
+                    controller: cyclesController,
+                    label: 'Cycles before Long Break',
+                    icon: Icons.repeat,
+                    hint: 'Number',
+                    keyboardType: TextInputType.number,
+                  ),
+                  const SizedBox(height: 24),
+                  
+                  // Buttons
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(dialogContext),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            side: BorderSide(color: Colors.grey[300]!),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Text(
+                            'Cancel',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.grey[700],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            final newName = nameController.text.trim();
+                            if (newName.isEmpty) {
+                              messenger.showSnackBar(
+                                const SnackBar(
+                                  content: Text('Bitte geben Sie einen Profil-Namen ein'),
+                                  backgroundColor: Color(0xFFFF6B6B),
+                                ),
+                              );
+                              return;
+                            }
+
+                            final updatedProfile = profile.copyWith(
+                              name: newName,
+                              workDuration: int.tryParse(workController.text) ?? profile.workDuration,
+                              shortBreakDuration: int.tryParse(shortBreakController.text) ?? profile.shortBreakDuration,
+                              longBreakDuration: int.tryParse(longBreakController.text) ?? profile.longBreakDuration,
+                              cyclesBeforeLongBreak: int.tryParse(cyclesController.text) ?? profile.cyclesBeforeLongBreak,
+                            );
+
+                            await pomodoroController.updateCustomProfile(updatedProfile);
+
+                            if (dialogContext.mounted) {
+                              Navigator.pop(dialogContext);
+                              messenger.showSnackBar(
+                                const SnackBar(
+                                  content: Text('Profile successfully updated'),
+                                  backgroundColor: Color(0xFF51CF66),
+                                ),
+                              );
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFFF6B6B),
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text(
+                            'Save',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showDeleteProfileDialog(BuildContext context, PomodoroProfile profile) {
+    final pomodoroController = context.read<PomodoroController>();
+    final messenger = ScaffoldMessenger.of(context);
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 400),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header with icon
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.redAccent.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.delete_outline,
+                        color: Colors.redAccent,
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    const Expanded(
+                      child: Text(
+                        'Delete Profile',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                
+                // Content
+                Text(
+                  'Are you sure you want to delete the profile "${profile.name}"? This action cannot be undone.',
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: Colors.grey[700],
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 28),
+                
+                // Buttons
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(dialogContext),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          side: BorderSide(color: Colors.grey[300]!),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: Text(
+                          'Cancel',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey[700],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          await pomodoroController.deleteCustomProfile(profile.id);
+                          if (dialogContext.mounted) {
+                            Navigator.pop(dialogContext);
+                            messenger.showSnackBar(
+                              const SnackBar(
+                                content: Text('Profile deleted'),
+                                backgroundColor: Color(0xFF51CF66),
+                              ),
+                            );
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.redAccent,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'Delete',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -107,7 +494,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> {
               const SizedBox(height: 20),
               // Title
               const Text(
-                'Benachrichtigungen erforderlich',
+                'Notifications Required',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -118,7 +505,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> {
               const SizedBox(height: 12),
               // Content
               Text(
-                'Um Sie während Ihrer Fokus-Sessions zu informieren, benötigt Goalify die Berechtigung, Benachrichtigungen anzuzeigen.',
+                'To keep you informed during focus sessions, Goalify needs notification permissions.',
                 style: TextStyle(
                   fontSize: 14,
                   color: Colors.grey[600],
@@ -145,7 +532,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> {
                     ),
                   ),
                   child: const Text(
-                    'Erlauben',
+                    'Allow',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -167,7 +554,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> {
                     ),
                   ),
                   child: const Text(
-                    'Später',
+                    'Later',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -224,7 +611,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> {
               const SizedBox(height: 20),
               // Title
               const Text(
-                'Bedienungshilfen erforderlich',
+                'Accessibility Required',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -235,7 +622,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> {
               const SizedBox(height: 12),
               // Content
               Text(
-                'Um ablenkende Apps während Ihrer Fokus-Sessions zu blockieren, benötigt Goalify Zugriff auf die Bedienungshilfen.',
+                'To block distracting apps during focus sessions, Goalify needs accessibility permissions.',
                 style: TextStyle(
                   fontSize: 14,
                   color: Colors.grey[600],
@@ -263,7 +650,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> {
                     ),
                   ),
                   child: const Text(
-                    'Erlauben',
+                    'Allow',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -285,7 +672,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> {
                     ),
                   ),
                   child: const Text(
-                    'Später',
+                    'Later',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -432,7 +819,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text(
-                        'Timer-Profil wählen',
+                        'Select Timer Profile',
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -462,6 +849,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> {
                       return _ProfileTile(
                         profile: profile,
                         isSelected: isSelected,
+                        onLongPress: () => _showProfileActions(parentContext, profile),
                         onTap: () async {
                           await controller.changeProfile(profile);
                           if (context.mounted) {
@@ -533,7 +921,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> {
                       const SizedBox(width: 16),
                       const Expanded(
                         child: Text(
-                          'Eigenes Profil erstellen',
+                          'Create Custom Profile',
                           style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
@@ -545,51 +933,51 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> {
                   ),
                   const SizedBox(height: 24),
                   
-                  // Profil-Name
+                  // Profile Name
                   _ModernTextField(
                     controller: nameController,
-                    label: 'Profil-Name',
+                    label: 'Profile Name',
                     icon: Icons.label_outline,
-                    hint: 'z.B. Mein Fokus',
+                    hint: 'e.g. My Focus',
                   ),
                   const SizedBox(height: 16),
                   
-                  // Arbeitszeit
+                  // Work Duration
                   _ModernTextField(
                     controller: workController,
-                    label: 'Arbeitszeit',
+                    label: 'Work Duration',
                     icon: Icons.work_outline,
-                    hint: 'Minuten',
+                    hint: 'Minutes',
                     keyboardType: TextInputType.number,
                   ),
                   const SizedBox(height: 16),
                   
-                  // Kurze Pause
+                  // Short Break
                   _ModernTextField(
                     controller: shortBreakController,
-                    label: 'Kurze Pause',
+                    label: 'Short Break',
                     icon: Icons.free_breakfast_outlined,
-                    hint: 'Minuten',
+                    hint: 'Minutes',
                     keyboardType: TextInputType.number,
                   ),
                   const SizedBox(height: 16),
                   
-                  // Lange Pause
+                  // Long Break
                   _ModernTextField(
                     controller: longBreakController,
-                    label: 'Lange Pause',
+                    label: 'Long Break',
                     icon: Icons.spa_outlined,
-                    hint: 'Minuten',
+                    hint: 'Minutes',
                     keyboardType: TextInputType.number,
                   ),
                   const SizedBox(height: 16),
                   
-                  // Zyklen
+                  // Cycles
                   _ModernTextField(
                     controller: cyclesController,
-                    label: 'Zyklen bis lange Pause',
+                    label: 'Cycles before Long Break',
                     icon: Icons.repeat,
-                    hint: 'Anzahl',
+                    hint: 'Number',
                     keyboardType: TextInputType.number,
                   ),
                   const SizedBox(height: 24),
@@ -608,7 +996,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> {
                             ),
                           ),
                           child: Text(
-                            'Abbrechen',
+                            'Cancel',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -624,7 +1012,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> {
                             if (nameController.text.trim().isEmpty) {
                               messenger.showSnackBar(
                                 const SnackBar(
-                                  content: Text('Bitte geben Sie einen Profil-Namen ein'),
+                                  content: Text('Please enter a profile name'),
                                   backgroundColor: Color(0xFFFF6B6B),
                                 ),
                               );
@@ -646,7 +1034,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> {
                               Navigator.pop(dialogContext);
                               messenger.showSnackBar(
                                 SnackBar(
-                                  content: Text('Profil "${profile.name}" wurde erstellt'),
+                                  content: Text('Profile "${profile.name}" created'),
                                   backgroundColor: const Color(0xFF51CF66),
                                 ),
                               );
@@ -662,7 +1050,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> {
                             ),
                           ),
                           child: const Text(
-                            'Erstellen',
+                            'Create',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -962,7 +1350,7 @@ class _ControlButtons extends StatelessWidget {
       if (!success && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Benachrichtigungsberechtigung erforderlich. Bitte erlauben Sie Benachrichtigungen in den Einstellungen.'),
+            content: Text('Notification permission required. Please allow notifications in settings.'),
             duration: Duration(seconds: 4),
             backgroundColor: Color(0xFFFF6B6B),
           ),
@@ -1332,17 +1720,20 @@ class _ProfileTile extends StatelessWidget {
   final PomodoroProfile profile;
   final bool isSelected;
   final VoidCallback onTap;
+  final VoidCallback onLongPress;
 
   const _ProfileTile({
     required this.profile,
     required this.isSelected,
     required this.onTap,
+    required this.onLongPress,
   });
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
+      onLongPress: onLongPress,
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         padding: const EdgeInsets.all(16),
@@ -1389,14 +1780,14 @@ class _ProfileTile extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${profile.workDuration}min Arbeit • ${profile.shortBreakDuration}min Pause • ${profile.longBreakDuration}min Lange Pause',
+                    '${profile.workDuration}min Work • ${profile.shortBreakDuration}min Break • ${profile.longBreakDuration}min Long Break',
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.grey[600],
                     ),
                   ),
                   Text(
-                    '${profile.cyclesBeforeLongBreak} Zyklen bis lange Pause',
+                    '${profile.cyclesBeforeLongBreak} cycles before long break',
                     style: TextStyle(
                       fontSize: 11,
                       color: Colors.grey[500],

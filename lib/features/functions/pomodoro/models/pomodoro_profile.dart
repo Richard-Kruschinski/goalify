@@ -18,7 +18,7 @@ class PomodoroProfile {
   // Predefined profiles
   static PomodoroProfile get classic => PomodoroProfile(
         id: 'classic',
-        name: 'Klassisch',
+        name: 'Classic',
         workDuration: 25,
         shortBreakDuration: 5,
         longBreakDuration: 15,
@@ -27,7 +27,7 @@ class PomodoroProfile {
 
   static PomodoroProfile get short => PomodoroProfile(
         id: 'short',
-        name: 'Kurz',
+        name: 'Short',
         workDuration: 15,
         shortBreakDuration: 3,
         longBreakDuration: 10,
@@ -36,7 +36,7 @@ class PomodoroProfile {
 
   static PomodoroProfile get long => PomodoroProfile(
         id: 'long',
-        name: 'Lang',
+        name: 'Long',
         workDuration: 50,
         shortBreakDuration: 10,
         longBreakDuration: 30,
@@ -45,7 +45,7 @@ class PomodoroProfile {
 
   static PomodoroProfile get intense => PomodoroProfile(
         id: 'intense',
-        name: 'Intensiv',
+        name: 'Intense',
         workDuration: 45,
         shortBreakDuration: 5,
         longBreakDuration: 20,
