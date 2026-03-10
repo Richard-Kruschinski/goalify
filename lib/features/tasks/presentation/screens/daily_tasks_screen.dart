@@ -699,6 +699,39 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     }
   }
 
+  DateTime? _tryParseDateKey(String dateKey) {
+    try {
+      final parts = dateKey.split('-').map(int.parse).toList();
+      return DateTime(parts[0], parts[1], parts[2]);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  bool _isTaskDueOnDate(DailyTask task, String dateKey) {
+    if (!task.keep) return false;
+    if (task.lastDoneKey == null || task.lastDoneKey!.isEmpty) return true;
+
+    final checkDate = _tryParseDateKey(dateKey);
+    final lastDoneDate = _tryParseDateKey(task.lastDoneKey!);
+    if (checkDate == null || lastDoneDate == null) return true;
+
+    final daysSince = checkDate.difference(lastDoneDate).inDays;
+    return daysSince >= task.effectiveIntervalDays;
+  }
+
+  bool _isConsecutiveCompletion(DailyTask task, String completionDateKey) {
+    final lastDoneKey = task.lastDoneKey;
+    if (lastDoneKey == null || lastDoneKey.isEmpty) return false;
+
+    final completionDate = _tryParseDateKey(completionDateKey);
+    final previousCompletionDate = _tryParseDateKey(lastDoneKey);
+    if (completionDate == null || previousCompletionDate == null) return false;
+
+    final daysBetween = completionDate.difference(previousCompletionDate).inDays;
+    return daysBetween == task.effectiveIntervalDays;
+  }
+
   // ===============================================================
   // Daily rollover + streak/freeze logic (keep tasks)
   // ===============================================================
@@ -726,12 +759,14 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     // --- SNAPSHOT: Save yesterday's tasks to history BEFORE modifying them ---
     await _saveTaskSnapshotToHistory(yesterday);
 
-    // --- Streak update (evaluate yesterday) ---
+    // --- Streak update (evaluate yesterday only if task was due) ---
     for (final t in _keepTasks) {
       if (!t.keep) continue;
+      final wasDueYesterday = _isTaskDueOnDate(t, yesterday);
+      if (!wasDueYesterday) continue;
+
       if (t.done) {
-        // completed yesterday
-        if (t.lastDoneKey == yesterday) {
+        if (_isConsecutiveCompletion(t, yesterday)) {
           t.streak += 1;
         } else {
           t.streak = 1;
