@@ -331,6 +331,9 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
 
   bool _isDoneForDate(DailyTask t, String dateKey) {
     if (!t.keep) return t.done;
+    // Past dates are rendered from immutable history snapshots.
+    // For those entries, keep the stored done-state instead of forcing false.
+    if (_isPastDate(dateKey, _todayKey())) return t.done;
     return dateKey == _todayKey() ? t.done : false;
   }
 
