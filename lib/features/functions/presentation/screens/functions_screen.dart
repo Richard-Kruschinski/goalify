@@ -7,6 +7,9 @@ import '../../distraction_blocker/presentation/screens/distraction_blocker_scree
 import '../../distraction_blocker/controllers/distraction_blocker_controller.dart';
 import '../../music_timer/presentation/screens/music_timer_screen.dart';
 import '../../music_timer/controllers/music_timer_controller.dart';
+import '../../interval_timer/presentation/screens/interval_timer_screen.dart';
+import '../../interval_timer/controllers/interval_timer_controller.dart';
+import '../../interval_timer/models/interval_timer_state.dart';
 
 class FunctionsScreen extends StatelessWidget {
   const FunctionsScreen({super.key});
@@ -100,6 +103,37 @@ class FunctionsScreen extends StatelessWidget {
               );
             },
           ),
+          const SizedBox(height: 16),
+          Consumer<IntervalTimerController>(
+            builder: (context, intervalTimer, _) {
+              final isRunning = intervalTimer.timerState == IntervalTimerState.running;
+              return FunctionCard(
+                title: 'Interval Timer',
+                subtitle: isRunning
+                    ? 'Running: ${intervalTimer.formattedTime} (Cycle ${intervalTimer.currentCycle}/${intervalTimer.totalCycles})'
+                    : 'Task -> Break -> Task -> Break (for kickboxing and rounds)',
+                icon: Icons.sports_martial_arts,
+                iconBackgroundColor: const Color(0xFFDDF4E7),
+                isActive: isRunning,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const IntervalTimerScreen(),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+          const SizedBox(height: 16),
+          const FunctionCard(
+            title: 'Options',
+            subtitle: 'Coming soon',
+            icon: Icons.tune,
+            iconBackgroundColor: Color(0xFFE9EDF5),
+            isInteractive: false,
+          ),
         ],
       ),
     );
@@ -113,6 +147,7 @@ class FunctionCard extends StatelessWidget {
   final Color iconBackgroundColor;
   final VoidCallback? onTap;
   final bool isActive;
+  final bool isInteractive;
 
   const FunctionCard({
     super.key,
@@ -122,6 +157,7 @@ class FunctionCard extends StatelessWidget {
     required this.iconBackgroundColor,
     this.onTap,
     this.isActive = false,
+    this.isInteractive = true,
   });
 
   @override
@@ -134,12 +170,16 @@ class FunctionCard extends StatelessWidget {
           ? Colors.red.withValues(alpha: 0.2)
           : Colors.black.withValues(alpha: 0.08),
       child: InkWell(
-        onTap: onTap ?? () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Coming Soon')),
-          );
-        },
+        onTap: isInteractive
+            ? (onTap ?? () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Coming Soon')),
+                );
+              })
+            : null,
         borderRadius: BorderRadius.circular(20),
+        splashColor: isInteractive ? null : Colors.transparent,
+        highlightColor: isInteractive ? null : Colors.transparent,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Stack(
@@ -186,21 +226,22 @@ class FunctionCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 16),
                   // Trailing Button
-                  Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: isActive ? const Color(0xFFFF6B6B) : Colors.grey[300]!,
-                        width: 1.5,
+                  if (isInteractive)
+                    Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: isActive ? const Color(0xFFFF6B6B) : Colors.grey[300]!,
+                          width: 1.5,
+                        ),
+                      ),
+                      padding: const EdgeInsets.all(8),
+                      child: Icon(
+                        Icons.arrow_forward,
+                        size: 20,
+                        color: isActive ? const Color(0xFFFF6B6B) : Colors.grey[600],
                       ),
                     ),
-                    padding: const EdgeInsets.all(8),
-                    child: Icon(
-                      Icons.arrow_forward,
-                      size: 20,
-                      color: isActive ? const Color(0xFFFF6B6B) : Colors.grey[600],
-                    ),
-                  ),
                 ],
               ),
               // Active indicator badge
