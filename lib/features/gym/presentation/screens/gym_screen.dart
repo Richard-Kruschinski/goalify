@@ -3212,7 +3212,7 @@ class _GymScreenState extends State<GymScreen> {
                     reservedSize: kLeftAxisReserved,
                     interval: yInterval,
                     getTitlesWidget: (value, meta) => SideTitleWidget(
-                      axisSide: meta.axisSide,
+                      meta: meta,
                       space: kLeftAxisSpaceToLine,
                       child: Text(value.toStringAsFixed(0)),
                     ),
@@ -3234,7 +3234,7 @@ class _GymScreenState extends State<GymScreen> {
                       if ((maxX - minX).abs() < eps) {
                         final dt = DateTime.fromMillisecondsSinceEpoch(value.toInt());
                         return SideTitleWidget(
-                          axisSide: meta.axisSide,
+                          meta: meta,
                           space: 6,
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -3250,7 +3250,7 @@ class _GymScreenState extends State<GymScreen> {
                           : const EdgeInsets.only(right: kLastDateRightPad);
 
                       return SideTitleWidget(
-                        axisSide: meta.axisSide,
+                        meta: meta,
                         space: 6,
                         child: Padding(
                           padding: pad,
@@ -6124,7 +6124,7 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
                   reservedSize: 42,
                   interval: yInterval,
                   getTitlesWidget: (value, meta) => SideTitleWidget(
-                    axisSide: meta.axisSide,
+                    meta: meta,
                     space: 6,
                     child: Text(value.toStringAsFixed(0)),
                   ),
@@ -6146,7 +6146,7 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
                     if ((maxX - minX).abs() < eps) {
                       final dt = DateTime.fromMillisecondsSinceEpoch(value.toInt());
                       return SideTitleWidget(
-                        axisSide: meta.axisSide,
+                        meta: meta,
                         space: 6,
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -6158,7 +6158,7 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
 
                     final dt = DateTime.fromMillisecondsSinceEpoch(value.toInt());
                     return SideTitleWidget(
-                      axisSide: meta.axisSide,
+                      meta: meta,
                       space: 6,
                       child: Padding(
                         padding: EdgeInsets.only(left: isFirst ? 8 : 0, right: isLast ? 24 : 0),
