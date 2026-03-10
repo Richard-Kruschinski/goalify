@@ -5033,6 +5033,10 @@ class _LogInputDialogState extends State<LogInputDialog> {
 
   bool get _dayLocked => widget.contextDay != null;
   bool get _isDurationWorkout => widget.workout.isDurationBased;
+  bool get _allowsZeroWeight =>
+      widget.workout.id == 'pull_ups' ||
+      widget.workout.id == 'pull_ups_machine' ||
+      widget.workout.id == 'dips';
 
   @override
   void initState() {
@@ -5137,11 +5141,12 @@ class _LogInputDialogState extends State<LogInputDialog> {
         final kg = double.tryParse(field.weightController.text.replaceAll(',', '.'));
         final reps = int.tryParse(field.repsController.text);
 
-        if (kg == null || kg <= 0) {
+        if (kg == null || (_allowsZeroWeight ? kg < 0 : kg <= 0)) {
+          final weightRule = _allowsZeroWeight ? '>= 0' : '> 0';
           if (dropsetNum > 0) {
-            _showSnackBar('Set $setNum Dropset $dropsetNum: Enter a valid weight (> 0).');
+            _showSnackBar('Set $setNum Dropset $dropsetNum: Enter a valid weight ($weightRule).');
           } else {
-            _showSnackBar('Set $setNum: Enter a valid weight (> 0).');
+            _showSnackBar('Set $setNum: Enter a valid weight ($weightRule).');
           }
           return false;
         }
