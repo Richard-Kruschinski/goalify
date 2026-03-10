@@ -241,8 +241,8 @@ class PomodoroController extends ChangeNotifier {
 
     _timerState = PomodoroTimerState.running;
     
-    // Start app blocking if in work phase and on Android
-    if (_currentPhase == PomodoroPhase.work && _platformService.isAndroid) {
+    // Start app blocking if in work phase, on Android, and profile has it enabled
+    if (_currentPhase == PomodoroPhase.work && _platformService.isAndroid && _currentProfile.shouldBlockApps) {
       if (kDebugMode) {
         print('Starting app blocking...');
       }

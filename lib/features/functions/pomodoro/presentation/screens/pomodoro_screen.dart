@@ -79,6 +79,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> {
     final shortBreakController = TextEditingController(text: profile.shortBreakDuration.toString());
     final longBreakController = TextEditingController(text: profile.longBreakDuration.toString());
     final cyclesController = TextEditingController(text: profile.cyclesBeforeLongBreak.toString());
+    bool shouldBlockApps = profile.shouldBlockApps; // Track app blocking preference
     final pomodoroController = context.read<PomodoroController>();
     final messenger = ScaffoldMessenger.of(context);
 
@@ -101,30 +102,31 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> {
               ),
             ],
           ),
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Header with icon
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFF6B6B).withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
+          child: StatefulBuilder(
+            builder: (context, setState) => SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header with icon
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFF6B6B).withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.edit_note,
+                            color: Color(0xFFFF6B6B),
+                            size: 28,
+                          ),
                         ),
-                        child: const Icon(
-                          Icons.edit_note,
-                          color: Color(0xFFFF6B6B),
-                          size: 28,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      const Expanded(
+                        const SizedBox(width: 16),
+                        const Expanded(
                         child: Text(
                           'Edit Profile',
                           style: TextStyle(
@@ -185,6 +187,22 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> {
                     hint: 'Number',
                     keyboardType: TextInputType.number,
                   ),
+                  const SizedBox(height: 20),
+                  
+                  // Block Apps Checkbox  
+                  CheckboxListTile(
+                    value: shouldBlockApps,
+                    onChanged: (value) {
+                      setState(() {
+                        shouldBlockApps = value ?? true;
+                      });
+                    },
+                    title: const Text('Block Apps'),
+                    subtitle: const Text('Block distracting apps during work sessions'),
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    activeColor: const Color(0xFFFF6B6B),
+                  ),
                   const SizedBox(height: 24),
                   
                   // Buttons
@@ -231,6 +249,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> {
                               shortBreakDuration: int.tryParse(shortBreakController.text) ?? profile.shortBreakDuration,
                               longBreakDuration: int.tryParse(longBreakController.text) ?? profile.longBreakDuration,
                               cyclesBeforeLongBreak: int.tryParse(cyclesController.text) ?? profile.cyclesBeforeLongBreak,
+                              shouldBlockApps: shouldBlockApps,
                             );
 
                             await pomodoroController.updateCustomProfile(updatedProfile);
@@ -268,6 +287,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> {
                 ],
               ),
             ),
+          ),
           ),
         ),
       ),
@@ -872,6 +892,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> {
     final shortBreakController = TextEditingController(text: '5');
     final longBreakController = TextEditingController(text: '15');
     final cyclesController = TextEditingController(text: '4');
+    bool shouldBlockApps = true; // Default: block apps
     final pomodoroController = context.read<PomodoroController>();
     final messenger = ScaffoldMessenger.of(context);
     
@@ -894,30 +915,31 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> {
               ),
             ],
           ),
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Header with icon
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFF6B6B).withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
+          child: StatefulBuilder(
+            builder: (context, setState) => SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header with icon
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFF6B6B).withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.add_circle_outline,
+                            color: Color(0xFFFF6B6B),
+                            size: 28,
+                          ),
                         ),
-                        child: const Icon(
-                          Icons.add_circle_outline,
-                          color: Color(0xFFFF6B6B),
-                          size: 28,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      const Expanded(
+                        const SizedBox(width: 16),
+                        const Expanded(
                         child: Text(
                           'Create Custom Profile',
                           style: TextStyle(
@@ -978,6 +1000,22 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> {
                     hint: 'Number',
                     keyboardType: TextInputType.number,
                   ),
+                  const SizedBox(height: 20),
+                  
+                  // Block Apps Checkbox  
+                  CheckboxListTile(
+                    value: shouldBlockApps,
+                    onChanged: (value) {
+                      setState(() {
+                        shouldBlockApps = value ?? true;
+                      });
+                    },
+                    title: const Text('Block Apps'),
+                    subtitle: const Text('Block distracting apps during work sessions'),
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    activeColor: const Color(0xFFFF6B6B),
+                  ),
                   const SizedBox(height: 24),
                   
                   // Buttons
@@ -1024,6 +1062,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> {
                               shortBreakDuration: int.tryParse(shortBreakController.text) ?? 5,
                               longBreakDuration: int.tryParse(longBreakController.text) ?? 15,
                               cyclesBeforeLongBreak: int.tryParse(cyclesController.text) ?? 4,
+                              shouldBlockApps: shouldBlockApps,
                             );
                             
                             await pomodoroController.addCustomProfile(profile);
@@ -1061,6 +1100,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> {
                 ],
               ),
             ),
+          ),
           ),
         ),
       ),

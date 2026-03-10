@@ -5,6 +5,7 @@ class PomodoroProfile {
   final int shortBreakDuration; // in minutes
   final int longBreakDuration; // in minutes
   final int cyclesBeforeLongBreak;
+  final bool shouldBlockApps; // whether to block apps during work sessions
 
   PomodoroProfile({
     required this.id,
@@ -13,6 +14,7 @@ class PomodoroProfile {
     required this.shortBreakDuration,
     required this.longBreakDuration,
     required this.cyclesBeforeLongBreak,
+    this.shouldBlockApps = true, // default: block apps
   });
 
   // Predefined profiles
@@ -23,6 +25,7 @@ class PomodoroProfile {
         shortBreakDuration: 5,
         longBreakDuration: 15,
         cyclesBeforeLongBreak: 4,
+        shouldBlockApps: true,
       );
 
   static PomodoroProfile get short => PomodoroProfile(
@@ -32,6 +35,7 @@ class PomodoroProfile {
         shortBreakDuration: 3,
         longBreakDuration: 10,
         cyclesBeforeLongBreak: 4,
+        shouldBlockApps: true,
       );
 
   static PomodoroProfile get long => PomodoroProfile(
@@ -41,6 +45,7 @@ class PomodoroProfile {
         shortBreakDuration: 10,
         longBreakDuration: 30,
         cyclesBeforeLongBreak: 3,
+        shouldBlockApps: true,
       );
 
   static PomodoroProfile get intense => PomodoroProfile(
@@ -50,6 +55,7 @@ class PomodoroProfile {
         shortBreakDuration: 5,
         longBreakDuration: 20,
         cyclesBeforeLongBreak: 3,
+        shouldBlockApps: true,
       );
 
   static List<PomodoroProfile> get defaultProfiles => [
@@ -67,6 +73,7 @@ class PomodoroProfile {
       'shortBreakDuration': shortBreakDuration,
       'longBreakDuration': longBreakDuration,
       'cyclesBeforeLongBreak': cyclesBeforeLongBreak,
+      'shouldBlockApps': shouldBlockApps,
     };
   }
 
@@ -78,6 +85,7 @@ class PomodoroProfile {
       shortBreakDuration: json['shortBreakDuration'] ?? 5,
       longBreakDuration: json['longBreakDuration'] ?? 15,
       cyclesBeforeLongBreak: json['cyclesBeforeLongBreak'] ?? 4,
+      shouldBlockApps: json['shouldBlockApps'] ?? true,
     );
   }
 
@@ -88,6 +96,7 @@ class PomodoroProfile {
     int? shortBreakDuration,
     int? longBreakDuration,
     int? cyclesBeforeLongBreak,
+    bool? shouldBlockApps,
   }) {
     return PomodoroProfile(
       id: id ?? this.id,
@@ -96,6 +105,7 @@ class PomodoroProfile {
       shortBreakDuration: shortBreakDuration ?? this.shortBreakDuration,
       longBreakDuration: longBreakDuration ?? this.longBreakDuration,
       cyclesBeforeLongBreak: cyclesBeforeLongBreak ?? this.cyclesBeforeLongBreak,
+      shouldBlockApps: shouldBlockApps ?? this.shouldBlockApps,
     );
   }
 
