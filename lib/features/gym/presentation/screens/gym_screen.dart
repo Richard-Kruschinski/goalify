@@ -1698,26 +1698,20 @@ class _GymScreenState extends State<GymScreen> {
     _saveBestSetCache();
   }
 
-  void _confirmDeleteForDay(Workout w, String day) {
-    showDialog<void>(
+  Future<void> _confirmDeleteForDay(Workout w, String day) async {
+    final confirmed = await _showModernConfirmationDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: Text('Clear history for "${w.name}" on $day?'),
-        content: const Text('Only this exercise’s logs for this day will be deleted.'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel')),
-          FilledButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _deleteWorkoutLogsForDay(w.id, day);
-            },
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
+      title: 'Clear history for "${w.name}" on $day?',
+      message: 'Only this exercise\'s logs for this day will be deleted.',
+      confirmButtonText: 'Delete',
+      icon: Icons.delete_outline,
+      iconColor: const Color(0xFFE53935),
+      isDangerous: true,
     );
+
+    if (confirmed) {
+      _deleteWorkoutLogsForDay(w.id, day);
+    }
   }
 
   // Remove-from-plan Dialog (By Exercise)
