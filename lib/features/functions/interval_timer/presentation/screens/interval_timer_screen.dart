@@ -24,11 +24,458 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
   late TextEditingController _taskDurationController;
   late TextEditingController _pauseBeforeController;
 
+  String _formatSeconds(int totalSeconds) {
+    final minutes = totalSeconds ~/ 60;
+    final seconds = totalSeconds % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  void _showTaskActions(
+    BuildContext context,
+    IntervalTimerController controller,
+    int taskIndex,
+  ) {
+    if (taskIndex < 0 || taskIndex >= controller.tasks.length) return;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.edit_outlined, color: Color(0xFFFF6B6B)),
+              title: const Text('Edit Task'),
+              onTap: () {
+                Navigator.pop(sheetContext);
+                _showEditTaskDialog(context, controller, taskIndex);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete_outline, color: Colors.redAccent),
+              title: const Text('Delete Task'),
+              onTap: () {
+                controller.removeTask(taskIndex);
+                Navigator.pop(sheetContext);
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showEditTaskDialog(
+    BuildContext context,
+    IntervalTimerController controller,
+    int taskIndex,
+  ) {
+    if (taskIndex < 0 || taskIndex >= controller.tasks.length) return;
+
+    final task = controller.tasks[taskIndex];
+    final messenger = ScaffoldMessenger.of(context);
+    final nameController = TextEditingController(text: task.name);
+    final durationController = TextEditingController(
+      text: (task.durationSeconds / 60).toString(),
+    );
+    final pauseController = TextEditingController(
+      text: taskIndex == 0
+          ? '0'
+          : (task.pauseBeforeSeconds / 60).toString(),
+    );
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 420),
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.12),
+                blurRadius: 24,
+                offset: const Offset(0, 12),
+              ),
+            ],
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFF6B6B).withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.edit_note,
+                        color: Color(0xFFFF6B6B),
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    const Text(
+                      'Edit Task',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: nameController,
+                  decoration: InputDecoration(
+                    labelText: 'Task',
+                    filled: true,
+                    fillColor: const Color(0xFFF5F6FA),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFFFF6B6B), width: 1.5),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: durationController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: InputDecoration(
+                    labelText: 'Duration (minutes)',
+                    filled: true,
+                    fillColor: const Color(0xFFF5F6FA),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFFFF6B6B), width: 1.5),
+                    ),
+                    helperText: 'Decimals allowed, e.g. 0.5 = 30 seconds.',
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: pauseController,
+                  enabled: taskIndex != 0,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: InputDecoration(
+                    labelText: 'Pause before task (minutes)',
+                    helperText: taskIndex == 0
+                        ? 'Always 0 for the first task.'
+                        : 'Decimals allowed, e.g. 0.5 = 30 seconds.',
+                    filled: true,
+                    fillColor: const Color(0xFFF5F6FA),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFFFF6B6B), width: 1.5),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(dialogContext),
+                      child: const Text(
+                        'Cancel',
+                        style: TextStyle(color: Colors.black54),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFFF6B6B),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                      ),
+                      onPressed: () {
+                        final newName = nameController.text.trim();
+                        final durationText = durationController.text.trim().replaceAll(',', '.');
+                        final durationMinutes = double.tryParse(durationText) ?? 0;
+                        final newDurationSeconds = (durationMinutes * 60).round();
+                        final pauseText = pauseController.text.trim().replaceAll(',', '.');
+                        final pauseMinutes = double.tryParse(pauseText) ?? 0;
+                        final pauseSeconds = (pauseMinutes * 60).round();
+
+                        if (newName.isEmpty || newDurationSeconds <= 0) {
+                          messenger.showSnackBar(
+                            const SnackBar(content: Text('Please enter valid values.')),
+                          );
+                          return;
+                        }
+
+                        controller.updateTask(
+                          index: taskIndex,
+                          name: newName,
+                          durationSeconds: newDurationSeconds,
+                          pauseBeforeSeconds: taskIndex == 0 ? 0 : pauseSeconds,
+                        );
+                        Navigator.pop(dialogContext);
+                      },
+                      child: const Text('Save'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showProfileSelector(BuildContext context) {
+    final controller = context.read<IntervalTimerController>();
+    final messenger = ScaffoldMessenger.of(context);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.add_circle_outline, color: Color(0xFF4CAF50)),
+              title: const Text('Save Profile'),
+              onTap: () {
+                Navigator.pop(sheetContext);
+                _showCreateProfileDialog(context);
+              },
+            ),
+            const Divider(height: 1),
+            if (controller.customProfiles.isEmpty)
+              const Padding(
+                padding: EdgeInsets.all(16),
+                child: Text(
+                  'No saved profiles yet.',
+                  style: TextStyle(color: Colors.grey),
+                ),
+              )
+            else
+              ...controller.customProfiles.map(
+                (profile) => ListTile(
+                  leading: Icon(
+                    controller.selectedProfileId == profile.id
+                        ? Icons.check_circle
+                        : Icons.radio_button_unchecked,
+                    color: controller.selectedProfileId == profile.id
+                        ? const Color(0xFF4CAF50)
+                        : Colors.grey,
+                  ),
+                  title: Text(profile.name),
+                  subtitle: Text('${profile.tasks.length} Tasks'),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                    onPressed: () async {
+                      await controller.deleteCustomProfile(profile.id);
+                      if (sheetContext.mounted) {
+                        Navigator.pop(sheetContext);
+                      }
+                      messenger.showSnackBar(
+                        const SnackBar(content: Text('Profile deleted.')),
+                      );
+                    },
+                  ),
+                  onTap: () async {
+                    await controller.applyCustomProfile(profile.id);
+                    if (sheetContext.mounted) {
+                      Navigator.pop(sheetContext);
+                    }
+                    messenger.showSnackBar(
+                      SnackBar(content: Text('Profile "${profile.name}" loaded.')),
+                    );
+                  },
+                ),
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showCreateProfileDialog(BuildContext context) {
+    final nameController = TextEditingController();
+    final controller = context.read<IntervalTimerController>();
+    final messenger = ScaffoldMessenger.of(context);
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 420),
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.12),
+                blurRadius: 24,
+                offset: const Offset(0, 12),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFF6B6B).withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.bookmark_add_outlined,
+                      color: Color(0xFFFF6B6B),
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Save Profile',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              TextField(
+                controller: nameController,
+                autofocus: true,
+                decoration: InputDecoration(
+                  labelText: 'Profile name',
+                  hintText: 'e.g. Kickboxing 12 Rounds',
+                  filled: true,
+                  fillColor: const Color(0xFFF5F6FA),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 14,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                      color: Color(0xFFFF6B6B),
+                      width: 1.5,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(dialogContext),
+                    child: const Text(
+                      'Cancel',
+                      style: TextStyle(color: Colors.black54),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF6B6B),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 12,
+                      ),
+                    ),
+                    onPressed: () async {
+                      if (!controller.hasTasks) {
+                        messenger.showSnackBar(
+                          const SnackBar(content: Text('Create at least one task first.')),
+                        );
+                        return;
+                      }
+
+                      final profileName = nameController.text.trim();
+                      if (profileName.isEmpty) {
+                        messenger.showSnackBar(
+                          const SnackBar(content: Text('Please enter a profile name.')),
+                        );
+                        return;
+                      }
+
+                      await controller.createCustomProfile(profileName);
+                      if (dialogContext.mounted) {
+                        Navigator.pop(dialogContext);
+                      }
+                      messenger.showSnackBar(
+                        SnackBar(content: Text('Profile "$profileName" saved.')),
+                      );
+                    },
+                    child: const Text('Save'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
     _taskNameController = TextEditingController();
-    _taskDurationController = TextEditingController(text: '1');
+    _taskDurationController = TextEditingController(text: '0.5');
     _pauseBeforeController = TextEditingController(text: '0');
   }
 
@@ -42,24 +489,28 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
 
   void _addTask(IntervalTimerController controller) {
     final name = _taskNameController.text.trim();
-    final durationMinutes = int.tryParse(_taskDurationController.text.trim()) ?? 0;
-    final pauseMinutes = int.tryParse(_pauseBeforeController.text.trim()) ?? 0;
+    final durationText = _taskDurationController.text.trim().replaceAll(',', '.');
+    final durationMinutes = double.tryParse(durationText) ?? 0;
+    final durationSeconds = (durationMinutes * 60).round();
+    final pauseText = _pauseBeforeController.text.trim().replaceAll(',', '.');
+    final pauseMinutes = double.tryParse(pauseText) ?? 0;
+    final pauseSeconds = (pauseMinutes * 60).round();
 
-    if (name.isEmpty || durationMinutes <= 0) {
+    if (name.isEmpty || durationSeconds <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Bitte Aufgabe und Dauer korrekt eingeben.')),
+        const SnackBar(content: Text('Please enter a valid task and duration in minutes.')),
       );
       return;
     }
 
     controller.addTask(
       name: name,
-      durationSeconds: durationMinutes * 60,
-      pauseBeforeSeconds: pauseMinutes * 60,
+      durationSeconds: durationSeconds,
+      pauseBeforeSeconds: pauseSeconds,
     );
 
     _taskNameController.clear();
-    _taskDurationController.text = '1';
+    _taskDurationController.text = '0.5';
     _pauseBeforeController.text = '0';
   }
 
@@ -73,6 +524,12 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
           icon: const Icon(Icons.arrow_back, color: Colors.black87),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings, color: Colors.black87),
+            onPressed: () => _showProfileSelector(context),
+          ),
+        ],
         title: const Text(
           'Interval Timer',
           style: TextStyle(
@@ -222,7 +679,7 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'Profil erstellen',
+                          'Create Profile',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -231,7 +688,7 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                         ),
                         const SizedBox(height: 8),
                         const Text(
-                          'Erste Aufgabe: Name + Dauer. Bei weiteren Aufgaben zusätzlich Pause davor eintragen.',
+                          'First task: name + duration. For additional tasks, also set the pause before it.',
                           style: TextStyle(color: Colors.grey),
                         ),
                         const SizedBox(height: 16),
@@ -239,8 +696,8 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                         TextField(
                           controller: _taskNameController,
                           decoration: InputDecoration(
-                            labelText: 'Aufgabe',
-                            hintText: 'z. B. Seilspringen',
+                            labelText: 'Task',
+                            hintText: 'e.g. Jump rope',
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -251,31 +708,32 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
 
                         TextField(
                           controller: _taskDurationController,
-                          keyboardType: TextInputType.number,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
                           decoration: InputDecoration(
-                            labelText: 'Dauer (Minuten)',
-                            hintText: '1',
+                            labelText: 'Duration (minutes)',
+                            hintText: '0.5',
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                             prefixIcon: const Icon(Icons.timer_outlined),
+                            helperText: 'Decimals allowed (e.g. 0.5 = 30 seconds).',
                           ),
                         ),
                         const SizedBox(height: 16),
 
                         TextField(
                           controller: _pauseBeforeController,
-                          keyboardType: TextInputType.number,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
                           decoration: InputDecoration(
-                            labelText: 'Pause vor dieser Aufgabe (Minuten)',
-                            hintText: '0',
+                            labelText: 'Pause before this task (minutes)',
+                            hintText: '0.5',
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                             prefixIcon: const Icon(Icons.free_breakfast_outlined),
                             helperText: controller.tasks.isEmpty
-                                ? 'Bei der ersten Aufgabe wird die Pause ignoriert.'
-                                : 'Wird als Pause zwischen der letzten und dieser Aufgabe genutzt.',
+                                ? 'Pause is ignored for the first task.'
+                                : 'Decimals allowed (e.g. 0.5 = 30 seconds).',
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -285,7 +743,7 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                           child: ElevatedButton.icon(
                             onPressed: () => _addTask(controller),
                             icon: const Icon(Icons.add),
-                            label: const Text('Task hinzufügen'),
+                            label: const Text('Add task'),
                             style: ElevatedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 14),
                               backgroundColor: Colors.black87,
@@ -299,7 +757,7 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             const Text(
-                              'Tasks im Profil',
+                              'Tasks in profile',
                               style: TextStyle(
                                 fontSize: 17,
                                 fontWeight: FontWeight.bold,
@@ -309,7 +767,7 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                             TextButton.icon(
                               onPressed: controller.tasks.isEmpty ? null : controller.clearProfile,
                               icon: const Icon(Icons.delete_outline),
-                              label: const Text('Profil leeren'),
+                              label: const Text('Clear profile'),
                             ),
                           ],
                         ),
@@ -317,17 +775,24 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
 
                         if (controller.tasks.isEmpty)
                           const Text(
-                            'Noch keine Aufgaben hinzugefügt.',
+                            'No tasks added yet.',
                             style: TextStyle(color: Colors.grey),
                           )
                         else
-                          Column(
-                            children: List.generate(controller.tasks.length, (index) {
+                          ReorderableListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: controller.tasks.length,
+                            buildDefaultDragHandles: false,
+                            onReorder: controller.reorderTasks,
+                            itemBuilder: (context, index) {
                               final task = controller.tasks[index];
                               return Card(
+                                key: ValueKey('${task.name}_${task.durationSeconds}_${task.pauseBeforeSeconds}_$index'),
                                 color: Colors.white,
                                 margin: const EdgeInsets.only(bottom: 10),
                                 child: ListTile(
+                                  onLongPress: () => _showTaskActions(context, controller, index),
                                   leading: CircleAvatar(
                                     backgroundColor: const Color(0xFFDDF4E7),
                                     child: Text('${index + 1}'),
@@ -335,16 +800,28 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                                   title: Text(task.name),
                                   subtitle: Text(
                                     index == 0
-                                        ? 'Dauer: ${task.durationSeconds ~/ 60} Min'
-                                        : 'Pause davor: ${task.pauseBeforeSeconds ~/ 60} Min • Dauer: ${task.durationSeconds ~/ 60} Min',
+                                        ? 'Duration: ${_formatSeconds(task.durationSeconds)}'
+                                        : 'Pause before: ${_formatSeconds(task.pauseBeforeSeconds)} • Duration: ${_formatSeconds(task.durationSeconds)}',
                                   ),
-                                  trailing: IconButton(
-                                    icon: const Icon(Icons.close),
-                                    onPressed: () => controller.removeTask(index),
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(Icons.close),
+                                        onPressed: () => controller.removeTask(index),
+                                      ),
+                                      ReorderableDragStartListener(
+                                        index: index,
+                                        child: const Padding(
+                                          padding: EdgeInsets.symmetric(horizontal: 4),
+                                          child: Icon(Icons.drag_handle, color: Colors.grey),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               );
-                            }),
+                            },
                           ),
                       ],
                     )
@@ -353,7 +830,7 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'Ablauf',
+                          'Sequence',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -367,8 +844,8 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                             padding: const EdgeInsets.only(bottom: 8),
                             child: Text(
                               index == 0
-                                  ? '${index + 1}. ${task.name} (${task.durationSeconds ~/ 60} Min)'
-                                  : '${index + 1}. Pause ${task.pauseBeforeSeconds ~/ 60} Min → ${task.name} (${task.durationSeconds ~/ 60} Min)',
+                                  ? '${index + 1}. ${task.name} (${_formatSeconds(task.durationSeconds)})'
+                                  : '${index + 1}. Pause ${_formatSeconds(task.pauseBeforeSeconds)} → ${task.name} (${_formatSeconds(task.durationSeconds)})',
                               style: const TextStyle(color: Colors.black87),
                             ),
                           );
