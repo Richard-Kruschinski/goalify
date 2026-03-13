@@ -597,6 +597,7 @@ class _GymScreenState extends State<GymScreen> {
   static const _kOrderByDayKey = 'gym_order_by_day_v1';
   static const _kAssignmentsKey = 'gym_assignments_by_day_v1';
   static const _kOrderDaysKey = 'gym_order_days_v1';
+  static const _kExerciseNotesKey = 'gym_exercise_notes_v1';
 
   // Kalender-Storage (Map<yyyy-MM-dd, Set<DayName>>)
   static const _kCalendarKey = 'gym_calendar_v1';
@@ -623,6 +624,7 @@ class _GymScreenState extends State<GymScreen> {
 
   // Zuweisungen „Übung gehört zu Day“, auch ohne History
   final Map<String, List<String>> _assignmentsByDay = <String, List<String>>{};
+  final Map<String, String> _exerciseNotesByWorkoutId = <String, String>{};
 
   // Reihenfolge der Workout-Days
   List<String> _orderDays = <String>[];
@@ -726,6 +728,18 @@ class _GymScreenState extends State<GymScreen> {
       });
     }
 
+    // Exercise notes
+    final notesRaw = await LocalStorage.loadJson(_kExerciseNotesKey, fallback: {});
+    _exerciseNotesByWorkoutId.clear();
+    if (notesRaw is Map) {
+      notesRaw.forEach((k, v) {
+        final note = v.toString().trim();
+        if (note.isNotEmpty) {
+          _exerciseNotesByWorkoutId[k.toString()] = note;
+        }
+      });
+    }
+
     // Day colors
     final colorsRaw = await LocalStorage.loadJson(_kDayColorsKey, fallback: {});
     _dayColors.clear();
@@ -777,6 +791,8 @@ class _GymScreenState extends State<GymScreen> {
       LocalStorage.saveJson(_kOrderByDayKey, _orderByDay);
   Future<void> _saveAssignments() async =>
       LocalStorage.saveJson(_kAssignmentsKey, _assignmentsByDay);
+    Future<void> _saveExerciseNotes() async =>
+      LocalStorage.saveJson(_kExerciseNotesKey, _exerciseNotesByWorkoutId);
   Future<void> _saveOrderDays() async =>
       LocalStorage.saveJson(_kOrderDaysKey, _orderDays);
   Future<void> _saveDayColors() async =>
@@ -1369,6 +1385,7 @@ class _GymScreenState extends State<GymScreen> {
     final deletedLogs = List<WorkoutLog>.from(_logs[workoutId] ?? const <WorkoutLog>[]);
     _logs.remove(workoutId);
     _bestSetCache.updateBest(workoutId, null); // Lösche Best-Set aus Cache
+    _exerciseNotesByWorkoutId.remove(workoutId);
 
     if (removeTrackedCalendar) {
       _removeCalendarTrackingForDeletedLogs(deletedLogs);
@@ -1389,6 +1406,7 @@ class _GymScreenState extends State<GymScreen> {
     _saveOrderByDay();
     _saveOrderDays();
     _saveBestSetCache();
+    _saveExerciseNotes();
     if (removeTrackedCalendar) {
       _saveCalendar();
     }
@@ -1434,6 +1452,120 @@ class _GymScreenState extends State<GymScreen> {
     }
   }
 
+  Future<void> _openExerciseNoteDialog(Workout workout) async {
+    final existing = _exerciseNotesByWorkoutId[workout.id] ?? '';
+    final controller = TextEditingController(text: existing);
+
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEDE9FE),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.sticky_note_2_outlined,
+                      color: Color(0xFF7C3AED),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Note for "${workout.name}"',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF1A1D1F),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: controller,
+                maxLines: 6,
+                minLines: 4,
+                textInputAction: TextInputAction.newline,
+                decoration: InputDecoration(
+                  hintText: 'Add a note for this exercise...',
+                  filled: true,
+                  fillColor: const Color(0xFFF8FAFC),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFFE53935), width: 2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: const Text('Cancel'),
+                  ),
+                  if (existing.trim().isNotEmpty) ...[
+                    const SizedBox(width: 8),
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, ''),
+                      child: const Text(
+                        'Remove',
+                        style: TextStyle(color: Color(0xFFE53935)),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(width: 8),
+                  FilledButton(
+                    onPressed: () => Navigator.pop(ctx, controller.text),
+                    child: const Text('Save'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    controller.dispose();
+    if (result == null) return;
+
+    final note = result.trim();
+    setState(() {
+      if (note.isEmpty) {
+        _exerciseNotesByWorkoutId.remove(workout.id);
+      } else {
+        _exerciseNotesByWorkoutId[workout.id] = note;
+      }
+    });
+    await _saveExerciseNotes();
+
+    if (!mounted) return;
+    final info = note.isEmpty ? 'Note removed.' : 'Note saved.';
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(info)));
+  }
+
   Future<void> _openWorkoutLongPressMenu(Workout w) async {
     final action = await showModalBottomSheet<String>(
       context: context,
@@ -1469,18 +1601,21 @@ class _GymScreenState extends State<GymScreen> {
   Future<void> _showExerciseOptionsMenu(Workout w) async {
     await showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (ctx) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        padding: const EdgeInsets.only(top: 16, bottom: 24, left: 20, right: 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+      builder: (ctx) => SafeArea(
+        child: SingleChildScrollView(
+          child: Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            padding: const EdgeInsets.only(top: 16, bottom: 24, left: 20, right: 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
             Container(
               width: 48,
               height: 4,
@@ -1546,6 +1681,68 @@ class _GymScreenState extends State<GymScreen> {
                               ),
                             ),
                             Icon(
+                              Icons.chevron_right,
+                              color: Color(0xFFD1D5DB),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  Container(
+                    height: 1,
+                    color: const Color(0xFFF0F4F8),
+                  ),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () async {
+                        Navigator.pop(ctx);
+                        await _openExerciseNoteDialog(w);
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEDE9FE),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.sticky_note_2_outlined,
+                                color: Color(0xFF7C3AED),
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Add note',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF1A1D1F),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    _exerciseNotesByWorkoutId[w.id]?.isNotEmpty == true
+                                        ? 'Edit existing note'
+                                        : 'Save a note for this exercise',
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      color: Color(0xFF6F7789),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(
                               Icons.chevron_right,
                               color: Color(0xFFD1D5DB),
                             ),
@@ -1674,7 +1871,9 @@ class _GymScreenState extends State<GymScreen> {
                 ],
               ),
             ),
-          ],
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -3936,6 +4135,7 @@ class _GymScreenState extends State<GymScreen> {
           onDeleteForDay: (w) => _confirmDeleteForDay(w, day),
           onDeleteAll: _confirmClearHistoryAll,
           onUnassignFromDay: (w) => _removeAssignmentForDay(day, w.id),
+          onEditNote: _openExerciseNoteDialog,
           onReorder: (ids) => _reorderDay(day, ids),
           stripeColor: stripe,
           // Checkbox oben rechts
@@ -4467,6 +4667,7 @@ class DayDetailScreen extends StatefulWidget {
   final void Function(Workout workout) onDeleteForDay;
   final void Function(Workout workout) onDeleteAll;
   final void Function(Workout workout) onUnassignFromDay;
+  final Future<void> Function(Workout workout) onEditNote;
   final void Function(List<String> newOrder) onReorder;
   final Color stripeColor;
   final VoidCallback? onRefresh;
@@ -4487,6 +4688,7 @@ class DayDetailScreen extends StatefulWidget {
     required this.onDeleteForDay,
     required this.onDeleteAll,
     required this.onUnassignFromDay,
+    required this.onEditNote,
     required this.onReorder,
     required this.stripeColor,
     this.onRefresh,
@@ -4755,18 +4957,21 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
   Future<void> _showExerciseOptionsMenuForDay(Workout w) async {
     await showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (ctx) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        padding: const EdgeInsets.only(top: 16, bottom: 24, left: 20, right: 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+      builder: (ctx) => SafeArea(
+        child: SingleChildScrollView(
+          child: Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            padding: const EdgeInsets.only(top: 16, bottom: 24, left: 20, right: 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
             Container(
               width: 48,
               height: 4,
@@ -4832,6 +5037,66 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
                               ),
                             ),
                             const Icon(
+                              Icons.chevron_right,
+                              color: Color(0xFFD1D5DB),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  Container(
+                    height: 1,
+                    color: const Color(0xFFF0F4F8),
+                  ),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () async {
+                        Navigator.pop(ctx);
+                        await widget.onEditNote(w);
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEDE9FE),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.sticky_note_2_outlined,
+                                color: Color(0xFF7C3AED),
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            const Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Add note',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF1A1D1F),
+                                    ),
+                                  ),
+                                  SizedBox(height: 4),
+                                  Text(
+                                    'Save a note for this exercise',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Color(0xFF6F7789),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Icon(
                               Icons.chevron_right,
                               color: Color(0xFFD1D5DB),
                             ),
@@ -4963,7 +5228,9 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
                 ],
               ),
             ),
-          ],
+              ],
+            ),
+          ),
         ),
       ),
     );
