@@ -927,7 +927,9 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     final all = _orderedTasksFor(todayKey);
     if (all.isEmpty) return;
 
-    final allDone = all.every((t) => t.done);
+    final allDone = all.every(
+      (t) => t.done || (t.keep && _wasFrozenOn(todayKey, t.id)),
+    );
     if (!allDone) return;
 
     final lastShown =
@@ -1140,6 +1142,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     });
     _sortCompletedToBottom(today);
     await _saveFreezeState();
+    await _checkAndMaybeShowCongrats();
   }
 
   // NEW: single combined reorder across keep + one-off
