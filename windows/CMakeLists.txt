@@ -1,5 +1,31 @@
 # Project-level configuration.
 cmake_minimum_required(VERSION 3.14)
+
+if(WIN32)
+  set(WINDOWS_KITS_BIN "C:/Program Files (x86)/Windows Kits/10/bin")
+  if(EXISTS "${WINDOWS_KITS_BIN}")
+    file(GLOB WINDOWS_SDK_BIN_DIRS LIST_DIRECTORIES true "${WINDOWS_KITS_BIN}/10.*")
+    list(SORT WINDOWS_SDK_BIN_DIRS COMPARE NATURAL ORDER DESCENDING)
+
+    foreach(WINDOWS_SDK_BIN_DIR IN LISTS WINDOWS_SDK_BIN_DIRS)
+      if((NOT CMAKE_MT OR CMAKE_MT STREQUAL "CMAKE_MT-NOTFOUND")
+          AND EXISTS "${WINDOWS_SDK_BIN_DIR}/x64/mt.exe")
+        set(CMAKE_MT "${WINDOWS_SDK_BIN_DIR}/x64/mt.exe" CACHE FILEPATH "Windows manifest tool" FORCE)
+      endif()
+
+      if((NOT CMAKE_RC_COMPILER OR CMAKE_RC_COMPILER STREQUAL "rc")
+          AND EXISTS "${WINDOWS_SDK_BIN_DIR}/x64/rc.exe")
+        set(CMAKE_RC_COMPILER "${WINDOWS_SDK_BIN_DIR}/x64/rc.exe" CACHE FILEPATH "Windows resource compiler" FORCE)
+      endif()
+
+      if(CMAKE_MT AND NOT CMAKE_MT STREQUAL "CMAKE_MT-NOTFOUND"
+          AND CMAKE_RC_COMPILER AND NOT CMAKE_RC_COMPILER STREQUAL "rc")
+        break()
+      endif()
+    endforeach()
+  endif()
+endif()
+
 project(goalify LANGUAGES CXX)
 
 # The name of the executable created for the application. Change this to change

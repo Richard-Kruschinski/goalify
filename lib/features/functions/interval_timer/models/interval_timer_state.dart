@@ -1,6 +1,18 @@
+class IntervalTaskProfileItem {
+  final String name;
+  final int durationSeconds;
+  final int pauseBeforeSeconds;
+
+  const IntervalTaskProfileItem({
+    required this.name,
+    required this.durationSeconds,
+    this.pauseBeforeSeconds = 0,
+  });
+}
+
 enum IntervalTimerPhase {
-  work,
-  break_;
+  task,
+  pause,
 }
 
 enum IntervalTimerState {

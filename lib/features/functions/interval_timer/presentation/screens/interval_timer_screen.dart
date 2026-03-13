@@ -20,25 +20,47 @@ class _IntervalTimerScreenContent extends StatefulWidget {
 }
 
 class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent> {
-  late TextEditingController _workDurationController;
-  late TextEditingController _breakDurationController;
-  late TextEditingController _cyclesController;
+  late TextEditingController _taskNameController;
+  late TextEditingController _taskDurationController;
+  late TextEditingController _pauseBeforeController;
 
   @override
   void initState() {
     super.initState();
-    final controller = context.read<IntervalTimerController>();
-    _workDurationController = TextEditingController(text: (controller.workDuration ~/ 60).toString());
-    _breakDurationController = TextEditingController(text: (controller.breakDuration ~/ 60).toString());
-    _cyclesController = TextEditingController(text: controller.totalCycles.toString());
+    _taskNameController = TextEditingController();
+    _taskDurationController = TextEditingController(text: '1');
+    _pauseBeforeController = TextEditingController(text: '0');
   }
 
   @override
   void dispose() {
-    _workDurationController.dispose();
-    _breakDurationController.dispose();
-    _cyclesController.dispose();
+    _taskNameController.dispose();
+    _taskDurationController.dispose();
+    _pauseBeforeController.dispose();
     super.dispose();
+  }
+
+  void _addTask(IntervalTimerController controller) {
+    final name = _taskNameController.text.trim();
+    final durationMinutes = int.tryParse(_taskDurationController.text.trim()) ?? 0;
+    final pauseMinutes = int.tryParse(_pauseBeforeController.text.trim()) ?? 0;
+
+    if (name.isEmpty || durationMinutes <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Bitte Aufgabe und Dauer korrekt eingeben.')),
+      );
+      return;
+    }
+
+    controller.addTask(
+      name: name,
+      durationSeconds: durationMinutes * 60,
+      pauseBeforeSeconds: pauseMinutes * 60,
+    );
+
+    _taskNameController.clear();
+    _taskDurationController.text = '1';
+    _pauseBeforeController.text = '0';
   }
 
   @override
@@ -70,11 +92,9 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Timer Display
                   Center(
                     child: Column(
                       children: [
-                        // Phase label
                         Text(
                           controller.currentPhaseLabel,
                           style: const TextStyle(
@@ -83,36 +103,48 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                             color: Colors.grey,
                           ),
                         ),
+                        const SizedBox(height: 8),
+                        Text(
+                          controller.currentItemLabel,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87,
+                          ),
+                        ),
                         const SizedBox(height: 16),
-                        
-                        // Large timer
+
                         Container(
                           width: 220,
                           height: 220,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: controller.currentPhase == IntervalTimerPhase.work
+                            color: controller.currentPhase == IntervalTimerPhase.task
                                 ? const Color(0xFFDDF4E7)
                                 : const Color(0xFFFFE8E8),
                           ),
                           child: Stack(
+                            alignment: Alignment.center,
                             children: [
-                              // Progress circle
-                              CircularProgressIndicator(
-                                value: controller.progress,
-                                strokeWidth: 8,
-                                valueColor: AlwaysStoppedAnimation(
-                                  controller.currentPhase == IntervalTimerPhase.work
-                                      ? Colors.green[600]
-                                      : Colors.red[600],
+                              SizedBox(
+                                width: 220,
+                                height: 220,
+                                child: CircularProgressIndicator(
+                                  value: controller.progress,
+                                  strokeWidth: 8,
+                                  valueColor: AlwaysStoppedAnimation(
+                                    controller.currentPhase == IntervalTimerPhase.task
+                                        ? Colors.green[600]
+                                        : Colors.red[600],
+                                  ),
                                 ),
                               ),
-                              // Timer text
                               Center(
                                 child: Text(
                                   controller.formattedTime,
                                   style: const TextStyle(
-                                    fontSize: 64,
+                                    fontSize: 52,
                                     fontWeight: FontWeight.bold,
                                     color: Colors.black87,
                                   ),
@@ -122,10 +154,8 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                           ),
                         ),
                         const SizedBox(height: 16),
-                        
-                        // Cycle indicator
                         Text(
-                          'Cycle ${controller.currentCycle} / ${controller.totalCycles}',
+                          'Task ${controller.currentTaskNumber} / ${controller.totalTasks}',
                           style: const TextStyle(
                             fontSize: 16,
                             color: Colors.grey,
@@ -135,8 +165,7 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                     ),
                   ),
                   const SizedBox(height: 48),
-                  
-                  // Controls
+
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -187,77 +216,163 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                     ],
                   ),
                   const SizedBox(height: 48),
-                  
-                  // Settings
+
                   if (controller.timerState == IntervalTimerState.idle)
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'Settings',
+                          'Profil erstellen',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                             color: Colors.black87,
                           ),
                         ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Erste Aufgabe: Name + Dauer. Bei weiteren Aufgaben zusätzlich Pause davor eintragen.',
+                          style: TextStyle(color: Colors.grey),
+                        ),
                         const SizedBox(height: 16),
-                        
-                        // Work Duration
+
                         TextField(
-                          controller: _workDurationController,
+                          controller: _taskNameController,
+                          decoration: InputDecoration(
+                            labelText: 'Aufgabe',
+                            hintText: 'z. B. Seilspringen',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            prefixIcon: const Icon(Icons.task_alt),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        TextField(
+                          controller: _taskDurationController,
                           keyboardType: TextInputType.number,
                           decoration: InputDecoration(
-                            labelText: 'Work Duration (minutes)',
+                            labelText: 'Dauer (Minuten)',
                             hintText: '1',
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            prefixIcon: const Icon(Icons.work_outline),
+                            prefixIcon: const Icon(Icons.timer_outlined),
                           ),
-                          onChanged: (value) {
-                            final minutes = int.tryParse(value) ?? 1;
-                            controller.setWorkDuration(minutes * 60);
-                          },
                         ),
                         const SizedBox(height: 16),
-                        
-                        // Break Duration
+
                         TextField(
-                          controller: _breakDurationController,
+                          controller: _pauseBeforeController,
                           keyboardType: TextInputType.number,
                           decoration: InputDecoration(
-                            labelText: 'Break Duration (minutes)',
-                            hintText: '1',
+                            labelText: 'Pause vor dieser Aufgabe (Minuten)',
+                            hintText: '0',
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                             prefixIcon: const Icon(Icons.free_breakfast_outlined),
+                            helperText: controller.tasks.isEmpty
+                                ? 'Bei der ersten Aufgabe wird die Pause ignoriert.'
+                                : 'Wird als Pause zwischen der letzten und dieser Aufgabe genutzt.',
                           ),
-                          onChanged: (value) {
-                            final minutes = int.tryParse(value) ?? 1;
-                            controller.setBreakDuration(minutes * 60);
-                          },
                         ),
                         const SizedBox(height: 16),
-                        
-                        // Total Cycles
-                        TextField(
-                          controller: _cyclesController,
-                          keyboardType: TextInputType.number,
-                          decoration: InputDecoration(
-                            labelText: 'Number of Cycles',
-                            hintText: '4',
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
+
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: () => _addTask(controller),
+                            icon: const Icon(Icons.add),
+                            label: const Text('Task hinzufügen'),
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              backgroundColor: Colors.black87,
+                              foregroundColor: Colors.white,
                             ),
-                            prefixIcon: const Icon(Icons.repeat),
                           ),
-                          onChanged: (value) {
-                            final cycles = int.tryParse(value) ?? 4;
-                            controller.setTotalCycles(cycles);
-                          },
                         ),
+                        const SizedBox(height: 24),
+
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Tasks im Profil',
+                              style: TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            TextButton.icon(
+                              onPressed: controller.tasks.isEmpty ? null : controller.clearProfile,
+                              icon: const Icon(Icons.delete_outline),
+                              label: const Text('Profil leeren'),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+
+                        if (controller.tasks.isEmpty)
+                          const Text(
+                            'Noch keine Aufgaben hinzugefügt.',
+                            style: TextStyle(color: Colors.grey),
+                          )
+                        else
+                          Column(
+                            children: List.generate(controller.tasks.length, (index) {
+                              final task = controller.tasks[index];
+                              return Card(
+                                color: Colors.white,
+                                margin: const EdgeInsets.only(bottom: 10),
+                                child: ListTile(
+                                  leading: CircleAvatar(
+                                    backgroundColor: const Color(0xFFDDF4E7),
+                                    child: Text('${index + 1}'),
+                                  ),
+                                  title: Text(task.name),
+                                  subtitle: Text(
+                                    index == 0
+                                        ? 'Dauer: ${task.durationSeconds ~/ 60} Min'
+                                        : 'Pause davor: ${task.pauseBeforeSeconds ~/ 60} Min • Dauer: ${task.durationSeconds ~/ 60} Min',
+                                  ),
+                                  trailing: IconButton(
+                                    icon: const Icon(Icons.close),
+                                    onPressed: () => controller.removeTask(index),
+                                  ),
+                                ),
+                              );
+                            }),
+                          ),
+                      ],
+                    )
+                  else
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Ablauf',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        ...List.generate(controller.tasks.length, (index) {
+                          final task = controller.tasks[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Text(
+                              index == 0
+                                  ? '${index + 1}. ${task.name} (${task.durationSeconds ~/ 60} Min)'
+                                  : '${index + 1}. Pause ${task.pauseBeforeSeconds ~/ 60} Min → ${task.name} (${task.durationSeconds ~/ 60} Min)',
+                              style: const TextStyle(color: Colors.black87),
+                            ),
+                          );
+                        }),
                       ],
                     ),
                 ],
