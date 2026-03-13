@@ -91,6 +91,7 @@ class DailyTask {
   String? lastDoneKey; // dateKey (yyyy-mm-dd) when last completed
 
   bool done; // "today" checked (resets on rollover for keep; per-date for one-offs)
+  List<TaskChecklistItem> checklist; // checklist-style note entries
 
   DailyTask({
     required this.id,
@@ -105,7 +106,12 @@ class DailyTask {
     this.bestStreak = 0,
     this.lastDoneKey,
     this.done = false,
-  });
+    List<TaskChecklistItem>? checklist,
+  }) : checklist = checklist ?? <TaskChecklistItem>[];
+
+  bool get hasChecklist => checklist.isNotEmpty;
+  int get checklistTotalCount => checklist.length;
+  int get checklistDoneCount => checklist.where((c) => c.done).length;
 
   /// Get the effective interval in days for this task
   int get effectiveIntervalDays {
@@ -128,6 +134,7 @@ class DailyTask {
     'lastDoneKey': lastDoneKey,
     'repeatPattern': repeatPattern.toStorageString(),
     'customDays': customDays,
+    'checklist': checklist.map((c) => c.toMap()).toList(),
   };
 
   factory DailyTask.fromMap(Map<String, dynamic> m) => DailyTask(
@@ -143,6 +150,29 @@ class DailyTask {
     lastDoneKey: m['lastDoneKey'] as String?,
     repeatPattern: TaskRepeatPattern.fromString(m['repeatPattern'] as String?),
     customDays: (m['customDays'] ?? 1) as int,
+    checklist: ((m['checklist'] as List?) ?? const <dynamic>[])
+        .map((e) => TaskChecklistItem.fromMap(Map<String, dynamic>.from(e)))
+        .toList(),
+  );
+}
+
+class TaskChecklistItem {
+  final String text;
+  bool done;
+
+  TaskChecklistItem({
+    required this.text,
+    this.done = false,
+  });
+
+  Map<String, dynamic> toMap() => {
+    'text': text,
+    'done': done,
+  };
+
+  factory TaskChecklistItem.fromMap(Map<String, dynamic> m) => TaskChecklistItem(
+    text: (m['text'] ?? '').toString(),
+    done: (m['done'] ?? false) as bool,
   );
 }
 
@@ -852,6 +882,9 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
         streak: t.streak,
         bestStreak: t.bestStreak,
         lastDoneKey: t.lastDoneKey,
+        checklist: t.checklist
+            .map((c) => TaskChecklistItem(text: c.text, done: c.done))
+            .toList(),
       ));
     }
     
@@ -866,6 +899,9 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
         points: t.points,
         keep: t.keep,
         done: t.done,
+        checklist: t.checklist
+            .map((c) => TaskChecklistItem(text: c.text, done: c.done))
+            .toList(),
       ));
     }
     
@@ -1145,6 +1181,211 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     await _checkAndMaybeShowCongrats();
   }
 
+  Future<void> _openChecklistNoteEditor(DailyTask task) async {
+    final draft = task.checklist
+        .map((c) => TaskChecklistItem(text: c.text, done: c.done))
+        .toList(growable: true);
+    final inputController = TextEditingController();
+
+    final saved = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: const Color(0xFFF5F7FA),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetCtx) => StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          final bottomInset = MediaQuery.of(ctx).viewInsets.bottom;
+          return Padding(
+            padding: EdgeInsets.only(bottom: bottomInset),
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEDE9FE),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(Icons.checklist, color: Color(0xFF7C3AED)),
+                        ),
+                        const SizedBox(width: 10),
+                        const Expanded(
+                          child: Text(
+                            'Checklist note',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF1A1D1F),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    if (draft.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.only(bottom: 8),
+                        child: Text(
+                          'No checklist items yet. Add one below.',
+                          style: TextStyle(color: Color(0xFF6F7789)),
+                        ),
+                      ),
+                    ...List.generate(draft.length, (index) {
+                      final item = draft[index];
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            Checkbox(
+                              value: item.done,
+                              activeColor: const Color(0xFFE53935),
+                              onChanged: (value) {
+                                setSheetState(() => item.done = value ?? false);
+                              },
+                            ),
+                            Expanded(
+                              child: Text(
+                                item.text,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: item.done
+                                      ? const Color(0xFF9CA3AF)
+                                      : const Color(0xFF1A1D1F),
+                                  decoration:
+                                      item.done ? TextDecoration.lineThrough : null,
+                                ),
+                              ),
+                            ),
+                            IconButton(
+                              tooltip: 'Delete item',
+                              onPressed: () => setSheetState(() => draft.removeAt(index)),
+                              icon: const Icon(Icons.delete_outline, color: Color(0xFFE53935)),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: inputController,
+                            textInputAction: TextInputAction.done,
+                            onSubmitted: (_) {
+                              final text = inputController.text.trim();
+                              if (text.isEmpty) return;
+                              setSheetState(() {
+                                draft.add(TaskChecklistItem(text: text));
+                                inputController.clear();
+                              });
+                            },
+                            decoration: InputDecoration(
+                              hintText: 'Add checklist item...',
+                              filled: true,
+                              fillColor: Colors.white,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: Color(0xFFE53935), width: 2),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton(
+                          onPressed: () {
+                            final text = inputController.text.trim();
+                            if (text.isEmpty) return;
+                            setSheetState(() {
+                              draft.add(TaskChecklistItem(text: text));
+                              inputController.clear();
+                            });
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFE53935),
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                          ),
+                          child: const Icon(Icons.add),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.pop(sheetCtx, false),
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: Color(0xFFE0E0E0)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text('Cancel'),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () => Navigator.pop(sheetCtx, true),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFE53935),
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text('Save checklist'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+
+    inputController.dispose();
+    if (saved != true) return;
+
+    setState(() {
+      task.checklist = draft;
+    });
+
+    if (task.keep) {
+      await _saveKeepTasks();
+    } else {
+      await _saveOneOffMap();
+    }
+  }
+
   // NEW: single combined reorder across keep + one-off
   void _onReorder(int oldIndex, int newIndex, {required String dateKey}) {
     // Block reordering for past dates
@@ -1339,6 +1580,9 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                               bestStreak: _keepTasks[idx].bestStreak,
                               lastDoneKey: _keepTasks[idx].lastDoneKey,
                               done: _keepTasks[idx].done,
+                              checklist: _keepTasks[idx].checklist
+                                  .map((c) => TaskChecklistItem(text: c.text, done: c.done))
+                                  .toList(),
                             );
                           });
                           await _saveKeepTasks();
@@ -1356,6 +1600,9 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                               points: data.points,
                               keep: false,
                               done: list[idx].done,
+                              checklist: list[idx].checklist
+                                  .map((c) => TaskChecklistItem(text: c.text, done: c.done))
+                                  .toList(),
                             );
                           });
                           await _saveOneOffMap();
@@ -1378,6 +1625,19 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                 ),
                 const SizedBox(height: 10),
                 actionTile(
+                  icon: Icons.checklist,
+                  title: 'Checklist note',
+                  subtitle: t.hasChecklist
+                      ? '${t.checklistDoneCount}/${t.checklistTotalCount} checked'
+                      : 'Add checkbox items to this task',
+                  iconColor: const Color(0xFF7C3AED),
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    await _openChecklistNoteEditor(t);
+                  },
+                ),
+                const SizedBox(height: 10),
+                actionTile(
                   icon: Icons.copy_all,
                   title: 'Duplicate',
                   subtitle: 'Copy this task right below',
@@ -1396,6 +1656,9 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                       bestStreak: t.keep ? 0 : 0,
                       lastDoneKey: null,
                       done: false,
+                      checklist: t.checklist
+                          .map((c) => TaskChecklistItem(text: c.text, done: c.done))
+                          .toList(),
                     );
                     String dateKeyForCopy = dateKey;
                     if (t.keep) {
@@ -2166,6 +2429,28 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      if (task.hasChecklist)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.checklist,
+                                size: 13,
+                                color: Color(0xFF7C3AED),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${task.checklistDoneCount}/${task.checklistTotalCount} checklist items done',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Color(0xFF7C3AED),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       // Task Type Badge
