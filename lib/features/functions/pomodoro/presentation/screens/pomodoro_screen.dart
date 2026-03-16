@@ -888,10 +888,10 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> {
 
   void _showCreateProfileDialog(BuildContext context) {
     final nameController = TextEditingController();
-    final workController = TextEditingController(text: '25');
-    final shortBreakController = TextEditingController(text: '5');
-    final longBreakController = TextEditingController(text: '15');
-    final cyclesController = TextEditingController(text: '4');
+    final workController = TextEditingController();
+    final shortBreakController = TextEditingController();
+    final longBreakController = TextEditingController();
+    final cyclesController = TextEditingController();
     bool shouldBlockApps = true; // Default: block apps
     final pomodoroController = context.read<PomodoroController>();
     final messenger = ScaffoldMessenger.of(context);
@@ -1054,14 +1054,36 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> {
                               );
                               return;
                             }
+
+                            final workDuration = int.tryParse(workController.text.trim());
+                            final shortBreakDuration = int.tryParse(shortBreakController.text.trim());
+                            final longBreakDuration = int.tryParse(longBreakController.text.trim());
+                            final cyclesBeforeLongBreak = int.tryParse(cyclesController.text.trim());
+
+                            if (workDuration == null ||
+                                shortBreakDuration == null ||
+                                longBreakDuration == null ||
+                                cyclesBeforeLongBreak == null ||
+                                workDuration <= 0 ||
+                                shortBreakDuration <= 0 ||
+                                longBreakDuration <= 0 ||
+                                cyclesBeforeLongBreak <= 0) {
+                              messenger.showSnackBar(
+                                const SnackBar(
+                                  content: Text('Please enter valid values for all durations and cycles'),
+                                  backgroundColor: Color(0xFFFF6B6B),
+                                ),
+                              );
+                              return;
+                            }
                             
                             final profile = PomodoroProfile(
                               id: 'custom_${DateTime.now().millisecondsSinceEpoch}',
                               name: nameController.text.trim(),
-                              workDuration: int.tryParse(workController.text) ?? 25,
-                              shortBreakDuration: int.tryParse(shortBreakController.text) ?? 5,
-                              longBreakDuration: int.tryParse(longBreakController.text) ?? 15,
-                              cyclesBeforeLongBreak: int.tryParse(cyclesController.text) ?? 4,
+                              workDuration: workDuration,
+                              shortBreakDuration: shortBreakDuration,
+                              longBreakDuration: longBreakDuration,
+                              cyclesBeforeLongBreak: cyclesBeforeLongBreak,
                               shouldBlockApps: shouldBlockApps,
                             );
                             
