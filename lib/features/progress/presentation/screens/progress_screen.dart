@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import '../../../../core/utils/local_storage.dart';
 
-enum Range { day, week, year }
+enum Range { week, month, year }
 enum DisplayMode { points, ratio }
 
 class ActivityPoint {
@@ -63,13 +63,15 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
   }
 
   DateTime _midnight(DateTime d) => DateTime(d.year, d.month, d.day);
+  DateTime _startOfMonth(DateTime d) => DateTime(d.year, d.month, 1);
+  DateTime _startOfYear(DateTime d) => DateTime(d.year, 1, 1);
 
   Future<void> _loadAll() async {
     // Range aus Prefs (persistente Auswahl)
     final savedRange = await LocalStorage.loadJson(_kRangeKey, fallback: 'week');
     switch (savedRange) {
-      case 'day':
-        range = Range.day;
+      case 'month':
+        range = Range.month;
         break;
       case 'year':
         range = Range.year;
@@ -92,7 +94,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
   }
 
   Future<void> _saveRange() async {
-    await LocalStorage.saveJson(_kRangeKey, range.name); // "day" | "week" | "year"
+    await LocalStorage.saveJson(_kRangeKey, range.name); // "week" | "month" | "year"
   }
   Future<void> _saveMode() async {
     await LocalStorage.saveJson(_kDisplayModeKey, _mode.name); // "points" | "ratio"
@@ -204,23 +206,19 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
   }
 
   List<ActivityPoint> _dataForRange() {
-    final now = DateTime.now();
-    final today = _midnight(now);
+    final today = _midnight(DateTime.now());
 
     switch (range) {
-      case Range.day:
-      // Tagesansicht: ein Wert für heute – als flache 24h-Linie darstellen,
-      // KPIs werden separat korrekt berechnet.
-        final value = _history[today] ?? 0;
-        final start = DateTime(now.year, now.month, now.day, 0);
-        return List.generate(24, (h) => ActivityPoint(start.add(Duration(hours: h)), value));
-
       case Range.week:
         final start = today.subtract(const Duration(days: 6));
         return _sequence(start, today);
 
+      case Range.month:
+        final start = _startOfMonth(today);
+        return _sequence(start, today);
+
       case Range.year:
-        final start = today.subtract(const Duration(days: 364));
+        final start = _startOfYear(today);
         return _sequence(start, today);
     }
   }
@@ -237,41 +235,29 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
   }
 
   List<ActivityPoint> _ratioDataForRange() {
-    final now = DateTime.now();
-    final today = _midnight(now);
+    final today = _midnight(DateTime.now());
 
     switch (range) {
-      case Range.day:
-        final value = _ratioHistory[today] ?? 0;
-        final start = DateTime(now.year, now.month, now.day, 0);
-        return List.generate(24, (h) => ActivityPoint(start.add(Duration(hours: h)), value));
       case Range.week:
         final start = today.subtract(const Duration(days: 6));
         return _ratioSequence(start, today);
+      case Range.month:
+        final start = _startOfMonth(today);
+        return _ratioSequence(start, today);
       case Range.year:
-        final start = today.subtract(const Duration(days: 364));
+        final start = _startOfYear(today);
         return _ratioSequence(start, today);
     }
   }
 
-  String _rangeLabel(Range r) => r == Range.day ? 'Day' : r == Range.week ? 'Week' : 'Year';
+  String _rangeLabel(Range r) => r == Range.week ? 'Week' : r == Range.month ? 'Month' : 'Year';
 
-  /// KPIs korrekt berechnen (bei Range.day NICHT 24x zählen)
   int _sumForRange(List<ActivityPoint> data) {
-    if (range == Range.day) {
-      // Tageswert = heutiger Tagespunkt
-      final today = _midnight(DateTime.now());
-      return _history[today] ?? 0;
-    }
     return data.fold<int>(0, (s, p) => s + p.value);
   }
 
   String _avgLabel(List<ActivityPoint> data) {
     if (data.isEmpty) return '-';
-    if (range == Range.day) {
-      final v = _sumForRange(data);
-      return v.toStringAsFixed(0);
-    }
     final avg = _sumForRange(data) / data.length;
     return avg.toStringAsFixed(1);
   }
@@ -288,9 +274,6 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
 
   String _avgRatioLabel(List<ActivityPoint> data) {
     if (data.isEmpty) return '-';
-    if (range == Range.day) {
-      return _currentRatioLabel();
-    }
     final avg = data.fold<int>(0, (s, p) => s + p.value) / data.length;
     return '${avg.toStringAsFixed(1)}%';
   }
@@ -421,9 +404,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
                             primaryXAxis: DateTimeAxis(
                               intervalType: range == Range.year
                                   ? DateTimeIntervalType.months
-                                  : range == Range.week
-                                  ? DateTimeIntervalType.days
-                                  : DateTimeIntervalType.hours,
+                                  : DateTimeIntervalType.days,
                               majorGridLines: const MajorGridLines(width: 0),
                             ),
                             primaryYAxis: NumericAxis(
@@ -699,22 +680,22 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
         children: [
           Expanded(
             child: _toggleButton(
-              label: 'Day',
-              icon: Icons.today,
-              isSelected: range == Range.day,
+              label: 'Week',
+              icon: Icons.view_week,
+              isSelected: range == Range.week,
               onTap: () async {
-                setState(() => range = Range.day);
+                setState(() => range = Range.week);
                 await _saveRange();
               },
             ),
           ),
           Expanded(
             child: _toggleButton(
-              label: 'Week',
-              icon: Icons.view_week,
-              isSelected: range == Range.week,
+              label: 'Month',
+              icon: Icons.calendar_view_month,
+              isSelected: range == Range.month,
               onTap: () async {
-                setState(() => range = Range.week);
+                setState(() => range = Range.month);
                 await _saveRange();
               },
             ),

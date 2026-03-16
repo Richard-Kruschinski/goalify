@@ -66,7 +66,7 @@ class MainNav extends StatefulWidget {
 
 class _MainNavState extends State<MainNav> {
   // 0:Progress, 1:Daily, 2:Gym, 3:Functions
-  int currentIndex = 2;
+  int currentIndex = 1;
 
   @override
   Widget build(BuildContext context) {
