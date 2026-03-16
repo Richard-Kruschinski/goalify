@@ -475,8 +475,8 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
   void initState() {
     super.initState();
     _taskNameController = TextEditingController();
-    _taskDurationController = TextEditingController(text: '0.5');
-    _pauseBeforeController = TextEditingController(text: '0');
+    _taskDurationController = TextEditingController();
+    _pauseBeforeController = TextEditingController();
   }
 
   @override
@@ -510,8 +510,8 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
     );
 
     _taskNameController.clear();
-    _taskDurationController.text = '0.5';
-    _pauseBeforeController.text = '0';
+    _taskDurationController.clear();
+    _pauseBeforeController.clear();
   }
 
   @override
@@ -711,7 +711,7 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
                           decoration: InputDecoration(
                             labelText: 'Duration (minutes)',
-                            hintText: '0.5',
+                            hintText: 'e.g. 0.5',
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -726,7 +726,7 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
                           decoration: InputDecoration(
                             labelText: 'Pause before this task (minutes)',
-                            hintText: '0.5',
+                            hintText: 'e.g. 0.5',
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
