@@ -263,7 +263,7 @@
     "id": "shoulder_press_machine",
     "name": "Shoulder Press (Machine)",
     "description": "Machine-guided pressing movement for front and side delts.",
-    "icon": "fitness_center",
+    "icon": "assets/images/exercises/shoulder_press_machine.png",
     "muscles": ["Shoulders", "Triceps"]
   },
   {
