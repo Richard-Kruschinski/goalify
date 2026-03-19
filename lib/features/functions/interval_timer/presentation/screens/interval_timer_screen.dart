@@ -785,14 +785,32 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                             itemCount: controller.tasks.length,
                             buildDefaultDragHandles: false,
                             onReorder: controller.reorderTasks,
+                            proxyDecorator: (child, index, animation) {
+                              return AnimatedBuilder(
+                                animation: animation,
+                                builder: (context, _) {
+                                  return Material(
+                                    type: MaterialType.transparency,
+                                    child: child,
+                                  );
+                                },
+                              );
+                            },
                             itemBuilder: (context, index) {
                               final task = controller.tasks[index];
                               return Card(
                                 key: ValueKey('${task.name}_${task.durationSeconds}_${task.pauseBeforeSeconds}_$index'),
                                 color: Colors.white,
                                 margin: const EdgeInsets.only(bottom: 10),
+                                clipBehavior: Clip.antiAlias,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
                                 child: ListTile(
                                   onLongPress: () => _showTaskActions(context, controller, index),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
                                   leading: CircleAvatar(
                                     backgroundColor: const Color(0xFFDDF4E7),
                                     child: Text('${index + 1}'),
