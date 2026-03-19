@@ -110,8 +110,8 @@ class FunctionsScreen extends StatelessWidget {
               return FunctionCard(
                 title: 'Interval Timer',
                 subtitle: isRunning
-                    ? 'Läuft: ${intervalTimer.currentItemLabel} • ${intervalTimer.formattedTime}'
-                    : 'Erstelle ein Aufgaben-Profil mit Pausen zwischen den Tasks',
+                    ? 'Running: ${intervalTimer.currentItemLabel} • ${intervalTimer.formattedTime}'
+                    : 'Create a task profile with breaks between tasks',
                 icon: Icons.sports_martial_arts,
                 iconBackgroundColor: const Color(0xFFDDF4E7),
                 isActive: isRunning,
