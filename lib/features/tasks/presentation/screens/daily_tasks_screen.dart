@@ -1017,6 +1017,10 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
 
     if (!mounted) return;
     if (created != null) {
+      // Auto-assign default icon based on category
+      final defaultIcon = _getDefaultIconForCategory(created.task.category);
+      _taskIcons[created.task.id] = defaultIcon.codePoint;
+
       if (created.task.keep) {
         setState(() {
           _keepTasks.add(created.task..done = false);
@@ -1037,6 +1041,9 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
         await _saveOneOffMap();
         await _saveOrderByDate();
       }
+
+      // Save the task icon
+      await _saveTaskIcons();
 
       // ensure new item is appended to combined order of that date
       final key = created.dateKey ?? forDateKey;
@@ -1083,6 +1090,10 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     } else {
       await _saveOneOffMap();
     }
+    
+    // Save the new combined order (completed moved to bottom)
+    await _saveOrderCombined();
+    
     if (dateKey == _todayKey()) {
       await _saveProgressToday();
       await _checkAndMaybeShowCongrats();
@@ -2592,6 +2603,50 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
         return const Color(0xFFE53935);
       default:
         return const Color(0xFF9C27B0);
+    }
+  }
+
+  /// Get default icon based on task category
+  IconData _getDefaultIconForCategory(String? category) {
+    if (category == null) return Icons.assignment;
+    switch (category.toLowerCase()) {
+      case 'gym':
+      case 'fitness':
+      case 'workout':
+      case 'exercise':
+        return Icons.fitness_center;
+      case 'work':
+        return Icons.work;
+      case 'leisure':
+      case 'fun':
+        return Icons.sports;
+      case 'health':
+        return Icons.favorite;
+      case 'water':
+      case 'drink':
+        return Icons.local_drink;
+      case 'morning':
+      case 'routine':
+        return Icons.schedule;
+      case 'read':
+      case 'book':
+        return Icons.book;
+      case 'study':
+      case 'learning':
+        return Icons.school;
+      case 'food':
+      case 'meal':
+        return Icons.restaurant;
+      case 'chores':
+      case 'chore':
+        return Icons.home;
+      case 'creatin':
+      case 'creatine':
+        return Icons.fitness_center;
+      case 'skill':
+        return Icons.lightbulb;
+      default:
+        return Icons.assignment;
     }
   }
 
