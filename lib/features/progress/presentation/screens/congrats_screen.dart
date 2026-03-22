@@ -28,7 +28,7 @@ class _CongratsScreenState extends State<CongratsScreen>
   @override
   void initState() {
     super.initState();
-    _confetti = ConfettiController(duration: const Duration(seconds: 2))..play();
+    _confetti = ConfettiController(duration: const Duration(seconds: 8))..play();
     _scale = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 450),
@@ -52,6 +52,25 @@ class _CongratsScreenState extends State<CongratsScreen>
       backgroundColor: Colors.black.withValues(alpha: 0.55),
       body: Stack(
         children: [
+          Positioned.fill(
+            child: IgnorePointer(
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: ConfettiWidget(
+                  confettiController: _confetti,
+                  blastDirectionality: BlastDirectionality.directional,
+                  blastDirection: 1.5708,
+                  shouldLoop: true,
+                  numberOfParticles: 46,
+                  emissionFrequency: 0.14,
+                  gravity: 0.26,
+                  minBlastForce: 10,
+                  maxBlastForce: 28,
+                ),
+              ),
+            ),
+          ),
+
           Positioned.fill(
             child: Center(
               child: ScaleTransition(
@@ -171,21 +190,6 @@ class _CongratsScreenState extends State<CongratsScreen>
                     ],
                   ),
                 ),
-              ),
-            ),
-          ),
-
-          Positioned.fill(
-            child: IgnorePointer(
-              child: ConfettiWidget(
-                confettiController: _confetti,
-                blastDirectionality: BlastDirectionality.explosive,
-                shouldLoop: true,
-                numberOfParticles: 20,
-                emissionFrequency: 0.06,
-                gravity: 0.35,
-                minBlastForce: 6,
-                maxBlastForce: 20,
               ),
             ),
           ),
