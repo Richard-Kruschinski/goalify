@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:syncfusion_flutter_charts/charts.dart';
+import 'package:fl_chart/fl_chart.dart';
 import '../../../../core/utils/local_storage.dart';
 
 enum Range { week, month, year }
@@ -29,21 +29,10 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
   Map<DateTime, int> _history = {};         // Mitternacht -> Punkte
   Map<DateTime, int> _ratioHistory = {};    // Mitternacht -> Verhältnis in %
 
-  late ZoomPanBehavior _zoom;
-  late TrackballBehavior _trackball;
-
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-
-    _zoom = ZoomPanBehavior(enablePinching: true, enablePanning: true, zoomMode: ZoomMode.x);
-    _trackball = TrackballBehavior(
-      enable: true,
-      activationMode: ActivationMode.singleTap,
-      tooltipAlignment: ChartAlignment.near,
-      tooltipSettings: const InteractiveTooltip(format: 'point.x : point.y'),
-    );
 
     _loadAll();
   }
@@ -278,6 +267,168 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
     return '${avg.toStringAsFixed(1)}%';
   }
 
+  List<FlSpot> _spotsFromData(List<ActivityPoint> data) {
+    return List<FlSpot>.generate(
+      data.length,
+      (i) => FlSpot(i.toDouble(), data[i].value.toDouble()),
+    );
+  }
+
+  double _maxYForData(List<ActivityPoint> data) {
+    if (_mode == DisplayMode.ratio) {
+      return 100;
+    }
+    if (data.isEmpty) {
+      return 5;
+    }
+    final maxValue = data
+        .map((point) => point.value)
+        .fold<int>(0, (a, b) => a > b ? a : b);
+    return (maxValue + 2).toDouble().clamp(5, 9999);
+  }
+
+  String _dateLabel(DateTime date) {
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    if (range == Range.year) {
+      return '$month.${date.year.toString().substring(2)}';
+    }
+    return '$day.$month';
+  }
+
+  Widget _buildProgressChart(List<ActivityPoint> data) {
+    if (data.isEmpty) {
+      return const Center(
+        child: Text(
+          'No data yet',
+          style: TextStyle(color: Color(0xFF6F7789), fontWeight: FontWeight.w500),
+        ),
+      );
+    }
+
+    final spots = _spotsFromData(data);
+    final maxX = (data.length - 1).toDouble();
+
+    return LineChart(
+      LineChartData(
+        minX: 0,
+        maxX: maxX,
+        minY: 0,
+        maxY: _maxYForData(data),
+        gridData: FlGridData(
+          show: true,
+          drawVerticalLine: false,
+          horizontalInterval: _mode == DisplayMode.ratio ? 20 : null,
+          getDrawingHorizontalLine: (_) => const FlLine(
+            color: Color(0x14000000),
+            strokeWidth: 1,
+          ),
+        ),
+        borderData: FlBorderData(show: false),
+        lineTouchData: LineTouchData(
+          touchTooltipData: LineTouchTooltipData(
+            getTooltipColor: (_) => const Color(0xFF1A1D1F),
+            getTooltipItems: (touchedSpots) {
+              return touchedSpots.map((spot) {
+                final index = spot.x.toInt();
+                final point = data[index];
+                return LineTooltipItem(
+                  '${_dateLabel(point.t)}\n${point.value}${_mode == DisplayMode.ratio ? '%' : ' pts'}',
+                  const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                );
+              }).toList();
+            },
+          ),
+          getTouchedSpotIndicator: (barData, spotIndexes) {
+            return spotIndexes
+                .map(
+                  (_) => TouchedSpotIndicatorData(
+                    const FlLine(color: Color(0x55E53935), strokeWidth: 1),
+                    FlDotData(
+                      getDotPainter: (_, __, ___, ____) => FlDotCirclePainter(
+                        radius: 5,
+                        color: const Color(0xFFE53935),
+                        strokeWidth: 2,
+                        strokeColor: Colors.white,
+                      ),
+                    ),
+                  ),
+                )
+                .toList();
+          },
+        ),
+        titlesData: FlTitlesData(
+          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 40,
+              interval: _mode == DisplayMode.ratio ? 20 : null,
+              getTitlesWidget: (value, meta) {
+                if (value < 0) {
+                  return const SizedBox.shrink();
+                }
+                if (_mode == DisplayMode.ratio && value % 20 != 0) {
+                  return const SizedBox.shrink();
+                }
+                return Text(
+                  _mode == DisplayMode.ratio ? '${value.toInt()}%' : value.toInt().toString(),
+                  style: const TextStyle(fontSize: 11, color: Color(0xFF6F7789)),
+                );
+              },
+            ),
+          ),
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 26,
+              getTitlesWidget: (value, meta) {
+                if (data.isEmpty) {
+                  return const SizedBox.shrink();
+                }
+                final index = value.round();
+                final mid = (data.length - 1) ~/ 2;
+                if (index != 0 && index != mid && index != data.length - 1) {
+                  return const SizedBox.shrink();
+                }
+                if (index < 0 || index >= data.length) {
+                  return const SizedBox.shrink();
+                }
+                return Text(
+                  _dateLabel(data[index].t),
+                  style: const TextStyle(fontSize: 11, color: Color(0xFF6F7789)),
+                );
+              },
+            ),
+          ),
+        ),
+        lineBarsData: [
+          LineChartBarData(
+            spots: spots,
+            isCurved: true,
+            color: const Color(0xFFE53935),
+            barWidth: 3,
+            isStrokeCapRound: true,
+            dotData: FlDotData(
+              show: true,
+              getDotPainter: (_, __, ___, ____) => FlDotCirclePainter(
+                radius: 3.5,
+                color: const Color(0xFFE53935),
+                strokeWidth: 1.8,
+                strokeColor: Colors.white,
+              ),
+            ),
+            belowBarData: BarAreaData(show: false),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _confirmClearHistory() async {
     final ok = await showDialog<bool>(
       context: context,
@@ -398,39 +549,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
                         padding: const EdgeInsets.fromLTRB(8, 12, 16, 8),
                         child: SizedBox(
                           height: 300,
-                          child: SfCartesianChart(
-                            zoomPanBehavior: _zoom,
-                            trackballBehavior: _trackball,
-                            primaryXAxis: DateTimeAxis(
-                              intervalType: range == Range.year
-                                  ? DateTimeIntervalType.months
-                                  : DateTimeIntervalType.days,
-                              majorGridLines: const MajorGridLines(width: 0),
-                            ),
-                            primaryYAxis: NumericAxis(
-                              title: AxisTitle(text: _mode == DisplayMode.ratio ? 'Ratio (%)' : 'Points'),
-                              majorGridLines: const MajorGridLines(width: 0.5),
-                            ),
-                            legend: const Legend(isVisible: false),
-                            series: <CartesianSeries<ActivityPoint, DateTime>>[
-                              SplineSeries<ActivityPoint, DateTime>(
-                                dataSource: data,
-                                xValueMapper: (p, _) => p.t,
-                                yValueMapper: (p, _) => p.value,
-                                name: _mode == DisplayMode.ratio ? 'Ratio' : 'Points',
-                                color: const Color(0xFFE53935),
-                                width: 3,
-                                markerSettings: const MarkerSettings(
-                                  isVisible: true,
-                                  height: 8,
-                                  width: 8,
-                                  color: Color(0xFFE53935),
-                                  borderColor: Colors.white,
-                                  borderWidth: 2,
-                                ),
-                              ),
-                            ],
-                          ),
+                          child: _buildProgressChart(data),
                         ),
                       ),
                     ),

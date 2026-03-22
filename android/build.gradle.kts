@@ -43,5 +43,4 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin") apply false
     // com.android.library NUR, wenn du wirklich ein Library-Modul hast – sonst weglassen
     // id("com.android.library") apply false
-    // id("com.google.gms.google-services") apply false
 }

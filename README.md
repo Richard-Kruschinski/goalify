@@ -62,7 +62,7 @@ It’s **under consideration** to return in the future.
 - Storage: local JSON via a small `LocalStorage` helper (no backend required)
 - State: straightforward `setState` + services
 
-> Previously listed: Riverpod, Firebase/Auth/Firestore, Syncfusion,those are **not required** in the current app and are **planned/optional**.
+> Previously listed: Riverpod and Firebase/Auth/Firestore, those are **not required** in the current app and are **planned/optional**.
 
 ---
 
