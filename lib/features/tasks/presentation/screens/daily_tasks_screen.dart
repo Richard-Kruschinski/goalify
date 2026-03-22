@@ -2687,11 +2687,11 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   Future<void> _pickDate() async {
     showDialog<void>(
       context: context,
-      builder: (_) => _ModernDatePickerDialog(
+      builder: (dialogContext) => _ModernDatePickerDialog(
         initialDate: _selectedDate,
         onDateSelected: (picked) {
           setState(() => _selectedDate = picked);
-          Navigator.pop(context);
+          Navigator.of(dialogContext).pop();
         },
       ),
     );
@@ -2769,6 +2769,10 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
 
   String _dateKey(DateTime d) =>
       '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+  DateTime _dateOnly(DateTime dt) => DateTime(dt.year, dt.month, dt.day);
+
+  bool _isPastDate(DateTime dt) => _dateOnly(dt).isBefore(_dateOnly(DateTime.now()));
 
   Future<int?> _showCustomDaysDialog() async {
     final controller = TextEditingController(text: _customDays.toString());
@@ -2936,6 +2940,16 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
 
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
+
+    if (!_keep && _isPastDate(_scheduledDate)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          duration: Duration(seconds: 2),
+          content: Text('Cannot create tasks for past dates.'),
+        ),
+      );
+      return;
+    }
 
     final t = DailyTask(
       id: DateTime.now().microsecondsSinceEpoch.toString(),
@@ -3280,11 +3294,20 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
                   onTap: () async {
                     await showDialog<void>(
                       context: context,
-                      builder: (_) => _ModernDatePickerDialog(
+                      builder: (dialogContext) => _ModernDatePickerDialog(
                         initialDate: _scheduledDate,
                         onDateSelected: (picked) {
+                          if (_isPastDate(picked)) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                duration: Duration(seconds: 2),
+                                content: Text('Cannot create tasks for past dates.'),
+                              ),
+                            );
+                            return;
+                          }
                           setState(() => _scheduledDate = picked);
-                          Navigator.pop(context);
+                          Navigator.of(dialogContext).pop();
                         },
                       ),
                     );
@@ -3979,6 +4002,200 @@ class _ModernDatePickerDialogState extends State<_ModernDatePickerDialog> {
     });
   }
 
+  Future<void> _jumpToMonthYear() async {
+    final monthController = TextEditingController(text: _currentMonth.month.toString());
+    final yearController = TextEditingController(text: _currentMonth.year.toString());
+
+    final targetMonth = await showDialog<DateTime>(
+      context: context,
+      builder: (dialogContext) {
+        String? errorText;
+
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            void submit() {
+              final month = int.tryParse(monthController.text.trim());
+              final year = int.tryParse(yearController.text.trim());
+
+              if (month == null || month < 1 || month > 12) {
+                setDialogState(() {
+                  errorText = 'Month must be between 1 and 12';
+                });
+                return;
+              }
+
+              if (year == null || year < 1) {
+                setDialogState(() {
+                  errorText = 'Year must be greater than 0';
+                });
+                return;
+              }
+
+                Navigator.of(dialogContext).pop(DateTime(year, month, 1));
+            }
+
+            return Dialog(
+              insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFEBEE),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.calendar_month,
+                              color: Color(0xFFE53935),
+                              size: 22,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          const Expanded(
+                            child: Text(
+                              'Go to month',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF1A1D1F),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 18),
+                      TextField(
+                        controller: monthController,
+                        keyboardType: TextInputType.number,
+                        textInputAction: TextInputAction.next,
+                        decoration: InputDecoration(
+                          labelText: 'Month',
+                          hintText: '1 - 12',
+                          filled: true,
+                          fillColor: const Color(0xFFF7F8FA),
+                          contentPadding:
+                              const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: Color(0xFFE6E8EC)),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: Color(0xFFE6E8EC)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide:
+                                const BorderSide(color: Color(0xFFE53935), width: 1.2),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: yearController,
+                        keyboardType: TextInputType.number,
+                        textInputAction: TextInputAction.done,
+                        onSubmitted: (_) => submit(),
+                        decoration: InputDecoration(
+                          labelText: 'Year',
+                          hintText: 'e.g. 2026',
+                          filled: true,
+                          fillColor: const Color(0xFFF7F8FA),
+                          contentPadding:
+                              const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: Color(0xFFE6E8EC)),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: Color(0xFFE6E8EC)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide:
+                                const BorderSide(color: Color(0xFFE53935), width: 1.2),
+                          ),
+                        ),
+                      ),
+                      if (errorText != null) ...[
+                        const SizedBox(height: 10),
+                        Text(
+                          errorText!,
+                          style: const TextStyle(
+                            color: Color(0xFFD32F2F),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                            onPressed: () => Navigator.of(dialogContext).pop(),
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
+                            ),
+                            child: const Text(
+                              'Cancel',
+                              style: TextStyle(color: Color(0xFF6F7789)),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton(
+                            onPressed: submit,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFE53935),
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 22, vertical: 11),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text(
+                              'Go',
+                              style: TextStyle(fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    monthController.dispose();
+    yearController.dispose();
+
+    if (!mounted || targetMonth == null) return;
+
+    setState(() {
+      _currentMonth = targetMonth;
+    });
+  }
+
   void _handleHorizontalDragStart(DragStartDetails details) {
     _dragStartX = details.globalPosition.dx;
     _dragHandled = false;
@@ -4060,17 +4277,21 @@ class _ModernDatePickerDialogState extends State<_ModernDatePickerDialog> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            titleLabel,
-                            style: const TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: -0.2,
+                          InkWell(
+                            onTap: _jumpToMonthYear,
+                            borderRadius: BorderRadius.circular(8),
+                            child: Text(
+                              titleLabel,
+                              style: const TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: -0.2,
+                              ),
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Select a date',
+                            'Select a date or tap month to jump',
                             style: TextStyle(
                               color: Colors.grey.shade600,
                               fontSize: 12,
