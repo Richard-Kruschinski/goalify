@@ -17,6 +17,7 @@ class PomodoroController extends ChangeNotifier {
   int _remainingSeconds = 0;
   int _currentCycle = 1; // 1-4
   PomodoroStats _stats = PomodoroStats();
+  DateTime? _phaseEndsAt;
   
   Timer? _timer;
   final PlatformChannelService _platformService = PlatformChannelService();
@@ -240,6 +241,7 @@ class PomodoroController extends ChangeNotifier {
     }
 
     _timerState = PomodoroTimerState.running;
+    _phaseEndsAt = DateTime.now().add(Duration(seconds: _remainingSeconds));
     
     // Start app blocking if in work phase, on Android, and profile has it enabled
     if (_currentPhase == PomodoroPhase.work && _platformService.isAndroid && _currentProfile.shouldBlockApps) {
@@ -259,9 +261,10 @@ class PomodoroController extends ChangeNotifier {
       }
     }
 
+    _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      _syncRemainingWithClock();
       if (_remainingSeconds > 0) {
-        _remainingSeconds--;
         notifyListeners();
       } else {
         _completePhase();
@@ -276,8 +279,10 @@ class PomodoroController extends ChangeNotifier {
   void pause() async {
     if (_timerState != PomodoroTimerState.running) return;
 
+    _syncRemainingWithClock();
     _timer?.cancel();
     _timerState = PomodoroTimerState.paused;
+    _phaseEndsAt = null;
     
     // Stop app blocking when paused
     await _platformService.stopAppBlocking();
@@ -290,6 +295,7 @@ class PomodoroController extends ChangeNotifier {
     _timer?.cancel();
     _timerState = PomodoroTimerState.idle;
     _remainingSeconds = totalSecondsForPhase;
+    _phaseEndsAt = null;
     
     // Stop app blocking
     await _platformService.stopAppBlocking();
@@ -300,6 +306,7 @@ class PomodoroController extends ChangeNotifier {
   // Complete current phase and move to next
   void _completePhase() async {
     _timer?.cancel();
+    _phaseEndsAt = null;
     
     // Stop app blocking
     await _platformService.stopAppBlocking();
@@ -348,6 +355,7 @@ class PomodoroController extends ChangeNotifier {
   // Skip to next phase manually
   void skipToNextPhase() async {
     _timer?.cancel();
+    _phaseEndsAt = null;
     await _platformService.stopAppBlocking();
 
     if (_currentPhase == PomodoroPhase.work) {
@@ -367,9 +375,28 @@ class PomodoroController extends ChangeNotifier {
     notifyListeners();
   }
 
+  void _syncRemainingWithClock() {
+    if (_timerState != PomodoroTimerState.running || _phaseEndsAt == null) return;
+
+    final secondsLeft = _phaseEndsAt!.difference(DateTime.now()).inSeconds;
+    _remainingSeconds = secondsLeft > 0 ? secondsLeft : 0;
+  }
+
+  void syncWithSystemTime() {
+    if (_timerState != PomodoroTimerState.running) return;
+
+    _syncRemainingWithClock();
+    if (_remainingSeconds <= 0) {
+      _completePhase();
+    } else {
+      notifyListeners();
+    }
+  }
+
   @override
   void dispose() {
     _timer?.cancel();
+    _phaseEndsAt = null;
     _platformService.stopAppBlocking();
     super.dispose();
   }

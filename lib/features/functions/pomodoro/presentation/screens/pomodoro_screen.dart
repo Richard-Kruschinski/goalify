@@ -22,7 +22,7 @@ class _PomodoroScreenContent extends StatefulWidget {
   State<_PomodoroScreenContent> createState() => _PomodoroScreenContentState();
 }
 
-class _PomodoroScreenContentState extends State<_PomodoroScreenContent> {
+class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with WidgetsBindingObserver {
   bool _isDefaultProfile(PomodoroProfile profile) {
     return PomodoroProfile.defaultProfiles.any((p) => p.id == profile.id);
   }
@@ -433,6 +433,9 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> {
   @override
   void initState() {
     super.initState();
+    // Register lifecycle observer to handle app state changes
+    WidgetsBinding.instance.addObserver(this);
+    
     // Show permission request dialogs if needed
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final controller = context.read<PomodoroController>();
@@ -443,6 +446,27 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> {
         _showIOSDialog(context);
       }
     });
+  }
+
+  @override
+  void dispose() {
+    // Unregister lifecycle observer
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final controller = context.read<PomodoroController>();
+    
+    switch (state) {
+      case AppLifecycleState.resumed:
+        // App resumed from background: sync wall-clock based remaining time
+        controller.syncWithSystemTime();
+        break;
+      default:
+        break;
+    }
   }
 
   Future<void> _checkPermissions() async {

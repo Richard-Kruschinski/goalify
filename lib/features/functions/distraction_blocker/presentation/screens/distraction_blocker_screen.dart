@@ -11,12 +11,15 @@ class DistractionBlockerScreen extends StatefulWidget {
   State<DistractionBlockerScreen> createState() => _DistractionBlockerScreenState();
 }
 
-class _DistractionBlockerScreenState extends State<DistractionBlockerScreen> {
+class _DistractionBlockerScreenState extends State<DistractionBlockerScreen> with WidgetsBindingObserver {
   Timer? _updateTimer;
 
   @override
   void initState() {
     super.initState();
+    // Register lifecycle observer to handle app state changes
+    WidgetsBinding.instance.addObserver(this);
+    
     // Update UI every second when blocker is active
     _updateTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) {
@@ -27,8 +30,31 @@ class _DistractionBlockerScreenState extends State<DistractionBlockerScreen> {
 
   @override
   void dispose() {
+    // Unregister lifecycle observer
+    WidgetsBinding.instance.removeObserver(this);
+    
     _updateTimer?.cancel();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final controller = context.read<DistractionBlockerController>();
+    
+    switch (state) {
+      case AppLifecycleState.paused:
+        // App moved to background (screen locked, switched to another app)
+        if (controller.isActive) {
+          controller.stopBlocking();
+        }
+        break;
+      case AppLifecycleState.resumed:
+        // App resumed from background
+        // Blocker can be restarted manually by user via UI
+        break;
+      default:
+        break;
+    }
   }
 
   @override

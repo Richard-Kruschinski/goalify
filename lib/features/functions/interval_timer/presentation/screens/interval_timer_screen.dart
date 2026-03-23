@@ -19,7 +19,7 @@ class _IntervalTimerScreenContent extends StatefulWidget {
   State<_IntervalTimerScreenContent> createState() => _IntervalTimerScreenContentState();
 }
 
-class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent> {
+class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent> with WidgetsBindingObserver {
   late TextEditingController _taskNameController;
   late TextEditingController _taskDurationController;
   late TextEditingController _pauseBeforeController;
@@ -474,6 +474,9 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
   @override
   void initState() {
     super.initState();
+    // Register lifecycle observer to handle app state changes
+    WidgetsBinding.instance.addObserver(this);
+    
     _taskNameController = TextEditingController();
     _taskDurationController = TextEditingController();
     _pauseBeforeController = TextEditingController();
@@ -481,10 +484,33 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
 
   @override
   void dispose() {
+    // Unregister lifecycle observer
+    WidgetsBinding.instance.removeObserver(this);
+    
     _taskNameController.dispose();
     _taskDurationController.dispose();
     _pauseBeforeController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final controller = context.read<IntervalTimerController>();
+    
+    switch (state) {
+      case AppLifecycleState.paused:
+        // App moved to background (screen locked, switched to another app)
+        if (controller.timerState == IntervalTimerState.running) {
+          controller.pause();
+        }
+        break;
+      case AppLifecycleState.resumed:
+        // App resumed from background
+        // Timer can be restarted manually by user via UI
+        break;
+      default:
+        break;
+    }
   }
 
   void _addTask(IntervalTimerController controller) {
