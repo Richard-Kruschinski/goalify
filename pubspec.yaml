@@ -40,6 +40,7 @@ flutter_icons:
 
 flutter:
   assets:
+    - assets/icons.json
     - assets/images/placeholder.jpg
     - assets/workouts.json
     - assets/images/exercises/

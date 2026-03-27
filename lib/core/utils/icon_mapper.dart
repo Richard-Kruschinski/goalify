@@ -267,6 +267,60 @@ class IconMapper {
       case 'spa':
         return Icons.spa;
 
+      // Daily & Lifestyle
+      case 'assignment':
+        return Icons.assignment;
+      case 'work':
+        return Icons.work;
+      case 'home':
+        return Icons.home;
+      case 'pets':
+        return Icons.pets;
+      case 'local_drink':
+        return Icons.local_drink;
+      case 'medical_services':
+        return Icons.medical_services;
+      case 'monitor_heart':
+        return Icons.monitor_heart;
+      case 'directions_bike':
+        return Icons.directions_bike;
+      case 'flight':
+        return Icons.flight;
+      case 'public':
+        return Icons.public;
+      case 'attach_money':
+        return Icons.attach_money;
+      case 'savings':
+        return Icons.savings;
+      case 'account_balance_wallet':
+        return Icons.account_balance_wallet;
+      case 'music_note':
+        return Icons.music_note;
+      case 'movie':
+        return Icons.movie;
+      case 'camera_alt':
+        return Icons.camera_alt;
+      case 'code':
+        return Icons.code;
+      case 'computer':
+        return Icons.computer;
+      case 'build':
+        return Icons.build;
+      case 'palette':
+        return Icons.palette;
+      case 'brush':
+        return Icons.brush;
+      case 'phone_android':
+        return Icons.phone_android;
+      case 'chat':
+        return Icons.chat;
+      case 'email':
+        return Icons.email;
+      case 'people':
+        return Icons.people;
+      case 'person':
+        return Icons.person;
+
       default:
         return Icons.check_circle_outline;
     }
