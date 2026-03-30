@@ -543,364 +543,508 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black87),
-          onPressed: () => Navigator.pop(context),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings, color: Colors.black87),
-            onPressed: () => _showProfileSelector(context),
-          ),
-        ],
-        title: const Text(
-          'Interval Timer',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
-        ),
-        centerTitle: false,
-      ),
-      backgroundColor: const Color(0xFFF5F6FA),
-      body: Consumer<IntervalTimerController>(
-        builder: (context, controller, _) {
-          return SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
+      backgroundColor: const Color(0xFFF5F7FA),
+      body: SafeArea(
+        child: Consumer<IntervalTimerController>(
+          builder: (context, controller, _) {
+            return Column(
+              children: [
+                _buildHeader(context),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Text(
-                          controller.currentPhaseLabel,
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.grey,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          controller.currentItemLabel,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.black87,
-                          ),
-                        ),
+                        _buildHeroTimer(controller),
                         const SizedBox(height: 16),
-
-                        Container(
-                          width: 220,
-                          height: 220,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: controller.currentPhase == IntervalTimerPhase.task
-                                ? const Color(0xFFDDF4E7)
-                                : const Color(0xFFFFE8E8),
-                          ),
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              SizedBox(
-                                width: 220,
-                                height: 220,
-                                child: CircularProgressIndicator(
-                                  value: controller.progress,
-                                  strokeWidth: 8,
-                                  valueColor: AlwaysStoppedAnimation(
-                                    controller.currentPhase == IntervalTimerPhase.task
-                                        ? Colors.green[600]
-                                        : Colors.red[600],
-                                  ),
-                                ),
-                              ),
-                              Center(
-                                child: Text(
-                                  controller.formattedTime,
-                                  style: const TextStyle(
-                                    fontSize: 52,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black87,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Task ${controller.currentTaskNumber} / ${controller.totalTasks}',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey,
-                          ),
-                        ),
+                        _buildActionButtons(controller),
+                        const SizedBox(height: 20),
+                        if (controller.timerState == IntervalTimerState.idle)
+                          _buildProfileEditor(controller)
+                        else
+                          _buildRunningSequence(controller),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 48),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
 
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+  Widget _buildHeader(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          IconButton(
+            onPressed: () => Navigator.pop(context),
+            icon: const Icon(Icons.arrow_back, color: Color(0xFF1A1D1F)),
+          ),
+          const Expanded(
+            child: Text(
+              'Interval Timer',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF1A1D1F),
+              ),
+            ),
+          ),
+          IconButton(
+            onPressed: () => _showProfileSelector(context),
+            icon: const Icon(Icons.tune, color: Color(0xFF1A1D1F)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeroTimer(IntervalTimerController controller) {
+    final inTask = controller.currentPhase == IntervalTimerPhase.task;
+    final isRunning = controller.timerState == IntervalTimerState.running;
+    final accent = inTask ? const Color(0xFF2E7D32) : const Color(0xFFE53935);
+    final ringBg = inTask ? const Color(0xFFE8F5E9) : const Color(0xFFFFEBEE);
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFFFFFFF), Color(0xFFF9FAFC)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildPhaseChip(
+                label: controller.currentPhaseLabel,
+                color: accent,
+                icon: inTask ? Icons.fitness_center : Icons.free_breakfast,
+              ),
+              const SizedBox(width: 8),
+              _buildPhaseChip(
+                label: 'Task ${controller.currentTaskNumber} / ${controller.totalTasks}',
+                color: const Color(0xFF546E7A),
+                icon: Icons.format_list_numbered,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            controller.currentItemLabel,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: isRunning ? 32 : 17,
+              height: 1.1,
+              fontWeight: isRunning ? FontWeight.w800 : FontWeight.w600,
+              color: const Color(0xFF1A1D1F),
+            ),
+          ),
+          const SizedBox(height: 18),
+          Container(
+            width: 228,
+            height: 228,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: ringBg,
+            ),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                SizedBox(
+                  width: 208,
+                  height: 208,
+                  child: CircularProgressIndicator(
+                    value: controller.progress,
+                    strokeWidth: 10,
+                    backgroundColor: Colors.white,
+                    valueColor: AlwaysStoppedAnimation<Color>(accent),
+                  ),
+                ),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      controller.formattedTime,
+                      style: const TextStyle(
+                        fontSize: 44,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF1A1D1F),
+                        letterSpacing: -1,
+                      ),
+                    ),
+                    Text(
+                      inTask ? 'Focus now' : 'Recovery',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: accent,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPhaseChip({
+    required String label,
+    required Color color,
+    required IconData icon,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButtons(IntervalTimerController controller) {
+    VoidCallback? primaryAction;
+    String primaryLabel;
+    IconData primaryIcon;
+    Color primaryColor;
+
+    if (controller.timerState == IntervalTimerState.running) {
+      primaryAction = controller.pause;
+      primaryLabel = 'Pause';
+      primaryIcon = Icons.pause;
+      primaryColor = const Color(0xFFFF9800);
+    } else if (controller.timerState == IntervalTimerState.paused) {
+      primaryAction = controller.resume;
+      primaryLabel = 'Resume';
+      primaryIcon = Icons.play_arrow;
+      primaryColor = const Color(0xFF2E7D32);
+    } else {
+      primaryAction = controller.start;
+      primaryLabel = 'Start';
+      primaryIcon = Icons.play_arrow;
+      primaryColor = const Color(0xFF2E7D32);
+    }
+
+    return Row(
+      children: [
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: primaryAction,
+            icon: Icon(primaryIcon),
+            label: Text(primaryLabel),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: primaryColor,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+              textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: controller.reset,
+            icon: const Icon(Icons.refresh),
+            label: const Text('Reset'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFF6F7789),
+              side: const BorderSide(color: Color(0xFFD8DEE8)),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+              textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildProfileEditor(IntervalTimerController controller) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Create Profile',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1A1D1F),
+                ),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Set task, duration and optional break before each next task.',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Color(0xFF6F7789),
+                ),
+              ),
+              const SizedBox(height: 14),
+              _buildInputField(
+                controller: _taskNameController,
+                label: 'Task',
+                hint: 'e.g. Jump rope',
+                icon: Icons.task_alt,
+              ),
+              const SizedBox(height: 12),
+              _buildInputField(
+                controller: _taskDurationController,
+                label: 'Duration (minutes)',
+                hint: 'e.g. 0.5',
+                icon: Icons.timer_outlined,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                helperText: 'Decimals allowed (0.5 = 30 seconds).',
+              ),
+              const SizedBox(height: 12),
+              _buildInputField(
+                controller: _pauseBeforeController,
+                label: 'Pause before this task (minutes)',
+                hint: 'e.g. 0.5',
+                icon: Icons.free_breakfast_outlined,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                helperText: controller.tasks.isEmpty
+                    ? 'Ignored for the first task.'
+                    : 'Decimals allowed (0.5 = 30 seconds).',
+              ),
+              const SizedBox(height: 14),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => _addTask(controller),
+                  icon: const Icon(Icons.add),
+                  label: const Text('Add task'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFE53935),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    textStyle: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Tasks in profile',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF1A1D1F),
+              ),
+            ),
+            TextButton.icon(
+              onPressed: controller.tasks.isEmpty ? null : controller.clearProfile,
+              icon: const Icon(Icons.delete_outline),
+              label: const Text('Clear'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        if (controller.tasks.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Text(
+              'No tasks added yet.',
+              style: TextStyle(color: Color(0xFF6F7789)),
+            ),
+          )
+        else
+          ReorderableListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: controller.tasks.length,
+            buildDefaultDragHandles: false,
+            onReorder: controller.reorderTasks,
+            itemBuilder: (context, index) {
+              final task = controller.tasks[index];
+              return Container(
+                key: ValueKey('${task.name}_${task.durationSeconds}_${task.pauseBeforeSeconds}_$index'),
+                margin: const EdgeInsets.only(bottom: 10),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: ListTile(
+                  onLongPress: () => _showTaskActions(context, controller, index),
+                  leading: CircleAvatar(
+                    backgroundColor: const Color(0xFFFFEBEE),
+                    foregroundColor: const Color(0xFFE53935),
+                    child: Text('${index + 1}'),
+                  ),
+                  title: Text(
+                    task.name,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: Text(
+                    index == 0
+                        ? 'Duration: ${_formatSeconds(task.durationSeconds)}'
+                        : 'Pause: ${_formatSeconds(task.pauseBeforeSeconds)} • Duration: ${_formatSeconds(task.durationSeconds)}',
+                  ),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      if (controller.timerState == IntervalTimerState.idle)
-                        ElevatedButton.icon(
-                          onPressed: controller.start,
-                          icon: const Icon(Icons.play_arrow),
-                          label: const Text('Start'),
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                            backgroundColor: Colors.green[600],
-                            foregroundColor: Colors.white,
-                          ),
-                        )
-                      else if (controller.timerState == IntervalTimerState.running)
-                        ElevatedButton.icon(
-                          onPressed: controller.pause,
-                          icon: const Icon(Icons.pause),
-                          label: const Text('Pause'),
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                            backgroundColor: Colors.orange[600],
-                            foregroundColor: Colors.white,
-                          ),
-                        )
-                      else if (controller.timerState == IntervalTimerState.paused)
-                        ElevatedButton.icon(
-                          onPressed: controller.resume,
-                          icon: const Icon(Icons.play_arrow),
-                          label: const Text('Resume'),
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                            backgroundColor: Colors.green[600],
-                            foregroundColor: Colors.white,
-                          ),
-                        ),
-                      const SizedBox(width: 16),
-                      ElevatedButton.icon(
-                        onPressed: controller.reset,
-                        icon: const Icon(Icons.refresh),
-                        label: const Text('Reset'),
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                          backgroundColor: Colors.grey[400],
-                          foregroundColor: Colors.white,
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => controller.removeTask(index),
+                      ),
+                      ReorderableDragStartListener(
+                        index: index,
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 4),
+                          child: Icon(Icons.drag_indicator, color: Color(0xFF9CA3AF)),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 48),
+                ),
+              );
+            },
+          ),
+      ],
+    );
+  }
 
-                  if (controller.timerState == IntervalTimerState.idle)
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Create Profile',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'First task: name + duration. For additional tasks, also set the pause before it.',
-                          style: TextStyle(color: Colors.grey),
-                        ),
-                        const SizedBox(height: 16),
-
-                        TextField(
-                          controller: _taskNameController,
-                          decoration: InputDecoration(
-                            labelText: 'Task',
-                            hintText: 'e.g. Jump rope',
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            prefixIcon: const Icon(Icons.task_alt),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-
-                        TextField(
-                          controller: _taskDurationController,
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          decoration: InputDecoration(
-                            labelText: 'Duration (minutes)',
-                            hintText: 'e.g. 0.5',
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            prefixIcon: const Icon(Icons.timer_outlined),
-                            helperText: 'Decimals allowed (e.g. 0.5 = 30 seconds).',
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-
-                        TextField(
-                          controller: _pauseBeforeController,
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          decoration: InputDecoration(
-                            labelText: 'Pause before this task (minutes)',
-                            hintText: 'e.g. 0.5',
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            prefixIcon: const Icon(Icons.free_breakfast_outlined),
-                            helperText: controller.tasks.isEmpty
-                                ? 'Pause is ignored for the first task.'
-                                : 'Decimals allowed (e.g. 0.5 = 30 seconds).',
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            onPressed: () => _addTask(controller),
-                            icon: const Icon(Icons.add),
-                            label: const Text('Add task'),
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              backgroundColor: Colors.black87,
-                              foregroundColor: Colors.white,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              'Tasks in profile',
-                              style: TextStyle(
-                                fontSize: 17,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
-                              ),
-                            ),
-                            TextButton.icon(
-                              onPressed: controller.tasks.isEmpty ? null : controller.clearProfile,
-                              icon: const Icon(Icons.delete_outline),
-                              label: const Text('Clear profile'),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-
-                        if (controller.tasks.isEmpty)
-                          const Text(
-                            'No tasks added yet.',
-                            style: TextStyle(color: Colors.grey),
-                          )
-                        else
-                          ReorderableListView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: controller.tasks.length,
-                            buildDefaultDragHandles: false,
-                            onReorder: controller.reorderTasks,
-                            proxyDecorator: (child, index, animation) {
-                              return AnimatedBuilder(
-                                animation: animation,
-                                builder: (context, _) {
-                                  return Material(
-                                    type: MaterialType.transparency,
-                                    child: child,
-                                  );
-                                },
-                              );
-                            },
-                            itemBuilder: (context, index) {
-                              final task = controller.tasks[index];
-                              return Card(
-                                key: ValueKey('${task.name}_${task.durationSeconds}_${task.pauseBeforeSeconds}_$index'),
-                                color: Colors.white,
-                                margin: const EdgeInsets.only(bottom: 10),
-                                clipBehavior: Clip.antiAlias,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                                child: ListTile(
-                                  onLongPress: () => _showTaskActions(context, controller, index),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
-                                  leading: CircleAvatar(
-                                    backgroundColor: const Color(0xFFDDF4E7),
-                                    child: Text('${index + 1}'),
-                                  ),
-                                  title: Text(task.name),
-                                  subtitle: Text(
-                                    index == 0
-                                        ? 'Duration: ${_formatSeconds(task.durationSeconds)}'
-                                        : 'Pause before: ${_formatSeconds(task.pauseBeforeSeconds)} • Duration: ${_formatSeconds(task.durationSeconds)}',
-                                  ),
-                                  trailing: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      IconButton(
-                                        icon: const Icon(Icons.close),
-                                        onPressed: () => controller.removeTask(index),
-                                      ),
-                                      ReorderableDragStartListener(
-                                        index: index,
-                                        child: const Padding(
-                                          padding: EdgeInsets.symmetric(horizontal: 4),
-                                          child: Icon(Icons.drag_handle, color: Colors.grey),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                      ],
-                    )
-                  else
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Sequence',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        ...List.generate(controller.tasks.length, (index) {
-                          final task = controller.tasks[index];
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: Text(
-                              index == 0
-                                  ? '${index + 1}. ${task.name} (${_formatSeconds(task.durationSeconds)})'
-                                  : '${index + 1}. Pause ${_formatSeconds(task.pauseBeforeSeconds)} → ${task.name} (${_formatSeconds(task.durationSeconds)})',
-                              style: const TextStyle(color: Colors.black87),
-                            ),
-                          );
-                        }),
-                      ],
-                    ),
-                ],
-              ),
+  Widget _buildRunningSequence(IntervalTimerController controller) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Sequence',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF1A1D1F),
             ),
-          );
-        },
+          ),
+          const SizedBox(height: 10),
+          ...List.generate(controller.tasks.length, (index) {
+            final task = controller.tasks[index];
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                index == 0
+                    ? '${index + 1}. ${task.name} (${_formatSeconds(task.durationSeconds)})'
+                    : '${index + 1}. Pause ${_formatSeconds(task.pauseBeforeSeconds)} -> ${task.name} (${_formatSeconds(task.durationSeconds)})',
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF1A1D1F),
+                ),
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInputField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    required IconData icon,
+    TextInputType? keyboardType,
+    String? helperText,
+  }) {
+    return TextField(
+      controller: controller,
+      keyboardType: keyboardType,
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+        helperText: helperText,
+        prefixIcon: Icon(icon, color: const Color(0xFF6F7789)),
+        filled: true,
+        fillColor: const Color(0xFFF5F7FA),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFE53935), width: 1.5),
+        ),
       ),
     );
   }
