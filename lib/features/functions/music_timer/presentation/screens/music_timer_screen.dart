@@ -29,8 +29,8 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
           'Music Timer',
           style: TextStyle(
             color: Colors.black87,
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
           ),
         ),
       ),

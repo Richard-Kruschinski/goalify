@@ -595,13 +595,14 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
             onPressed: () => Navigator.pop(context),
             icon: const Icon(Icons.arrow_back, color: Color(0xFF1A1D1F)),
           ),
+          const SizedBox(width: 8),
           const Expanded(
             child: Text(
               'Interval Timer',
               style: TextStyle(
                 fontSize: 24,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF1A1D1F),
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
               ),
             ),
           ),
