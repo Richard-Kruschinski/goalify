@@ -2956,7 +2956,7 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
       title: _titleCtrl.text.trim(),
       description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
       category: (_category?.trim().isEmpty ?? true) ? null : _category!.trim(),
-      points: _points,
+      points: _keep ? _points : 0,
       keep: _keep,
       repeatPattern: _keep ? _repeatPattern : TaskRepeatPattern.daily,
       customDays: _keep ? _customDays : 1,
@@ -3102,59 +3102,6 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
                   );
                 }).toList(),
               ),
-              const SizedBox(height: 20),
-              // Points
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.star, size: 20, color: Color(0xFFFF9800)),
-                        const SizedBox(width: 8),
-                        const Text(
-                          'Points',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF1A1D1F),
-                          ),
-                        ),
-                        const Spacer(),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFF3E0),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            '$_points',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFFFF9800),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    Slider(
-                      value: 1.0 * _points,
-                      min: 1,
-                      max: 10,
-                      divisions: 9,
-                      activeColor: const Color(0xFFE53935),
-                      inactiveColor: const Color(0xFFFFEBEE),
-                      onChanged: (v) => setState(() => _points = v.round()),
-                    ),
-                  ],
-                ),
-              ),
               const SizedBox(height: 16),
               // Task Type Toggle
               Container(
@@ -3230,6 +3177,61 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
                   ],
                 ),
               ),
+              if (_keep) ...[
+                const SizedBox(height: 16),
+                // Points are only relevant for recurring tasks.
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.star, size: 20, color: Color(0xFFFF9800)),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'Points',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF1A1D1F),
+                            ),
+                          ),
+                          const Spacer(),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFF3E0),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              '$_points',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFFFF9800),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      Slider(
+                        value: 1.0 * _points,
+                        min: 1,
+                        max: 10,
+                        divisions: 9,
+                        activeColor: const Color(0xFFE53935),
+                        inactiveColor: const Color(0xFFFFEBEE),
+                        onChanged: (v) => setState(() => _points = v.round()),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               // Repeat pattern selector (only for recurring tasks)
               if (_keep) ...[
                 const SizedBox(height: 20),
@@ -3625,7 +3627,7 @@ class _EditDailyTaskSheetState extends State<_EditDailyTaskSheet> {
         description:
         _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
         category: (_category?.trim().isEmpty ?? true) ? null : _category!.trim(),
-        points: _points,
+        points: _keep ? _points : 0,
         keep: _keep,
         repeatPattern: _repeatPattern,
         customDays: _customDays,
@@ -3788,58 +3790,60 @@ class _EditDailyTaskSheetState extends State<_EditDailyTaskSheet> {
                 }).toList(),
               ),
               const SizedBox(height: 20),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.star, size: 20, color: Color(0xFFFF9800)),
-                        const SizedBox(width: 8),
-                        const Text(
-                          'Points',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF1A1D1F),
-                          ),
-                        ),
-                        const Spacer(),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFF3E0),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            '$_points',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFFFF9800),
+              if (_keep) ...[
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.star, size: 20, color: Color(0xFFFF9800)),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'Points',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF1A1D1F),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                    Slider(
-                      value: 1.0 * _points,
-                      min: 1,
-                      max: 10,
-                      divisions: 9,
-                      activeColor: const Color(0xFFE53935),
-                      inactiveColor: const Color(0xFFFFEBEE),
-                      onChanged: (v) => setState(() => _points = v.round()),
-                    ),
-                  ],
+                          const Spacer(),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFF3E0),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              '$_points',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFFFF9800),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      Slider(
+                        value: 1.0 * _points,
+                        min: 1,
+                        max: 10,
+                        divisions: 9,
+                        activeColor: const Color(0xFFE53935),
+                        inactiveColor: const Color(0xFFFFEBEE),
+                        onChanged: (v) => setState(() => _points = v.round()),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
+                const SizedBox(height: 12),
+              ],
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
