@@ -3,6 +3,7 @@ package com.example.goalify.services
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.AccessibilityServiceInfo
 import android.app.ActivityManager
+import android.content.Context
 import android.content.Intent
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
@@ -17,8 +18,13 @@ class AppBlockingAccessibilityService : AccessibilityService() {
 
     companion object {
         private const val TAG = "AppBlockingService"
+        private const val PREFS_NAME = "goalify_app_blocking"
+        private const val KEY_BLOCKED_ATTEMPTS = "blocked_attempts_count"
         private var isBlocking = false
         private var blockedApps = mutableSetOf<String>()
+        private var blockedAttemptsCount = 0
+        private var lastAttemptPackage: String? = null
+        private var lastAttemptTimestampMs: Long = 0L
         
         // Static method to update blocking state from MainActivity
         fun setBlockingEnabled(enabled: Boolean, apps: List<String>) {
@@ -29,6 +35,17 @@ class AppBlockingAccessibilityService : AccessibilityService() {
         }
         
         fun isBlockingEnabled(): Boolean = isBlocking
+
+        fun getBlockedAttemptsCount(context: Context): Int {
+            val persistedCount = context
+                .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                .getInt(KEY_BLOCKED_ATTEMPTS, 0)
+
+            if (persistedCount != blockedAttemptsCount) {
+                blockedAttemptsCount = persistedCount
+            }
+            return blockedAttemptsCount
+        }
     }
 
     override fun onServiceConnected() {
@@ -110,6 +127,8 @@ class AppBlockingAccessibilityService : AccessibilityService() {
 
     private fun blockApp(packageName: String) {
         try {
+            maybeTrackBlockedAttempt(packageName)
+
             Log.d(TAG, "Launching BlockedAppOverlayActivity for $packageName")
             // Launch overlay activity to block the app
             val intent = Intent(this, BlockedAppOverlayActivity::class.java).apply {
@@ -125,6 +144,27 @@ class AppBlockingAccessibilityService : AccessibilityService() {
         } catch (e: Exception) {
             Log.e(TAG, "Error launching overlay: ${e.message}", e)
         }
+    }
+
+    private fun maybeTrackBlockedAttempt(packageName: String) {
+        val nowMs = System.currentTimeMillis()
+        val isDuplicateBurst =
+            packageName == lastAttemptPackage && (nowMs - lastAttemptTimestampMs) < 1500
+
+        if (isDuplicateBurst) {
+            return
+        }
+
+        lastAttemptPackage = packageName
+        lastAttemptTimestampMs = nowMs
+        blockedAttemptsCount += 1
+
+        getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putInt(KEY_BLOCKED_ATTEMPTS, blockedAttemptsCount)
+            .apply()
+
+        Log.d(TAG, "Blocked attempts tracked: $blockedAttemptsCount")
     }
 
     private fun bringGoalifyToForeground() {

@@ -9,14 +9,18 @@ class DistractionBlockerController extends ChangeNotifier {
   bool _isActive = false;
   DateTime? _activatedAt;
   int _totalBlockingSeconds = 0; // Total seconds blocked today
+  int _blockedAttempts = 0;
   DateTime? _lastResetDate;
   Timer? _updateTimer;
+  int _attemptRefreshTick = 0;
+  bool _isRefreshingAttempts = false;
 
   final PlatformChannelService _platformService = PlatformChannelService();
 
   bool get isActive => _isActive;
   DateTime? get activatedAt => _activatedAt;
   int get totalBlockingSeconds => _totalBlockingSeconds;
+  int get blockedAttempts => _blockedAttempts;
 
   /// Get formatted blocking duration for current session
   String get currentSessionDuration {
@@ -56,6 +60,11 @@ class DistractionBlockerController extends ChangeNotifier {
   void _startUpdateTimer() {
     _updateTimer?.cancel();
     _updateTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      _attemptRefreshTick++;
+      if (_isActive && _attemptRefreshTick >= 2) {
+        _attemptRefreshTick = 0;
+        _refreshBlockedAttemptsCount(notify: false);
+      }
       notifyListeners(); // Update UI every second
     });
   }
@@ -72,6 +81,7 @@ class DistractionBlockerController extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       _isActive = prefs.getBool('distraction_blocker_active') ?? false;
       _totalBlockingSeconds = prefs.getInt('distraction_blocker_total_seconds') ?? 0;
+      _blockedAttempts = prefs.getInt('distraction_blocker_blocked_attempts') ?? 0;
       
       final activatedAtString = prefs.getString('distraction_blocker_activated_at');
       if (activatedAtString != null) {
@@ -88,6 +98,8 @@ class DistractionBlockerController extends ChangeNotifier {
         await _platformService.startAppBlocking();
         _startUpdateTimer(); // Start UI updates
       }
+
+      await _refreshBlockedAttemptsCount(notify: false);
       
       notifyListeners();
     } catch (e) {
@@ -101,6 +113,7 @@ class DistractionBlockerController extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('distraction_blocker_active', _isActive);
       await prefs.setInt('distraction_blocker_total_seconds', _totalBlockingSeconds);
+      await prefs.setInt('distraction_blocker_blocked_attempts', _blockedAttempts);
       
       if (_activatedAt != null) {
         await prefs.setString('distraction_blocker_activated_at', _activatedAt!.toIso8601String());
@@ -154,6 +167,7 @@ class DistractionBlockerController extends ChangeNotifier {
       
       // Start app blocking via platform channel
       await _platformService.startAppBlocking();
+      await _refreshBlockedAttemptsCount(notify: false);
       
       _isActive = true;
       _activatedAt = DateTime.now();
@@ -206,5 +220,25 @@ class DistractionBlockerController extends ChangeNotifier {
   /// Get total blocking seconds including current session
   int getTotalSecondsToday() {
     return _totalBlockingSeconds + getCurrentSessionSeconds();
+  }
+
+  Future<void> _refreshBlockedAttemptsCount({bool notify = true}) async {
+    if (_isRefreshingAttempts) return;
+    _isRefreshingAttempts = true;
+
+    try {
+      final attempts = await _platformService.getBlockedAttemptsCount();
+      if (attempts != _blockedAttempts) {
+        _blockedAttempts = attempts;
+        await _saveState();
+        if (notify) {
+          notifyListeners();
+        }
+      }
+    } catch (e) {
+      debugPrint('Error refreshing blocked attempts: $e');
+    } finally {
+      _isRefreshingAttempts = false;
+    }
   }
 }

@@ -95,6 +95,16 @@ class MainActivity : FlutterActivity() {
                         result.error("OPEN_SETTINGS_ERROR", e.message, null)
                     }
                 }
+
+                "getBlockedAttemptsCount" -> {
+                    try {
+                        val attempts = AppBlockingAccessibilityService.getBlockedAttemptsCount(this)
+                        result.success(attempts)
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Error getting blocked attempts count: ${e.message}")
+                        result.success(0)
+                    }
+                }
                 
                 "pauseMusic" -> {
                     try {

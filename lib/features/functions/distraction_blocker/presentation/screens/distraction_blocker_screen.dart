@@ -39,18 +39,15 @@ class _DistractionBlockerScreenState extends State<DistractionBlockerScreen> wit
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    final controller = context.read<DistractionBlockerController>();
-    
     switch (state) {
       case AppLifecycleState.paused:
-        // App moved to background (screen locked, switched to another app)
-        if (controller.isActive) {
-          controller.stopBlocking();
-        }
+        // Keep blocker active while app is in background/minimized.
+        break;
+      case AppLifecycleState.inactive:
+        // Keep blocker active during transient inactive states as well.
         break;
       case AppLifecycleState.resumed:
-        // App resumed from background
-        // Blocker can be restarted manually by user via UI
+        // Nothing to do: blocker state is managed by controller persistence.
         break;
       default:
         break;
@@ -170,6 +167,15 @@ class _DistractionBlockerScreenState extends State<DistractionBlockerScreen> wit
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.9),
                       fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    '${controller.blockedAttempts} distraction attempts prevented',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.9),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
@@ -424,6 +430,15 @@ class _DistractionBlockerScreenState extends State<DistractionBlockerScreen> wit
             label: 'Apps Being Blocked',
             value: '${AppBlockingConfig.blockedAppsCount}',
             color: const Color(0xFFFF9066),
+          ),
+
+          const SizedBox(height: 16),
+
+          _buildStatRow(
+            icon: Icons.shield,
+            label: 'Distraction Attempts Prevented',
+            value: '${controller.blockedAttempts}',
+            color: const Color(0xFF66BB6A),
           ),
         ],
       ),

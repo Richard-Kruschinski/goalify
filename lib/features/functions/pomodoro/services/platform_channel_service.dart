@@ -106,6 +106,28 @@ class PlatformChannelService {
     }
   }
 
+  /// Get how many blocked-app launch attempts were prevented (Android only)
+  Future<int> getBlockedAttemptsCount() async {
+    if (!isAndroid) {
+      return 0;
+    }
+
+    try {
+      final result = await _channel.invokeMethod('getBlockedAttemptsCount');
+      if (result is int) {
+        return result;
+      }
+      if (result is num) {
+        return result.toInt();
+      }
+      return 0;
+    } on PlatformException catch (_) {
+      return 0;
+    } catch (_) {
+      return 0;
+    }
+  }
+
   /// Pause currently playing music (Android only)
   /// Works with any music app (YouTube, Spotify, etc.)
   /// Fades volume to zero, pauses playback, then restores previous volume
