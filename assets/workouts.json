@@ -28,6 +28,20 @@
     "muscles": ["Chest", "Triceps", "Shoulders"]
   },
   {
+    "id": "close_grip_bench_press",
+    "name": "Close-Grip Bench Press",
+    "description": "Narrow-grip barbell bench press variation that shifts more load to the triceps while still training chest and front shoulders.",
+    "icon": "assets/images/exercises/benchpress.png",
+    "muscles": ["Triceps", "Chest", "Shoulders"]
+  },
+  {
+    "id": "pause_rep_benchpress",
+    "name": "Pause Rep Benchpress",
+    "description": "Bench press variation where you pause for about 1 second just above the chest on every rep. Keep a small gap between the bar and your chest, and do not rest the bar on the chest.",
+    "icon": "assets/images/exercises/benchpress.png",
+    "muscles": ["Chest", "Triceps", "Shoulders"]
+  },
+  {
     "id": "biceps_curl_dumbbell",
     "name": "Biceps Curl (Dumbbell)",
     "description": "Classic dumbbell curl for biceps development.",
