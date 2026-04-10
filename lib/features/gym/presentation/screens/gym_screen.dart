@@ -3107,10 +3107,14 @@ class _GymScreenState extends State<GymScreen> {
   }
 
   // ----------------------------- Charts -----------------------------
-  void _openProgressChartDialog(Workout w) {
+  void _openProgressChartDialog(Workout w, { String? filterByDay }) {
     final isDuration = _isDurationWorkout(w);
 
-    final logs = List<WorkoutLog>.from(_logs[w.id] ?? const <WorkoutLog>[]);
+    final allLogs = List<WorkoutLog>.from(_logs[w.id] ?? const <WorkoutLog>[]);
+    // Filtere nach Tag, wenn filterByDay angegeben ist
+    final logs = filterByDay != null
+        ? allLogs.where((log) => log.day == filterByDay).toList()
+        : allLogs;
     if (logs.isEmpty) {
       showDialog<void>(
         context: context,
@@ -4131,7 +4135,7 @@ class _GymScreenState extends State<GymScreen> {
           },
           onRefresh: () => setState(() {}),
           onShowHistory: _openHistoryDialog,
-          onShowChart: _openProgressChartDialog,
+          onShowChart: (w) => _openProgressChartDialog(w, filterByDay: day),
           onDeleteForDay: (w) => _confirmDeleteForDay(w, day),
           onDeleteAll: _confirmClearHistoryAll,
           onUnassignFromDay: (w) => _removeAssignmentForDay(day, w.id),
