@@ -3852,7 +3852,7 @@ class _GymScreenState extends State<GymScreen> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'Workout Days',
+                      'Workouts',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
