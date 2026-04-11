@@ -281,6 +281,13 @@
     "muscles": ["Shoulders", "Triceps"]
   },
   {
+    "id": "shoulder_press_dumbbell",
+    "name": "Shoulder Press (Dumbbell)",
+    "description": "The dumbbell shoulder press is a shoulder exercise in which you press two dumbbells from shoulder height overhead in a controlled motion. It primarily targets the front deltoid (anterior shoulder muscle).",
+    "icon": "assets/images/exercises/shoulder_press_dumbbell.png",
+    "muscles": ["Shoulders", "Triceps"]
+  },
+  {
     "id": "shrugs_dumbbell",
     "name": "Shrugs (Dumbbell)",
     "description": "Dumbbell shrugs targeting the upper trapezius.",
