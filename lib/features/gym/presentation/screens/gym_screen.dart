@@ -10,7 +10,7 @@ import '../../../../core/utils/local_storage.dart'; // saveJson/loadJson
 import '../../../../core/utils/icon_mapper.dart'; // IconMapper für zentrale Icon-Verwaltung
 import '../../../tasks/presentation/screens/daily_tasks_screen.dart'; // for markGymTaskDoneForToday
 
-enum ViewMode { byExercise, byDay }
+enum ViewMode { byExercise, byDay, bySplit }
 
 const List<String> kSuggestedWorkdays = <String>[
   'Push', 'Pull', 'Leg', 'Arm', 'Upper Body', 'Lower Body',
@@ -241,6 +241,13 @@ class LogOutcome {
   final WorkoutLog? log;
   final String? assignDay;
   const LogOutcome({this.log, this.assignDay});
+}
+
+class SplitEditorResult {
+  final String name;
+  final List<String> days;
+
+  const SplitEditorResult({required this.name, required this.days});
 }
 
 /// ===============================================================
@@ -598,6 +605,8 @@ class _GymScreenState extends State<GymScreen> {
   static const _kAssignmentsKey = 'gym_assignments_by_day_v1';
   static const _kOrderDaysKey = 'gym_order_days_v1';
   static const _kExerciseNotesKey = 'gym_exercise_notes_v1';
+  static const _kSplitsKey = 'gym_splits_v1';
+  static const _kSplitOrderKey = 'gym_split_order_v1';
 
   // Kalender-Storage (Map<yyyy-MM-dd, Set<DayName>>)
   static const _kCalendarKey = 'gym_calendar_v1';
@@ -628,6 +637,10 @@ class _GymScreenState extends State<GymScreen> {
 
   // Reihenfolge der Workout-Days
   List<String> _orderDays = <String>[];
+
+  // Splits (Splitname -> Workout-Days)
+  final Map<String, List<String>> _splitsByName = <String, List<String>>{};
+  List<String> _splitOrder = <String>[];
 
   // Kalender – pro Datum (yyyy-MM-dd) Liste der erledigten Workout-Days
   final Map<String, Set<String>> _calendarByDate = <String, Set<String>>{};
@@ -679,7 +692,13 @@ class _GymScreenState extends State<GymScreen> {
     // View mode
     final vm =
     await LocalStorage.loadJson(_kGymViewKey, fallback: 'byExercise');
-    _mode = (vm == 'byDay') ? ViewMode.byDay : ViewMode.byExercise;
+    if (vm == 'byDay') {
+      _mode = ViewMode.byDay;
+    } else if (vm == 'bySplit') {
+      _mode = ViewMode.bySplit;
+    } else {
+      _mode = ViewMode.byExercise;
+    }
 
     // Logs
     final raw = await LocalStorage.loadJson(_kGymLogsKey, fallback: {});
@@ -774,7 +793,26 @@ class _GymScreenState extends State<GymScreen> {
         ? orderDaysRaw.map((e) => e.toString()).toList()
         : <String>[];
 
+    // Splits
+    final splitsRaw = await LocalStorage.loadJson(_kSplitsKey, fallback: {});
+    _splitsByName.clear();
+    if (splitsRaw is Map) {
+      splitsRaw.forEach((k, v) {
+        if (v is List) {
+          _splitsByName[k.toString()] =
+              v.map((e) => e.toString()).toList(growable: true);
+        }
+      });
+    }
+
+    final splitOrderRaw =
+    await LocalStorage.loadJson(_kSplitOrderKey, fallback: []);
+    _splitOrder = (splitOrderRaw is List)
+        ? splitOrderRaw.map((e) => e.toString()).toList(growable: true)
+        : <String>[];
+
     _syncOrderDaysWithAssignments();
+    _syncSplitsWithDays();
   }
 
   Future<void> _saveLogs() async {
@@ -801,6 +839,10 @@ class _GymScreenState extends State<GymScreen> {
       LocalStorage.saveJson(_kDayIconsKey, _dayIcons);
   Future<void> _saveDayCustomIcons() async =>
       LocalStorage.saveJson(_kDayCustomIconsKey, _dayCustomIcons);
+    Future<void> _saveSplits() async =>
+      LocalStorage.saveJson(_kSplitsKey, _splitsByName);
+    Future<void> _saveSplitOrder() async =>
+      LocalStorage.saveJson(_kSplitOrderKey, _splitOrder);
 
   // ----------------------------- Kalender: Load/Save -----------------------------
   Future<void> _loadCalendar() async {
@@ -1092,6 +1134,7 @@ class _GymScreenState extends State<GymScreen> {
     if (list.isEmpty) {
       _assignmentsByDay.remove(day);
       _orderDays.remove(day);
+      _removeDayFromSplits(day);
       _saveOrderDays();
     }
     _saveAssignments();
@@ -1103,6 +1146,16 @@ class _GymScreenState extends State<GymScreen> {
       _saveOrderByDay();
     }
     setState(() {});
+  }
+
+  void _removeDayFromSplits(String day) {
+    bool changed = false;
+    _splitsByName.forEach((_, days) {
+      if (days.remove(day)) changed = true;
+    });
+    if (changed) {
+      _saveSplits();
+    }
   }
 
   Set<String> _assignedDaysForWorkout(String workoutId) {
@@ -1314,6 +1367,53 @@ class _GymScreenState extends State<GymScreen> {
     if (_orderDays.length != beforeLen) changed = true;
 
     if (changed) _saveOrderDays();
+  }
+
+  void _syncSplitsWithDays() {
+    final availableDays = _assignmentsByDay.keys.toSet();
+    bool splitsChanged = false;
+
+    _splitsByName.forEach((_, days) {
+      final before = days.length;
+      days.removeWhere((d) => !availableDays.contains(d));
+      if (days.length != before) splitsChanged = true;
+    });
+
+    bool orderChanged = false;
+    for (final splitName in _splitsByName.keys) {
+      if (!_splitOrder.contains(splitName)) {
+        _splitOrder.add(splitName);
+        orderChanged = true;
+      }
+    }
+    final splitNamesSet = _splitsByName.keys.toSet();
+    final beforeLen = _splitOrder.length;
+    _splitOrder.removeWhere((s) => !splitNamesSet.contains(s));
+    if (_splitOrder.length != beforeLen) orderChanged = true;
+
+    if (splitsChanged) _saveSplits();
+    if (orderChanged) _saveSplitOrder();
+  }
+
+  List<String> _getOrderedSplits() {
+    _syncSplitsWithDays();
+    return List<String>.from(_splitOrder);
+  }
+
+  void _reorderSplits(int oldIndex, int newIndex) {
+    if (newIndex > oldIndex) newIndex -= 1;
+    final splits = _getOrderedSplits();
+    if (splits.isEmpty) return;
+
+    final moved = splits.removeAt(oldIndex);
+    splits.insert(newIndex, moved);
+
+    final setSplits = splits.toSet();
+    _splitOrder.removeWhere(setSplits.contains);
+    _splitOrder.insertAll(0, splits);
+
+    _saveSplitOrder();
+    setState(() {});
   }
 
   List<String> _getOrderedDays() {
@@ -2485,8 +2585,17 @@ class _GymScreenState extends State<GymScreen> {
         _dayCustomIcons[newName] = customIcon;
       }
 
+      // 7. Rename in splits
+      _splitsByName.forEach((_, days) {
+        for (int i = 0; i < days.length; i++) {
+          if (days[i] == oldName) {
+            days[i] = newName;
+          }
+        }
+      });
+
       if (renameTracked) {
-        // 7. Rename in calendar entries (tracked workouts)
+        // 8. Rename in calendar entries (tracked workouts)
         _calendarByDate.forEach((dateKey, daySet) {
           if (daySet.contains(oldName)) {
             daySet.remove(oldName);
@@ -2494,7 +2603,7 @@ class _GymScreenState extends State<GymScreen> {
           }
         });
 
-        // 8. Rename in workout logs
+        // 9. Rename in workout logs
         _logs.forEach((workoutId, logList) {
           for (int i = 0; i < logList.length; i++) {
             final log = logList[i];
@@ -2517,6 +2626,7 @@ class _GymScreenState extends State<GymScreen> {
     await _saveDayColors();
     await _saveDayIcons();
     await _saveDayCustomIcons();
+    await _saveSplits();
     if (renameTracked) {
       await _saveCalendar();
       await _saveLogs();
@@ -2930,6 +3040,7 @@ class _GymScreenState extends State<GymScreen> {
     _dayColors.remove(day);
     _dayIcons.remove(day);
     _dayCustomIcons.remove(day);
+    _removeDayFromSplits(day);
 
     if (removeTrackedHistory) {
       _calendarByDate.forEach((_, days) => days.remove(day));
@@ -3562,7 +3673,9 @@ class _GymScreenState extends State<GymScreen> {
             Expanded(
               child: _mode == ViewMode.byExercise
                   ? _buildWorkoutListBody()
-                  : _buildDayListBody(),
+                  : _mode == ViewMode.byDay
+                      ? _buildDayListBody()
+                      : _buildSplitListBody(),
             ),
           ],
         ),
@@ -3753,6 +3866,55 @@ class _GymScreenState extends State<GymScreen> {
               ),
             ),
           ),
+          Expanded(
+            child: GestureDetector(
+              onTap: () {
+                setState(() => _mode = ViewMode.bySplit);
+                _saveViewMode();
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: _mode == ViewMode.bySplit
+                      ? Colors.white
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: _mode == ViewMode.bySplit
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.account_tree,
+                      size: 18,
+                      color: _mode == ViewMode.bySplit
+                          ? const Color(0xFFE53935)
+                          : const Color(0xFF6F7789),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Splits',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: _mode == ViewMode.bySplit
+                            ? const Color(0xFF1A1D1F)
+                            : const Color(0xFF6F7789),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -3793,7 +3955,7 @@ class _GymScreenState extends State<GymScreen> {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(30),
-          onTap: _onAddPressed,
+          onTap: _mode == ViewMode.bySplit ? _onAddSplitPressed : _onAddPressed,
           child: const Icon(
             Icons.add,
             color: Colors.white,
@@ -4108,6 +4270,510 @@ class _GymScreenState extends State<GymScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildSplitListBody() {
+    final splits = _getOrderedSplits();
+    if (splits.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: const BoxDecoration(
+                color: Color(0xFFF0F4F8),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.account_tree,
+                size: 64,
+                color: Color(0xFF9CA3AF),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'No splits yet',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF1A1D1F),
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Tap + to group workout days in splits',
+              style: TextStyle(
+                fontSize: 14,
+                color: Color(0xFF9CA3AF),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ReorderableListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      itemCount: splits.length,
+      onReorder: _reorderSplits,
+      buildDefaultDragHandles: false,
+      itemBuilder: (_, i) {
+        final splitName = splits[i];
+        final count = _splitsByName[splitName]?.length ?? 0;
+        return _buildModernSplitCard(splitName, i, count);
+      },
+    );
+  }
+
+  Widget _buildModernSplitCard(String splitName, int index, int count) {
+    return Container(
+      key: ValueKey('split_$splitName'),
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () => _openSplitDetail(splitName),
+          onLongPress: () => _showSplitOptionsMenu(splitName),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                ReorderableDragStartListener(
+                  index: index,
+                  child: const Icon(
+                    Icons.drag_indicator,
+                    color: Color(0xFFD1D5DB),
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFEBEE),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.account_tree,
+                    color: Color(0xFFE53935),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        splitName,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1A1D1F),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '$count workout day${count == 1 ? '' : 's'}',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF6F7789),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(
+                  Icons.chevron_right,
+                  color: Color(0xFF9CA3AF),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openSplitDetail(String splitName) {
+    final orderedDays = _getOrderedDays();
+    final splitDays = _splitsByName[splitName] ?? const <String>[];
+    final daySet = splitDays.toSet();
+    final days = orderedDays.where(daySet.contains).toList(growable: false);
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SplitDetailScreen(
+          splitName: splitName,
+          days: days,
+          dayExerciseCount: (day) => _assignmentsByDay[day]?.length ?? 0,
+          dayIconBuilder: _getDayIconWidget,
+          onOpenDay: _openDayDetail,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showSplitOptionsMenu(String splitName) async {
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: SingleChildScrollView(
+          child: Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            padding: const EdgeInsets.only(top: 16, bottom: 24, left: 20, right: 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 48,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE5E7EB),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    splitName,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF1A1D1F),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Column(
+                    children: [
+                      Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                          onTap: () => Navigator.pop(ctx, 'edit'),
+                          child: const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                            child: Row(
+                              children: [
+                                Icon(Icons.edit, color: Color(0xFF6F7789)),
+                                SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    'Edit split',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF1A1D1F),
+                                    ),
+                                  ),
+                                ),
+                                Icon(Icons.chevron_right, color: Color(0xFF9CA3AF)),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const Divider(height: 1, color: Color(0xFFE5E7EB)),
+                      Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
+                          onTap: () => Navigator.pop(ctx, 'delete'),
+                          child: const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                            child: Row(
+                              children: [
+                                Icon(Icons.delete_outline, color: Color(0xFFE53935)),
+                                SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    'Delete split',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFFE53935),
+                                    ),
+                                  ),
+                                ),
+                                Icon(Icons.chevron_right, color: Color(0xFF9CA3AF)),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    if (action == 'edit') {
+      await _editSplit(splitName);
+    } else if (action == 'delete') {
+      await _deleteSplit(splitName);
+    }
+  }
+
+  Future<void> _onAddSplitPressed() async {
+    final availableDays = _getOrderedDays();
+    if (availableDays.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Create workout days first before adding a split.')),
+      );
+      return;
+    }
+
+    final result = await _openSplitEditor(availableDays: availableDays);
+    if (result == null) return;
+
+    setState(() {
+      _splitsByName[result.name] = List<String>.from(result.days, growable: true);
+      if (!_splitOrder.contains(result.name)) {
+        _splitOrder.add(result.name);
+      }
+    });
+    await _saveSplits();
+    await _saveSplitOrder();
+  }
+
+  Future<void> _editSplit(String splitName) async {
+    final availableDays = _getOrderedDays();
+    final initialDays = _splitsByName[splitName] ?? const <String>[];
+
+    final result = await _openSplitEditor(
+      availableDays: availableDays,
+      initialName: splitName,
+      initialDays: initialDays,
+    );
+    if (result == null) return;
+
+    setState(() {
+      if (result.name != splitName) {
+        _splitsByName.remove(splitName);
+        final idx = _splitOrder.indexOf(splitName);
+        if (idx >= 0) {
+          _splitOrder[idx] = result.name;
+        } else if (!_splitOrder.contains(result.name)) {
+          _splitOrder.add(result.name);
+        }
+      }
+      _splitsByName[result.name] = List<String>.from(result.days, growable: true);
+    });
+    await _saveSplits();
+    await _saveSplitOrder();
+  }
+
+  Future<void> _deleteSplit(String splitName) async {
+    final confirmed = await _showModernConfirmationDialog(
+      context: context,
+      title: 'Delete split "$splitName"?',
+      message: 'Only the split will be removed. Workout days and tracked exercises remain unchanged.',
+      confirmButtonText: 'Delete',
+      icon: Icons.delete_outline,
+      iconColor: const Color(0xFFE53935),
+      isDangerous: true,
+    );
+
+    if (!confirmed) return;
+
+    setState(() {
+      _splitsByName.remove(splitName);
+      _splitOrder.remove(splitName);
+    });
+    await _saveSplits();
+    await _saveSplitOrder();
+  }
+
+  Future<SplitEditorResult?> _openSplitEditor({
+    required List<String> availableDays,
+    String? initialName,
+    List<String> initialDays = const [],
+  }) async {
+    final existingName = initialName;
+    final controller = TextEditingController(text: initialName ?? '');
+    final selected = <String>{...initialDays};
+
+    final result = await showDialog<SplitEditorResult>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) => Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: Container(
+            constraints: const BoxConstraints(maxHeight: 620, maxWidth: 560),
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFEBEE),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.account_tree,
+                        color: Color(0xFFE53935),
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        existingName == null ? 'Create Split' : 'Edit Split',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1A1D1F),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: controller,
+                  decoration: InputDecoration(
+                    labelText: 'Split name',
+                    hintText: 'e.g. PPL, Upper/Lower',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Select workout days',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF6F7789),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Flexible(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: availableDays.length,
+                    itemBuilder: (_, i) {
+                      final day = availableDays[i];
+                      final checked = selected.contains(day);
+                      return CheckboxListTile(
+                        dense: true,
+                        value: checked,
+                        activeColor: const Color(0xFFE53935),
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(day),
+                        onChanged: (v) {
+                          setS(() {
+                            if (v == true) {
+                              selected.add(day);
+                            } else {
+                              selected.remove(day);
+                            }
+                          });
+                        },
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text('Cancel'),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      onPressed: () {
+                        final name = controller.text.trim();
+                        if (name.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Please enter a split name.')),
+                          );
+                          return;
+                        }
+                        if (selected.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Select at least one workout day.')),
+                          );
+                          return;
+                        }
+
+                        final nameTaken = _splitsByName.containsKey(name) && name != existingName;
+                        if (nameTaken) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('A split named "$name" already exists.')),
+                          );
+                          return;
+                        }
+
+                        Navigator.pop(
+                          ctx,
+                          SplitEditorResult(
+                            name: name,
+                            days: availableDays.where(selected.contains).toList(growable: true),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFE53935),
+                        foregroundColor: Colors.white,
+                      ),
+                      child: Text(existingName == null ? 'Create' : 'Save'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    controller.dispose();
+    return result;
   }
 
   void _openDayDetail(String day) {
@@ -8427,6 +9093,150 @@ class _ColorPickerGrid extends StatelessWidget {
             ),
           );
         }).toList(),
+      ),
+    );
+  }
+}
+
+class SplitDetailScreen extends StatelessWidget {
+  final String splitName;
+  final List<String> days;
+  final int Function(String day) dayExerciseCount;
+  final Widget Function(String day) dayIconBuilder;
+  final void Function(String day) onOpenDay;
+
+  const SplitDetailScreen({
+    super.key,
+    required this.splitName,
+    required this.days,
+    required this.dayExerciseCount,
+    required this.dayIconBuilder,
+    required this.onOpenDay,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F7FA),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.03),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: const Icon(Icons.arrow_back, color: Color(0xFF6F7789)),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      splitName,
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1A1D1F),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: days.isEmpty
+                  ? const Center(
+                      child: Text(
+                        'No workout days in this split',
+                        style: TextStyle(color: Color(0xFF6F7789)),
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      itemCount: days.length,
+                      itemBuilder: (_, i) {
+                        final day = days[i];
+                        final count = dayExerciseCount(day);
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.04),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(16),
+                              onTap: () => onOpenDay(day),
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 48,
+                                      height: 48,
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFFFEBEE),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: dayIconBuilder(day),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            day,
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w600,
+                                              color: Color(0xFF1A1D1F),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            '$count exercise${count == 1 ? '' : 's'}',
+                                            style: const TextStyle(
+                                              fontSize: 13,
+                                              color: Color(0xFF6F7789),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const Icon(
+                                      Icons.chevron_right,
+                                      color: Color(0xFF9CA3AF),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }
