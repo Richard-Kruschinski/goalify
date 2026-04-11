@@ -779,70 +779,88 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   }
 
   Future<void> _dailyRolloverIfNeeded() async {
-    final last =
-    await LocalStorage.loadJson(_kDailyRolloverKey, fallback: '');
-    final today = _todayKey();
-    if (last == today) return;
+    final rawLast =
+        await LocalStorage.loadJson(_kDailyRolloverKey, fallback: '');
+    final todayKey = _todayKey();
+    if (rawLast == todayKey) return;
 
-    final yesterday = _yesterdayKey();
+    final todayDate = DateTime.now();
+    final today = DateTime(todayDate.year, todayDate.month, todayDate.day);
 
-    // --- SNAPSHOT: Save yesterday's tasks to history BEFORE modifying them ---
-    await _saveTaskSnapshotToHistory(yesterday);
+    // If no valid rollover exists, keep legacy behavior and process only 1 day.
+    final parsedLast = _tryParseDateKey((rawLast ?? '').toString());
+    var cursor = parsedLast ?? today.subtract(const Duration(days: 1));
+    cursor = DateTime(cursor.year, cursor.month, cursor.day);
 
-    // --- Streak update (evaluate yesterday only if task was due) ---
-    for (final t in _keepTasks) {
-      if (!t.keep) continue;
-      final wasDueYesterday = _isTaskDueOnDate(t, yesterday);
-      if (!wasDueYesterday) continue;
-
-      if (t.done) {
-        if (_isConsecutiveCompletion(t, yesterday)) {
-          t.streak += 1;
-        } else {
-          t.streak = 1;
-        }
-        t.lastDoneKey = yesterday;
-        if (t.streak > t.bestStreak) t.bestStreak = t.streak;
-      } else {
-        // not done -> protect only if frozen yesterday
-        if (!_wasFrozenOn(yesterday, t.id)) {
-          t.streak = 0;
-        }
-      }
-    }
-    _clearFreezeForDate(yesterday);
-
-    // --- Day change ---
     bool changedKeep = false;
+    bool changedOneOff = false;
+    bool changedOrderByDate = false;
+    bool changedOrderCombined = false;
 
-    // 1) keep tasks: uncheck for a new day
-    for (final t in _keepTasks) {
-      if (t.keep && t.done) {
-        t.done = false;
-        changedKeep = true;
+    while (cursor.isBefore(today)) {
+      final dayKey = _dateKey(cursor);
+      final nextDay = cursor.add(const Duration(days: 1));
+      final nextDayKey = _dateKey(nextDay);
+
+      // --- SNAPSHOT: Save day's tasks to history BEFORE modifying them ---
+      await _saveTaskSnapshotToHistory(dayKey);
+
+      // --- Streak update (evaluate this day only if task was due) ---
+      for (final t in _keepTasks) {
+        if (!t.keep) continue;
+        final wasDue = _isTaskDueOnDate(t, dayKey);
+        if (!wasDue) continue;
+
+        if (t.done) {
+          if (_isConsecutiveCompletion(t, dayKey)) {
+            t.streak += 1;
+          } else {
+            t.streak = 1;
+          }
+          t.lastDoneKey = dayKey;
+          if (t.streak > t.bestStreak) t.bestStreak = t.streak;
+        } else {
+          // not done -> protect only if frozen that day
+          if (!_wasFrozenOn(dayKey, t.id)) {
+            t.streak = 0;
+          }
+        }
       }
-    }
+      _clearFreezeForDate(dayKey);
 
-    // 2) one-offs: drop yesterday's bucket entirely (completed or not)
-    // (They're now saved in history, so we can safely remove them)
-    if (_oneOffByDate.containsKey(yesterday)) {
-      _oneOffByDate.remove(yesterday);
-      _orderByDate.remove(yesterday);
-      _orderCombined.remove(yesterday);
-      await _saveOneOffMap();
-      await _saveOrderByDate();
-      await _saveOrderCombined();
-    }
+      // --- Day change ---
+      // 1) keep tasks: uncheck for the next day
+      for (final t in _keepTasks) {
+        if (t.keep && t.done) {
+          t.done = false;
+          changedKeep = true;
+        }
+      }
 
-    // --- Freeze tokens: +1 each 7 days ---
-    _freezeDaysCounter += 1;
-    if (_freezeDaysCounter % 7 == 0) {
-      _freezeTokens += 1;
-    }
+      // 2) one-offs: drop this day's bucket entirely (completed or not)
+      // (They're now saved in history, so we can safely remove them)
+      if (_oneOffByDate.containsKey(dayKey)) {
+        _oneOffByDate.remove(dayKey);
+        _orderByDate.remove(dayKey);
+        _orderCombined.remove(dayKey);
+        changedOneOff = true;
+        changedOrderByDate = true;
+        changedOrderCombined = true;
+      }
 
-    // --- Reset combined order to original state (active first) ---
-    _resetCombinedOrderToOriginal(yesterday);
-    _resetCombinedOrderToOriginal(today);
+      // --- Freeze tokens: +1 each 7 days ---
+      _freezeDaysCounter += 1;
+      if (_freezeDaysCounter % 7 == 0) {
+        _freezeTokens += 1;
+      }
+
+      // --- Reset combined order to original state (active first) ---
+      _resetCombinedOrderToOriginal(dayKey);
+      _resetCombinedOrderToOriginal(nextDayKey);
+      changedOrderCombined = true;
+
+      cursor = nextDay;
+    }
 
     // --- Cleanup old history (older than 7 days) ---
     await _cleanupOldHistory();
@@ -851,12 +869,20 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     await _markRolloverDoneForToday();
     await _saveProgressToday();
     await _saveFreezeState();
-    await _saveOrderCombined();
-
     if (changedKeep) {
       await _saveKeepTasks();
-      if (mounted) setState(() {});
     }
+    if (changedOneOff) {
+      await _saveOneOffMap();
+    }
+    if (changedOrderByDate) {
+      await _saveOrderByDate();
+    }
+    if (changedOrderCombined) {
+      await _saveOrderCombined();
+    }
+
+    if (mounted) setState(() {});
   }
 
   /// Save a snapshot of all tasks (keep + one-offs) for a specific date to history
