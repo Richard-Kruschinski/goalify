@@ -51,6 +51,27 @@
                     ]
     },
     {
+        "id":  "box_jumps",
+        "name":  "Box Jumps",
+        "description":  "It is a lower body plyometric exercise in which you explosively jump onto an elevated platform. The advantage is that it improves power, speed, and coordination. Important: land softly with bent knees and control the movement, rather than jumping down recklessly, to reduce impact and risk of injury.",
+        "icon":  "fitness_center",
+        "muscles":  [
+                        "Quads",
+                        "Glutes",
+                        "Calves"
+                    ]
+    },
+    {
+        "id":  "bulgarian_split_squat",
+        "name":  "Bulgarian Split Squat",
+        "description":  "It is a lower body exercise in which you perform a squat with one leg elevated behind you. The advantage is that each leg works independently, improving balance and correcting muscle imbalances. Important: keep your front knee stable and track it over your toes, while lowering yourself straight down to effectively target the glutes and quadriceps.",
+        "icon":  "fitness_center",
+        "muscles":  [
+                        "Quads",
+                        "Glutes"
+                    ]
+    },
+    {
         "id":  "butterfly_cables",
         "name":  "Butterfly (Cables)",
         "description":  "Cable fly (standing or lying) for chest isolation.",
@@ -241,6 +262,17 @@
                     ]
     },
     {
+        "id":  "lat_pulldown_reverse_grip",
+        "name":  "Lat Pulldown (Reverse Grip)",
+        "description":  "It is an upper body back exercise in which you pull a bar downward using an underhand (reverse) grip. The advantage is that this grip increases biceps involvement and can allow a stronger, more controlled pull. Important: the bar is not pulled behind the neck, but down toward the upper chest while keeping the torso stable to optimally activate the latissimus.",
+        "icon":  "fitness_center",
+        "muscles":  [
+                        "Back",
+                        "Lats",
+                        "Biceps"
+                    ]
+    },
+    {
         "id":  "lateral_neck_flexion",
         "name":  "Lateral Neck Flexion",
         "description":  "Side-to-side neck flexion. Use light resistance and slow tempo.",
@@ -295,6 +327,17 @@
                     ]
     },
     {
+        "id":  "leg_press",
+        "name":  "Leg Press",
+        "description":  "It is a lower body exercise in which you push a weighted platform away from your body using your legs. The advantage is that it provides stability and allows you to train the legs with controlled movement. Important: do not let your knees collapse inward and avoid locking them out at the top to keep tension on the muscles and reduce joint stress.",
+        "icon":  "fitness_center",
+        "muscles":  [
+                        "Quads",
+                        "Glutes",
+                        "Hamstrings"
+                    ]
+    },
+    {
         "id":  "neck_curls",
         "name":  "Neck Curls",
         "description":  "Neck flexion against resistance. Keep range controlled and avoid jerking.",
@@ -310,6 +353,17 @@
         "icon":  "assets/images/exercises/neck_extension.png",
         "muscles":  [
                         "Neck Extensors (Upper Traps, Splenius, Erector Cervicis)"
+                    ]
+    },
+    {
+        "id":  "one_arm_row_dumbbell",
+        "name":  "One-arm Row (Dumbbell)",
+        "description":  "It is an upper body back exercise in which you pull a dumbbell with one arm. The advantage is that each side works independently. Important: the dumbbell is not pulled toward the chest, but specifically toward the hip to optimally activate the latissimus.",
+        "icon":  "fitness_center",
+        "muscles":  [
+                        "Back",
+                        "Lats",
+                        "Biceps"
                     ]
     },
     {
