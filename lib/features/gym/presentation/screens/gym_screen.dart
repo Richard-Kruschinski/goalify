@@ -4408,14 +4408,11 @@ class _GymScreenState extends State<GymScreen> {
     );
   }
 
-  void _reorderDaysInSplit(String splitName, List<String> newOrder) {
-    _splitsByName[splitName] = List<String>.from(newOrder, growable: true);
-    _saveSplits();
-  }
-
   void _openSplitDetail(String splitName) {
-    // Use the exact order stored in _splitsByName for this split
-    final days = List<String>.from(_splitsByName[splitName] ?? <String>[], growable: true);
+    final orderedDays = _getOrderedDays();
+    final splitDays = _splitsByName[splitName] ?? const <String>[];
+    final daySet = splitDays.toSet();
+    final days = orderedDays.where(daySet.contains).toList(growable: false);
 
     Navigator.push(
       context,
@@ -4426,7 +4423,6 @@ class _GymScreenState extends State<GymScreen> {
           dayExerciseCount: (day) => _assignmentsByDay[day]?.length ?? 0,
           dayIconBuilder: _getDayIconWidget,
           onOpenDay: _openDayDetail,
-          onReorderDays: (newOrder) => _reorderDaysInSplit(splitName, newOrder),
         ),
       ),
     );
@@ -9102,13 +9098,12 @@ class _ColorPickerGrid extends StatelessWidget {
   }
 }
 
-class SplitDetailScreen extends StatefulWidget {
+class SplitDetailScreen extends StatelessWidget {
   final String splitName;
   final List<String> days;
   final int Function(String day) dayExerciseCount;
   final Widget Function(String day) dayIconBuilder;
   final void Function(String day) onOpenDay;
-  final void Function(List<String> newOrder) onReorderDays;
 
   const SplitDetailScreen({
     super.key,
@@ -9117,33 +9112,7 @@ class SplitDetailScreen extends StatefulWidget {
     required this.dayExerciseCount,
     required this.dayIconBuilder,
     required this.onOpenDay,
-    required this.onReorderDays,
   });
-
-  @override
-  State<SplitDetailScreen> createState() => _SplitDetailScreenState();
-}
-
-class _SplitDetailScreenState extends State<SplitDetailScreen> {
-  late List<String> days;
-
-  @override
-  void initState() {
-    super.initState();
-    days = List<String>.from(widget.days, growable: true);
-  }
-
-  void _onReorder(int oldIndex, int newIndex) {
-    if (newIndex > oldIndex) newIndex -= 1;
-    
-    setState(() {
-      final moved = days.removeAt(oldIndex);
-      days.insert(newIndex, moved);
-    });
-    
-    // Persist the new order to parent
-    widget.onReorderDays(days);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -9173,7 +9142,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      widget.splitName,
+                      splitName,
                       style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -9192,16 +9161,13 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
                         style: TextStyle(color: Color(0xFF6F7789)),
                       ),
                     )
-                  : ReorderableListView.builder(
+                  : ListView.builder(
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                       itemCount: days.length,
-                      onReorder: _onReorder,
-                      buildDefaultDragHandles: false,
                       itemBuilder: (_, i) {
                         final day = days[i];
-                        final count = widget.dayExerciseCount(day);
+                        final count = dayExerciseCount(day);
                         return Container(
-                          key: ValueKey('split_day_$day'),
                           margin: const EdgeInsets.only(bottom: 12),
                           decoration: BoxDecoration(
                             color: Colors.white,
@@ -9218,20 +9184,11 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
                             color: Colors.transparent,
                             child: InkWell(
                               borderRadius: BorderRadius.circular(16),
-                              onTap: () => widget.onOpenDay(day),
+                              onTap: () => onOpenDay(day),
                               child: Padding(
                                 padding: const EdgeInsets.all(16),
                                 child: Row(
                                   children: [
-                                    ReorderableDragStartListener(
-                                      index: i,
-                                      child: const Icon(
-                                        Icons.drag_indicator,
-                                        color: Color(0xFFD1D5DB),
-                                        size: 20,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
                                     Container(
                                       width: 48,
                                       height: 48,
@@ -9239,7 +9196,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
                                         color: const Color(0xFFFFEBEE),
                                         borderRadius: BorderRadius.circular(12),
                                       ),
-                                      child: widget.dayIconBuilder(day),
+                                      child: dayIconBuilder(day),
                                     ),
                                     const SizedBox(width: 16),
                                     Expanded(
