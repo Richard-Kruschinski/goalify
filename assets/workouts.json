@@ -126,6 +126,13 @@
     "muscles": ["Triceps", "Chest", "Shoulders"]
   },
   {
+    "id": "face_pulls",
+    "name": "Face Pulls",
+    "description": "At the cable machine, pull the rope toward your face, leading with your elbows out and squeezing your shoulder blades together. Keep your torso stable and the movement controlled.",
+    "icon": "fitness_center",
+    "muscles": ["Rear Delts", "Upper Back"]
+  },
+  {
     "id": "hammer_curls",
     "name": "Hammer Curls",
     "description": "Biceps exercise with neutral grip. Targets the brachialis.",
@@ -307,6 +314,13 @@
     "description": "Fundamental leg and glute exercise. Keep depth and neutral spine.",
     "icon": "assets/images/exercises/squat.png",
     "muscles": ["Quads", "Glutes", "Hamstrings", "Core"]
+  },
+  {
+    "id": "seated_cable_row_close_grip",
+    "name": "Seated Cable Row (Close Grip)",
+    "description": "While seated at the cable machine, pull the close-grip handle toward your upper abdomen, keeping your elbows close to your body and squeezing your shoulder blades together. Keep your back straight and the movement controlled.",
+    "icon": "fitness_center",
+    "muscles": ["Back", "Lats", "Biceps"]
   },
   {
     "id": "tbar_row",
