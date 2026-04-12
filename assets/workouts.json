@@ -378,8 +378,8 @@
                     ]
     },
     {
-        "id":  "pause_rep_benchpress",
-        "name":  "Pause Rep Benchpress",
+        "id":  "pause_rep_bench_press",
+        "name":  "Bench Press (Pause Rep)",
         "description":  "Bench press variation where you pause for about 1 second just above the chest on every rep. Keep a small gap between the bar and your chest, and do not rest the bar on the chest.",
         "icon":  "assets/images/exercises/benchpress.png",
         "muscles":  [

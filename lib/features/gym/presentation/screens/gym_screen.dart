@@ -2409,142 +2409,8 @@ class _GymScreenState extends State<GymScreen> {
       return;
     }
 
-    // Ask if tracked workouts should also be renamed
-    if (!mounted) return;
-    final renameTracked = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: const BoxDecoration(
-                  color: Color(0xFFE3F2FD),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.history,
-                  color: Color(0xFF2196F3),
-                  size: 32,
-                ),
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                'Rename tracked workouts?',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1A1D1F),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Do you want to rename all tracked workouts from "$oldDayName" to "$newName" in the calendar history?',
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF6F7789),
-                  height: 1.5,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF5F7FA),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Column(
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.check_circle, color: Color(0xFF4CAF50), size: 20),
-                        SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Yes: Update all history',
-                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Icon(Icons.cancel, color: Color(0xFFFF9800), size: 20),
-                        SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'No: Only for future entries',
-                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(ctx, false),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        side: const BorderSide(color: Color(0xFFE0E0E0)),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text(
-                        'No',
-                        style: TextStyle(
-                          color: Color(0xFF6F7789),
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.pop(ctx, true),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFE53935),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: const Text(
-                        'Yes',
-                        style: TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-
-    if (renameTracked == null) return;
-
-    // Perform the rename
-    await _performDayRename(oldDayName, newName, renameTracked);
+    // Always keep tracked history in sync with renamed workout days.
+    await _performDayRename(oldDayName, newName, true);
   }
 
   Future<void> _performDayRename(String oldName, String newName, bool renameTracked) async {
@@ -2603,18 +2469,35 @@ class _GymScreenState extends State<GymScreen> {
           }
         });
 
-        // 9. Rename in workout logs
+        // 9. Rename in workout logs and deduplicate potential day collisions.
         _logs.forEach((workoutId, logList) {
+          final Map<String, WorkoutLog> byDateAndDay = <String, WorkoutLog>{};
+
           for (int i = 0; i < logList.length; i++) {
             final log = logList[i];
-            if (log.day == oldName) {
-              logList[i] = WorkoutLog(
-                dateTime: log.dateTime,
-                day: newName,
-                sets: log.sets,
-              );
+            final normalizedDay = log.day == oldName ? newName : log.day;
+            final normalizedLog = log.day == oldName
+                ? WorkoutLog(
+                    dateTime: log.dateTime,
+                    day: newName,
+                    sets: log.sets,
+                  )
+                : log;
+
+            final dateKey = _dateKey(log.dateTime);
+            final uniqueKey = '$dateKey|$normalizedDay';
+            final existing = byDateAndDay[uniqueKey];
+
+            if (existing == null || normalizedLog.dateTime.isAfter(existing.dateTime)) {
+              byDateAndDay[uniqueKey] = normalizedLog;
             }
           }
+
+          final deduped = byDateAndDay.values.toList()
+            ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
+          logList
+            ..clear()
+            ..addAll(deduped);
         });
       }
     });
@@ -4409,10 +4292,10 @@ class _GymScreenState extends State<GymScreen> {
   }
 
   void _openSplitDetail(String splitName) {
-    final orderedDays = _getOrderedDays();
     final splitDays = _splitsByName[splitName] ?? const <String>[];
-    final daySet = splitDays.toSet();
-    final days = orderedDays.where(daySet.contains).toList(growable: false);
+    final days = splitDays
+        .where(_assignmentsByDay.containsKey)
+        .toList(growable: false);
 
     Navigator.push(
       context,
@@ -4423,9 +4306,17 @@ class _GymScreenState extends State<GymScreen> {
           dayExerciseCount: (day) => _assignmentsByDay[day]?.length ?? 0,
           dayIconBuilder: _getDayIconWidget,
           onOpenDay: _openDayDetail,
+          onReorderDays: (newOrder) => _reorderSplitDays(splitName, newOrder),
         ),
       ),
     );
+  }
+
+  void _reorderSplitDays(String splitName, List<String> newOrder) {
+    setState(() {
+      _splitsByName[splitName] = List<String>.from(newOrder, growable: true);
+    });
+    _saveSplits();
   }
 
   Future<void> _showSplitOptionsMenu(String splitName) async {
@@ -9098,12 +8989,13 @@ class _ColorPickerGrid extends StatelessWidget {
   }
 }
 
-class SplitDetailScreen extends StatelessWidget {
+class SplitDetailScreen extends StatefulWidget {
   final String splitName;
   final List<String> days;
   final int Function(String day) dayExerciseCount;
   final Widget Function(String day) dayIconBuilder;
   final void Function(String day) onOpenDay;
+  final void Function(List<String> newOrder) onReorderDays;
 
   const SplitDetailScreen({
     super.key,
@@ -9112,7 +9004,30 @@ class SplitDetailScreen extends StatelessWidget {
     required this.dayExerciseCount,
     required this.dayIconBuilder,
     required this.onOpenDay,
+    required this.onReorderDays,
   });
+
+  @override
+  State<SplitDetailScreen> createState() => _SplitDetailScreenState();
+}
+
+class _SplitDetailScreenState extends State<SplitDetailScreen> {
+  late List<String> _days;
+
+  @override
+  void initState() {
+    super.initState();
+    _days = List<String>.from(widget.days);
+  }
+
+  void _onReorder(int oldIndex, int newIndex) {
+    if (newIndex > oldIndex) newIndex -= 1;
+    setState(() {
+      final moved = _days.removeAt(oldIndex);
+      _days.insert(newIndex, moved);
+    });
+    widget.onReorderDays(List<String>.from(_days, growable: false));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -9142,7 +9057,7 @@ class SplitDetailScreen extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      splitName,
+                      widget.splitName,
                       style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -9154,20 +9069,23 @@ class SplitDetailScreen extends StatelessWidget {
               ),
             ),
             Expanded(
-              child: days.isEmpty
+              child: _days.isEmpty
                   ? const Center(
                       child: Text(
                         'No workout days in this split',
                         style: TextStyle(color: Color(0xFF6F7789)),
                       ),
                     )
-                  : ListView.builder(
+                  : ReorderableListView.builder(
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                      itemCount: days.length,
+                      itemCount: _days.length,
+                      onReorder: _onReorder,
+                      buildDefaultDragHandles: false,
                       itemBuilder: (_, i) {
-                        final day = days[i];
-                        final count = dayExerciseCount(day);
+                        final day = _days[i];
+                        final count = widget.dayExerciseCount(day);
                         return Container(
+                          key: ValueKey('split_day_${widget.splitName}_$day'),
                           margin: const EdgeInsets.only(bottom: 12),
                           decoration: BoxDecoration(
                             color: Colors.white,
@@ -9184,11 +9102,20 @@ class SplitDetailScreen extends StatelessWidget {
                             color: Colors.transparent,
                             child: InkWell(
                               borderRadius: BorderRadius.circular(16),
-                              onTap: () => onOpenDay(day),
+                              onTap: () => widget.onOpenDay(day),
                               child: Padding(
                                 padding: const EdgeInsets.all(16),
                                 child: Row(
                                   children: [
+                                    ReorderableDragStartListener(
+                                      index: i,
+                                      child: const Icon(
+                                        Icons.drag_indicator,
+                                        color: Color(0xFFD1D5DB),
+                                        size: 20,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
                                     Container(
                                       width: 48,
                                       height: 48,
@@ -9196,7 +9123,7 @@ class SplitDetailScreen extends StatelessWidget {
                                         color: const Color(0xFFFFEBEE),
                                         borderRadius: BorderRadius.circular(12),
                                       ),
-                                      child: dayIconBuilder(day),
+                                      child: widget.dayIconBuilder(day),
                                     ),
                                     const SizedBox(width: 16),
                                     Expanded(
