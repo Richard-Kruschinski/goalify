@@ -84,6 +84,7 @@ class DailyTask {
   // --- Repeat pattern (for keep tasks only) ---
   final TaskRepeatPattern repeatPattern;
   final int customDays; // used when repeatPattern == custom
+  String? repeatStartKey; // anchor date (yyyy-mm-dd) for recurring schedule
 
   // --- Streaks (for keep tasks only) ---
   int streak; // current streak length (days)
@@ -102,6 +103,7 @@ class DailyTask {
     this.keep = false,
     this.repeatPattern = TaskRepeatPattern.daily,
     this.customDays = 1,
+    this.repeatStartKey,
     this.streak = 0,
     this.bestStreak = 0,
     this.lastDoneKey,
@@ -121,6 +123,13 @@ class DailyTask {
     return repeatPattern.intervalDays;
   }
 
+  String get repeatDisplayLabel {
+    if (repeatPattern == TaskRepeatPattern.custom) {
+      return 'Every $customDays days';
+    }
+    return repeatPattern.label;
+  }
+
   Map<String, dynamic> toMap() => {
     'id': id,
     'title': title,
@@ -132,6 +141,7 @@ class DailyTask {
     'streak': streak,
     'bestStreak': bestStreak,
     'lastDoneKey': lastDoneKey,
+    'repeatStartKey': repeatStartKey,
     'repeatPattern': repeatPattern.toStorageString(),
     'customDays': customDays,
     'checklist': checklist.map((c) => c.toMap()).toList(),
@@ -148,6 +158,7 @@ class DailyTask {
     streak: (m['streak'] ?? 0) as int,
     bestStreak: (m['bestStreak'] ?? 0) as int,
     lastDoneKey: m['lastDoneKey'] as String?,
+    repeatStartKey: (m['repeatStartKey'] as String?) ?? (m['lastDoneKey'] as String?),
     repeatPattern: TaskRepeatPattern.fromString(m['repeatPattern'] as String?),
     customDays: (m['customDays'] ?? 1) as int,
     checklist: ((m['checklist'] as List?) ?? const <dynamic>[])
@@ -395,6 +406,8 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
         );
     }
 
+    await _normalizeRecurringAnchors();
+
     // MIGRATION: if any non-keep sneaked into old list, move them to TODAY bucket
     if (_keepTasks.any((t) => !t.keep)) {
       final today = _todayKey();
@@ -579,6 +592,26 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   Future<void> _saveTaskCustomIcons() async =>
       LocalStorage.saveJson(_kTaskCustomIconsKey, _taskCustomIcons);
 
+  Future<void> _normalizeRecurringAnchors() async {
+    final todayKey = _todayKey();
+    var changed = false;
+
+    for (final task in _keepTasks) {
+      if (!task.keep) continue;
+      final anchor = task.repeatStartKey;
+      if (anchor == null || anchor.isEmpty) {
+        task.repeatStartKey = (task.lastDoneKey != null && task.lastDoneKey!.isNotEmpty)
+            ? task.lastDoneKey
+            : todayKey;
+        changed = true;
+      }
+    }
+
+    if (changed) {
+      await _saveKeepTasks();
+    }
+  }
+
 
   // Keep order sync (legacy - still used to seed combined)
   void _syncOrderKeepWithTasks() {
@@ -694,26 +727,8 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   bool _isTaskActiveOnDate(DailyTask task, String dateKey) {
     // One-off tasks are always active on their scheduled date
     if (!task.keep) return true;
-    
-    // If no lastDoneKey, task is active (never completed before)
-    if (task.lastDoneKey == null || task.lastDoneKey!.isEmpty) return true;
-    
-    try {
-      // Parse dates
-      final dateParts = dateKey.split('-').map(int.parse).toList();
-      final checkDate = DateTime(dateParts[0], dateParts[1], dateParts[2]);
-      
-      final lastParts = task.lastDoneKey!.split('-').map(int.parse).toList();
-      final lastDone = DateTime(lastParts[0], lastParts[1], lastParts[2]);
-      
-      // Calculate days since last completion
-      final daysSince = checkDate.difference(lastDone).inDays;
-      
-      // Task is active if enough days have passed according to its interval
-      return daysSince >= task.effectiveIntervalDays;
-    } catch (e) {
-      return true; // If parsing fails, show the task
-    }
+
+    return _isRecurringTaskScheduledOnDate(task, dateKey);
   }
 
   /// Check if dateKey is in the past (before today)
@@ -740,14 +755,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
 
   bool _isTaskDueOnDate(DailyTask task, String dateKey) {
     if (!task.keep) return false;
-    if (task.lastDoneKey == null || task.lastDoneKey!.isEmpty) return true;
-
-    final checkDate = _tryParseDateKey(dateKey);
-    final lastDoneDate = _tryParseDateKey(task.lastDoneKey!);
-    if (checkDate == null || lastDoneDate == null) return true;
-
-    final daysSince = checkDate.difference(lastDoneDate).inDays;
-    return daysSince >= task.effectiveIntervalDays;
+    return _isRecurringTaskScheduledOnDate(task, dateKey);
   }
 
   bool _isConsecutiveCompletion(DailyTask task, String completionDateKey) {
@@ -760,6 +768,22 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
 
     final daysBetween = completionDate.difference(previousCompletionDate).inDays;
     return daysBetween == task.effectiveIntervalDays;
+  }
+
+  bool _isRecurringTaskScheduledOnDate(DailyTask task, String dateKey) {
+    final anchorKey = task.repeatStartKey;
+    if (anchorKey == null || anchorKey.isEmpty) {
+      return true;
+    }
+
+    final checkDate = _tryParseDateKey(dateKey);
+    final anchorDate = _tryParseDateKey(anchorKey);
+    if (checkDate == null || anchorDate == null) return true;
+
+    final daysSince = checkDate.difference(anchorDate).inDays;
+    if (daysSince < 0) return false;
+
+    return daysSince % task.effectiveIntervalDays == 0;
   }
 
   // ===============================================================
@@ -904,6 +928,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
         keep: t.keep,
         repeatPattern: t.repeatPattern,
         customDays: t.customDays,
+        repeatStartKey: t.repeatStartKey,
         done: t.done,
         streak: t.streak,
         bestStreak: t.bestStreak,
@@ -1613,6 +1638,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                               keep: true,
                               repeatPattern: data.repeatPattern,
                               customDays: data.customDays,
+                              repeatStartKey: _keepTasks[idx].repeatStartKey,
                               streak: _keepTasks[idx].streak,
                               bestStreak: _keepTasks[idx].bestStreak,
                               lastDoneKey: _keepTasks[idx].lastDoneKey,
@@ -1680,6 +1706,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                   subtitle: 'Copy this task right below',
                   iconColor: const Color(0xFF009688),
                   onTap: () async {
+                    String dateKeyForCopy = dateKey;
                     final copy = DailyTask(
                       id: DateTime.now().microsecondsSinceEpoch.toString(),
                       title: t.title,
@@ -1689,6 +1716,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                       keep: t.keep,
                       repeatPattern: t.repeatPattern,
                       customDays: t.customDays,
+                      repeatStartKey: t.keep ? dateKeyForCopy : null,
                       streak: t.keep ? 0 : 0,
                       bestStreak: t.keep ? 0 : 0,
                       lastDoneKey: null,
@@ -1697,7 +1725,6 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                           .map((c) => TaskChecklistItem(text: c.text, done: c.done))
                           .toList(),
                     );
-                    String dateKeyForCopy = dateKey;
                     if (t.keep) {
                       setState(() {
                         _keepTasks.add(copy);
@@ -2513,7 +2540,9 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                task.keep ? 'Recurring' : 'Daily',
+                                task.keep
+                                    ? 'Recurring · ${task.repeatDisplayLabel}'
+                                    : 'Daily',
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
@@ -2986,6 +3015,7 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
       keep: _keep,
       repeatPattern: _keep ? _repeatPattern : TaskRepeatPattern.daily,
       customDays: _keep ? _customDays : 1,
+      repeatStartKey: _keep ? widget.defaultDateKey : null,
     );
 
     Navigator.pop(context, _CreateResult(t, _keep ? null : _dateKey(_scheduledDate)));
