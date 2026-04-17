@@ -18,6 +18,7 @@ enum TaskRepeatPattern {
   daily,
   every_2_days,
   every_3_days,
+  weekly_days,
   every_7_days,
   biweekly,
   monthly,
@@ -31,8 +32,10 @@ enum TaskRepeatPattern {
         return 'Every 2 days';
       case TaskRepeatPattern.every_3_days:
         return 'Every 3 days';
-      case TaskRepeatPattern.every_7_days:
+      case TaskRepeatPattern.weekly_days:
         return 'Weekly';
+      case TaskRepeatPattern.every_7_days:
+        return 'Every 7 days';
       case TaskRepeatPattern.biweekly:
         return 'Biweekly';
       case TaskRepeatPattern.monthly:
@@ -50,6 +53,8 @@ enum TaskRepeatPattern {
         return 2;
       case TaskRepeatPattern.every_3_days:
         return 3;
+      case TaskRepeatPattern.weekly_days:
+        return 7;
       case TaskRepeatPattern.every_7_days:
         return 7;
       case TaskRepeatPattern.biweekly:
@@ -85,6 +90,7 @@ class DailyTask {
   final TaskRepeatPattern repeatPattern;
   final int customDays; // used when repeatPattern == custom
   String? repeatStartKey; // anchor date (yyyy-mm-dd) for recurring schedule
+  List<int> weeklyDays; // 1=Mon ... 7=Sun
 
   // --- Streaks (for keep tasks only) ---
   int streak; // current streak length (days)
@@ -104,12 +110,14 @@ class DailyTask {
     this.repeatPattern = TaskRepeatPattern.daily,
     this.customDays = 1,
     this.repeatStartKey,
+    List<int>? weeklyDays,
     this.streak = 0,
     this.bestStreak = 0,
     this.lastDoneKey,
     this.done = false,
     List<TaskChecklistItem>? checklist,
-  }) : checklist = checklist ?? <TaskChecklistItem>[];
+  })  : weeklyDays = (weeklyDays ?? <int>[]).where((day) => day >= 1 && day <= 7).toSet().toList(),
+        checklist = checklist ?? <TaskChecklistItem>[];
 
   bool get hasChecklist => checklist.isNotEmpty;
   int get checklistTotalCount => checklist.length;
@@ -124,10 +132,23 @@ class DailyTask {
   }
 
   String get repeatDisplayLabel {
+    if (repeatPattern == TaskRepeatPattern.weekly_days) {
+      return weeklyDaysLabel;
+    }
+    if (repeatPattern == TaskRepeatPattern.biweekly) {
+      return 'Biweekly · ${weeklyDaysLabel == 'Weekly' ? 'Mon' : weeklyDaysLabel}';
+    }
     if (repeatPattern == TaskRepeatPattern.custom) {
       return 'Every $customDays days';
     }
     return repeatPattern.label;
+  }
+
+  String get weeklyDaysLabel {
+    if (weeklyDays.isEmpty) return 'Weekly';
+    const names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final sorted = weeklyDays.toSet().toList()..sort();
+    return sorted.map((day) => names[day - 1]).join(', ');
   }
 
   Map<String, dynamic> toMap() => {
@@ -144,27 +165,37 @@ class DailyTask {
     'repeatStartKey': repeatStartKey,
     'repeatPattern': repeatPattern.toStorageString(),
     'customDays': customDays,
+    'weeklyDays': weeklyDays,
     'checklist': checklist.map((c) => c.toMap()).toList(),
   };
 
-  factory DailyTask.fromMap(Map<String, dynamic> m) => DailyTask(
-    id: m['id'] as String,
-    title: m['title'] as String,
-    description: m['description'] as String?,
-    category: m['category'] as String?,
-    points: (m['points'] ?? 1) as int,
-    keep: (m['keep'] ?? false) as bool,
-    done: (m['done'] ?? false) as bool,
-    streak: (m['streak'] ?? 0) as int,
-    bestStreak: (m['bestStreak'] ?? 0) as int,
-    lastDoneKey: m['lastDoneKey'] as String?,
-    repeatStartKey: (m['repeatStartKey'] as String?) ?? (m['lastDoneKey'] as String?),
-    repeatPattern: TaskRepeatPattern.fromString(m['repeatPattern'] as String?),
-    customDays: (m['customDays'] ?? 1) as int,
-    checklist: ((m['checklist'] as List?) ?? const <dynamic>[])
-        .map((e) => TaskChecklistItem.fromMap(Map<String, dynamic>.from(e)))
-        .toList(),
-  );
+  factory DailyTask.fromMap(Map<String, dynamic> m) {
+    final repeatPattern = TaskRepeatPattern.fromString(m['repeatPattern'] as String?);
+    final weeklyDays = ((m['weeklyDays'] as List?) ?? const <dynamic>[])
+        .map((e) => (e as num).toInt())
+        .where((day) => day >= 1 && day <= 7)
+        .toList();
+
+    return DailyTask(
+      id: m['id'] as String,
+      title: m['title'] as String,
+      description: m['description'] as String?,
+      category: m['category'] as String?,
+      points: (m['points'] ?? 1) as int,
+      keep: (m['keep'] ?? false) as bool,
+      done: (m['done'] ?? false) as bool,
+      streak: (m['streak'] ?? 0) as int,
+      bestStreak: (m['bestStreak'] ?? 0) as int,
+      lastDoneKey: m['lastDoneKey'] as String?,
+      repeatStartKey: (m['repeatStartKey'] as String?) ?? (m['lastDoneKey'] as String?),
+      repeatPattern: repeatPattern,
+      customDays: (m['customDays'] ?? 1) as int,
+      weeklyDays: weeklyDays,
+      checklist: ((m['checklist'] as List?) ?? const <dynamic>[])
+          .map((e) => TaskChecklistItem.fromMap(Map<String, dynamic>.from(e)))
+          .toList(),
+    );
+  }
 }
 
 class TaskChecklistItem {
@@ -598,6 +629,13 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
 
     for (final task in _keepTasks) {
       if (!task.keep) continue;
+      if ((task.repeatPattern == TaskRepeatPattern.weekly_days ||
+              task.repeatPattern == TaskRepeatPattern.biweekly) &&
+          task.weeklyDays.isEmpty) {
+        final anchorDate = _tryParseDateKey(task.repeatStartKey ?? '') ?? DateTime.now();
+        task.weeklyDays = <int>[anchorDate.weekday];
+        changed = true;
+      }
       final anchor = task.repeatStartKey;
       if (anchor == null || anchor.isEmpty) {
         task.repeatStartKey = (task.lastDoneKey != null && task.lastDoneKey!.isNotEmpty)
@@ -771,6 +809,36 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   }
 
   bool _isRecurringTaskScheduledOnDate(DailyTask task, String dateKey) {
+    if (task.repeatPattern == TaskRepeatPattern.weekly_days) {
+      if (task.weeklyDays.isEmpty) return true;
+      final checkDate = _tryParseDateKey(dateKey);
+      if (checkDate == null) return true;
+      return task.weeklyDays.contains(checkDate.weekday);
+    }
+
+    if (task.repeatPattern == TaskRepeatPattern.biweekly) {
+      final checkDate = _tryParseDateKey(dateKey);
+      final anchorDate = _tryParseDateKey(task.repeatStartKey ?? '');
+      if (checkDate == null || anchorDate == null) return true;
+      if (checkDate.isBefore(anchorDate)) return false;
+
+      final weekdays = task.weeklyDays.isEmpty
+          ? <int>[anchorDate.weekday]
+          : task.weeklyDays;
+      if (!weekdays.contains(checkDate.weekday)) return false;
+
+      final startOfAnchorWeek =
+          DateTime(anchorDate.year, anchorDate.month, anchorDate.day)
+              .subtract(Duration(days: anchorDate.weekday - 1));
+      final startOfCheckWeek =
+          DateTime(checkDate.year, checkDate.month, checkDate.day)
+              .subtract(Duration(days: checkDate.weekday - 1));
+      final weeksBetween =
+          startOfCheckWeek.difference(startOfAnchorWeek).inDays ~/ 7;
+
+      return weeksBetween % 2 == 0;
+    }
+
     final anchorKey = task.repeatStartKey;
     if (anchorKey == null || anchorKey.isEmpty) {
       return true;
@@ -1639,6 +1707,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                               repeatPattern: data.repeatPattern,
                               customDays: data.customDays,
                               repeatStartKey: _keepTasks[idx].repeatStartKey,
+                              weeklyDays: data.weeklyDays,
                               streak: _keepTasks[idx].streak,
                               bestStreak: _keepTasks[idx].bestStreak,
                               lastDoneKey: _keepTasks[idx].lastDoneKey,
@@ -1717,6 +1786,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                       repeatPattern: t.repeatPattern,
                       customDays: t.customDays,
                       repeatStartKey: t.keep ? dateKeyForCopy : null,
+                      weeklyDays: List<int>.from(t.weeklyDays),
                       streak: t.keep ? 0 : 0,
                       bestStreak: t.keep ? 0 : 0,
                       lastDoneKey: null,
@@ -2794,6 +2864,7 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
   // Repeat pattern fields
   TaskRepeatPattern _repeatPattern = TaskRepeatPattern.daily;
   int _customDays = 1;
+  Set<int> _weeklyDays = <int>{};
 
   late DateTime _scheduledDate;
 
@@ -2813,6 +2884,7 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
     // parse default dateKey
     final parts = widget.defaultDateKey.split('-').map(int.parse).toList();
     _scheduledDate = DateTime(parts[0], parts[1], parts[2]);
+    _weeklyDays = <int>{_scheduledDate.weekday};
   }
 
   @override
@@ -3016,6 +3088,12 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
       repeatPattern: _keep ? _repeatPattern : TaskRepeatPattern.daily,
       customDays: _keep ? _customDays : 1,
       repeatStartKey: _keep ? widget.defaultDateKey : null,
+      weeklyDays: _keep
+        ? ((_repeatPattern == TaskRepeatPattern.weekly_days ||
+            _repeatPattern == TaskRepeatPattern.biweekly)
+          ? (_weeklyDays.isEmpty ? <int>{_scheduledDate.weekday}.toList() : _weeklyDays.toList())
+          : const <int>[])
+        : const <int>[],
     );
 
     Navigator.pop(context, _CreateResult(t, _keep ? null : _dateKey(_scheduledDate)));
@@ -3307,8 +3385,17 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
                     final selected = _repeatPattern == pattern;
                     return GestureDetector(
                       onTap: () async {
+                        if (pattern == TaskRepeatPattern.weekly_days ||
+                            pattern == TaskRepeatPattern.biweekly) {
+                          setState(() {
+                            _repeatPattern = pattern;
+                            if (_weeklyDays.isEmpty) {
+                              _weeklyDays = <int>{_scheduledDate.weekday};
+                            }
+                          });
+                          return;
+                        }
                         if (pattern == TaskRepeatPattern.custom) {
-                          // Show custom days dialog
                           final customDays = await _showCustomDaysDialog();
                           if (customDays != null && customDays > 0) {
                             setState(() {
@@ -3344,6 +3431,23 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
                     );
                   }).toList(),
                 ),
+                if (_repeatPattern == TaskRepeatPattern.weekly_days ||
+                  _repeatPattern == TaskRepeatPattern.biweekly) ...[
+                  const SizedBox(height: 14),
+                  const Text(
+                    'Choose weekdays',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF6F7789),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  _WeekdayPicker(
+                    selectedDays: _weeklyDays,
+                    onChanged: (days) => setState(() => _weeklyDays = days),
+                  ),
+                ],
               ],
               if (!_keep) ...[
                 const SizedBox(height: 16),
@@ -3449,6 +3553,7 @@ class _TaskFormData {
   final bool keep;
   final TaskRepeatPattern repeatPattern;
   final int customDays;
+  final List<int> weeklyDays;
   
   const _TaskFormData({
     required this.title,
@@ -3458,6 +3563,7 @@ class _TaskFormData {
     required this.keep,
     required this.repeatPattern,
     required this.customDays,
+    required this.weeklyDays,
   });
 }
 
@@ -3480,6 +3586,7 @@ class _EditDailyTaskSheetState extends State<_EditDailyTaskSheet> {
   // Repeat pattern fields
   late TaskRepeatPattern _repeatPattern;
   late int _customDays;
+  late Set<int> _weeklyDays;
 
   static const _suggestedCategories = [
     'Gym',
@@ -3501,6 +3608,9 @@ class _EditDailyTaskSheetState extends State<_EditDailyTaskSheet> {
     _keep = widget.task.keep; // kept for completeness; not used to migrate
     _repeatPattern = widget.task.repeatPattern;
     _customDays = widget.task.customDays;
+    _weeklyDays = widget.task.weeklyDays.isNotEmpty
+      ? widget.task.weeklyDays.toSet()
+      : <int>{DateTime.now().weekday};
   }
 
   @override
@@ -3676,6 +3786,11 @@ class _EditDailyTaskSheetState extends State<_EditDailyTaskSheet> {
 
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
+
+    final weeklyDays = (_repeatPattern == TaskRepeatPattern.weekly_days ||
+        _repeatPattern == TaskRepeatPattern.biweekly)
+        ? (_weeklyDays.isEmpty ? <int>{DateTime.now().weekday}.toList() : _weeklyDays.toList())
+        : const <int>[];
     Navigator.pop(
       context,
       _TaskFormData(
@@ -3687,6 +3802,7 @@ class _EditDailyTaskSheetState extends State<_EditDailyTaskSheet> {
         keep: _keep,
         repeatPattern: _repeatPattern,
         customDays: _customDays,
+        weeklyDays: weeklyDays,
       ),
     );
   }
@@ -3934,8 +4050,17 @@ class _EditDailyTaskSheetState extends State<_EditDailyTaskSheet> {
                     final selected = _repeatPattern == pattern;
                     return GestureDetector(
                       onTap: () async {
+                        if (pattern == TaskRepeatPattern.weekly_days ||
+                            pattern == TaskRepeatPattern.biweekly) {
+                          setState(() {
+                            _repeatPattern = pattern;
+                            if (_weeklyDays.isEmpty) {
+                              _weeklyDays = <int>{DateTime.now().weekday};
+                            }
+                          });
+                          return;
+                        }
                         if (pattern == TaskRepeatPattern.custom) {
-                          // Show custom days dialog
                           final customDays = await _showCustomDaysDialog();
                           if (customDays != null && customDays > 0) {
                             setState(() {
@@ -3971,6 +4096,23 @@ class _EditDailyTaskSheetState extends State<_EditDailyTaskSheet> {
                     );
                   }).toList(),
                 ),
+                if (_repeatPattern == TaskRepeatPattern.weekly_days ||
+                  _repeatPattern == TaskRepeatPattern.biweekly) ...[
+                  const SizedBox(height: 14),
+                  const Text(
+                    'Choose weekdays',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF6F7789),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  _WeekdayPicker(
+                    selectedDays: _weeklyDays,
+                    onChanged: (days) => setState(() => _weeklyDays = days),
+                  ),
+                ],
               ],
               const SizedBox(height: 20),
               Row(
@@ -4014,6 +4156,61 @@ class _EditDailyTaskSheetState extends State<_EditDailyTaskSheet> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _WeekdayPicker extends StatelessWidget {
+  const _WeekdayPicker({
+    required this.selectedDays,
+    required this.onChanged,
+  });
+
+  final Set<int> selectedDays;
+  final ValueChanged<Set<int>> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    const labels = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: List.generate(7, (index) {
+        final day = index + 1;
+        final selected = selectedDays.contains(day);
+
+        return GestureDetector(
+          onTap: () {
+            final next = Set<int>.from(selectedDays);
+            if (selected) {
+              next.remove(day);
+            } else {
+              next.add(day);
+            }
+            onChanged(next);
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: selected ? const Color(0xFFE53935) : Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: selected ? const Color(0xFFE53935) : const Color(0xFFE0E0E0),
+                width: 1.5,
+              ),
+            ),
+            child: Text(
+              labels[index],
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: selected ? Colors.white : const Color(0xFF6F7789),
+              ),
+            ),
+          ),
+        );
+      }),
     );
   }
 }
