@@ -5807,9 +5807,17 @@ class _SetInputField {
   final TextEditingController durationController;
   final List<_SetInputField> dropsets; // Dropsets dieses Sets
 
-  _SetInputField({double weightKg = 0, int reps = 0, int? durationSeconds, List<_SetInputField>? dropsets})
+  _SetInputField({
+    double weightKg = 0,
+    int reps = 0,
+    int? durationSeconds,
+    List<_SetInputField>? dropsets,
+    bool showZeroWeight = false,
+  })
       : weightController = TextEditingController(
-            text: weightKg > 0 ? weightKg.toStringAsFixed(1) : ''),
+            text: (weightKg > 0 || (showZeroWeight && weightKg == 0))
+                ? weightKg.toStringAsFixed(1)
+                : ''),
         repsController = TextEditingController(text: reps > 0 ? reps.toString() : ''),
         durationController = TextEditingController(
             text: (durationSeconds ?? 0) > 0 ? durationSeconds.toString() : ''),
@@ -5858,7 +5866,8 @@ class _LogInputDialogState extends State<LogInputDialog> {
   bool get _allowsZeroWeight =>
       widget.workout.id == 'pull_ups' ||
       widget.workout.id == 'pull_ups_machine' ||
-      widget.workout.id == 'dips';
+      widget.workout.id == 'dips' ||
+      widget.workout.id == 'box_jumps';
 
   @override
   void initState() {
@@ -5895,6 +5904,7 @@ class _LogInputDialogState extends State<LogInputDialog> {
       reps: set.reps,
       durationSeconds: set.durationSeconds,
       dropsets: dropsets,
+      showZeroWeight: _allowsZeroWeight,
     );
   }
 
