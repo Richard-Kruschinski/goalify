@@ -563,6 +563,13 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     }
 
     await _dailyRolloverIfNeeded(); // apply rollover
+
+    // Re-apply done-at-bottom sort after loading so the order is correct
+    // even if the app restarted or the stored order got out of sync.
+    final todayKey = _todayKey();
+    _syncCombinedForDate(todayKey); // ensure _orderCombined[today] is initialised
+    _sortCompletedToBottom(todayKey);
+
     _recalcTodayPoints();
     await _saveProgressToday();
     if (mounted) setState(() {});
@@ -3164,6 +3171,8 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
       ),
     );
   }
+
+  
 
   List<Widget> _buildLimitedCycleChips() {
     const fixedOptions = <(int?, String)>[
