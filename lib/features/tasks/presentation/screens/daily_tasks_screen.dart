@@ -800,12 +800,17 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     if (!task.keep) return true;
 
     if (task.isLimited) {
+      final checkDate = _tryParseDateKey(dateKey);
+      final todayDate = _tryParseDateKey(_todayKey());
+      // For future dates, factor in today's check-off before the daily rollover runs
+      final isFutureDate = checkDate != null && todayDate != null && checkDate.isAfter(todayDate);
+      final effectiveCount = task.completedCount + (isFutureDate && task.done ? 1 : 0);
+
       // Cycle still has remaining completions → visible
-      if (task.completedCount < task.targetCount!) return true;
+      if (effectiveCount < task.targetCount!) return true;
       // Cycle done — permanent tasks vanish, recurring tasks hide until next cycle
       if (task.limitedCycleIntervalDays == null) return false;
       final cycleStart = _tryParseDateKey(task.limitedCycleStartKey ?? '');
-      final checkDate = _tryParseDateKey(dateKey);
       if (cycleStart == null || checkDate == null) return false;
       final daysSince = checkDate.difference(cycleStart).inDays;
       return daysSince >= task.limitedCycleIntervalDays!;
@@ -2708,7 +2713,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                               const SizedBox(width: 4),
                               Text(
                                 task.isLimited
-                                    ? '${task.completedCount}/${task.targetCount} days'
+                                    ? '${task.completedCount + (task.done ? 1 : 0)}/${task.targetCount} days'
                                         '${task.isLimitedRecurring ? ' · ${task.limitedCycleLabel}' : ''}'
                                     : task.keep
                                         ? 'Recurring · ${task.repeatDisplayLabel}'
@@ -3187,7 +3192,10 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
       ...fixedOptions.map((opt) {
         final selected = _limitedCycleIntervalDays == opt.$1;
         return GestureDetector(
-          onTap: () => setState(() => _limitedCycleIntervalDays = opt.$1),
+          onTap: () => setState(() {
+            _limitedCycleIntervalDays = opt.$1;
+            if (opt.$1 != null && _targetCount > opt.$1!) _targetCount = opt.$1!;
+          }),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
@@ -3214,7 +3222,10 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
         onTap: () async {
           final days = await _showCustomDaysDialog();
           if (days != null && days > 0) {
-            setState(() => _limitedCycleIntervalDays = days);
+            setState(() {
+              _limitedCycleIntervalDays = days;
+              if (_targetCount > days) _targetCount = days;
+            });
           }
         },
         child: Container(
@@ -3569,13 +3580,31 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
                         ),
                       ),
                       IconButton(
-                        onPressed: () => setState(() => _targetCount++),
+                        onPressed: _limitedCycleIntervalDays != null && _targetCount >= _limitedCycleIntervalDays!
+                            ? null
+                            : () => setState(() => _targetCount++),
                         icon: const Icon(Icons.add_circle_outline),
                         color: const Color(0xFFE53935),
                       ),
                     ],
                   ),
                 ),
+                if (_limitedCycleIntervalDays != null && _targetCount == _limitedCycleIntervalDays)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.info_outline, size: 14, color: Color(0xFFFF9800)),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            'Same as cycle length — equivalent to a daily recurring task.',
+                            style: const TextStyle(fontSize: 12, color: Color(0xFFFF9800)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 const SizedBox(height: 12),
                 // Cycle / reset options
                 const Text(
@@ -4117,7 +4146,10 @@ class _EditDailyTaskSheetState extends State<_EditDailyTaskSheet> {
       ...fixedOptions.map((opt) {
         final selected = _limitedCycleIntervalDays == opt.$1;
         return GestureDetector(
-          onTap: () => setState(() => _limitedCycleIntervalDays = opt.$1),
+          onTap: () => setState(() {
+            _limitedCycleIntervalDays = opt.$1;
+            if (opt.$1 != null && _targetCount > opt.$1!) _targetCount = opt.$1!;
+          }),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
@@ -4143,7 +4175,10 @@ class _EditDailyTaskSheetState extends State<_EditDailyTaskSheet> {
         onTap: () async {
           final days = await _showCustomDaysDialog();
           if (days != null && days > 0) {
-            setState(() => _limitedCycleIntervalDays = days);
+            setState(() {
+              _limitedCycleIntervalDays = days;
+              if (_targetCount > days) _targetCount = days;
+            });
           }
         },
         child: Container(
@@ -4372,7 +4407,9 @@ class _EditDailyTaskSheetState extends State<_EditDailyTaskSheet> {
                             ),
                           ),
                           IconButton(
-                            onPressed: () => setState(() => _targetCount++),
+                            onPressed: _limitedCycleIntervalDays != null && _targetCount >= _limitedCycleIntervalDays!
+                                ? null
+                                : () => setState(() => _targetCount++),
                             icon: const Icon(Icons.add_circle_outline),
                             color: const Color(0xFFE53935),
                           ),
@@ -4391,6 +4428,22 @@ class _EditDailyTaskSheetState extends State<_EditDailyTaskSheet> {
                     ],
                   ),
                 ),
+                if (_limitedCycleIntervalDays != null && _targetCount == _limitedCycleIntervalDays)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.info_outline, size: 14, color: Color(0xFFFF9800)),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            'Same as cycle length — equivalent to a daily recurring task.',
+                            style: const TextStyle(fontSize: 12, color: Color(0xFFFF9800)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 const SizedBox(height: 12),
                 const Text(
                   'Repeats after completion',
