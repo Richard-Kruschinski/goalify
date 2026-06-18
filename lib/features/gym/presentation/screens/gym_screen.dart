@@ -4853,7 +4853,7 @@ class _GymScreenState extends State<GymScreen> {
               Expanded(
                 child: ListView.separated(
                   itemCount: history.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  separatorBuilder: (_, _) => const SizedBox(height: 12),
                   itemBuilder: (_, i) {
                     final log = history[i];
                     final best = isBestWorkout(log);

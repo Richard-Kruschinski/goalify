@@ -426,8 +426,6 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   }
 
   String _todayKey() => _dateKey(DateTime.now());
-  String _yesterdayKey() =>
-      _dateKey(DateTime.now().subtract(const Duration(days: 1)));
   String _selectedKey() => _dateKey(_selectedDate);
 
   bool _isDoneForDate(DailyTask t, String dateKey) {
@@ -1184,12 +1182,12 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
         opaque: false,
         barrierDismissible: true,
         barrierColor: Colors.black54,
-        pageBuilder: (_, __, ___) => CongratsScreen(
+        pageBuilder: (_, _, _) => CongratsScreen(
           onSeeProgress: () {
             widget.onNavigateToTab?.call(0);
           },
         ),
-        transitionsBuilder: (_, anim, __, child) =>
+        transitionsBuilder: (_, anim, _, child) =>
             FadeTransition(opacity: anim, child: child),
       ),
     );

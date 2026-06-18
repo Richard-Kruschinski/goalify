@@ -348,7 +348,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
                   (_) => TouchedSpotIndicatorData(
                     const FlLine(color: Color(0x55E53935), strokeWidth: 1),
                     FlDotData(
-                      getDotPainter: (_, __, ___, ____) => FlDotCirclePainter(
+                      getDotPainter: (_, _, _, _) => FlDotCirclePainter(
                         radius: 5,
                         color: const Color(0xFFE53935),
                         strokeWidth: 2,
@@ -415,7 +415,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
             isStrokeCapRound: true,
             dotData: FlDotData(
               show: true,
-              getDotPainter: (_, __, ___, ____) => FlDotCirclePainter(
+              getDotPainter: (_, _, _, _) => FlDotCirclePainter(
                 radius: 3.5,
                 color: const Color(0xFFE53935),
                 strokeWidth: 1.8,
