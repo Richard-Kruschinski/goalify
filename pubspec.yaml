@@ -1,7 +1,7 @@
 name: Goalify
 description: "A social habit tracker where friends create groups, set a deadline, complete tasks for points, and compete on a live scoreboard"
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.1.0+2
 
 environment:
   sdk: ^3.8.1
@@ -48,5 +48,3 @@ flutter:
 
 
 
-Error detected in pubspec.yaml:
-No file or variants found for asset: assets/images/default_group.jpg.

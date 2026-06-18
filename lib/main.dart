@@ -9,8 +9,13 @@ import 'features/functions/pomodoro/controllers/pomodoro_controller.dart';
 import 'features/functions/distraction_blocker/controllers/distraction_blocker_controller.dart';
 import 'features/functions/music_timer/controllers/music_timer_controller.dart';
 import 'features/functions/interval_timer/controllers/interval_timer_controller.dart';
+import 'core/services/timer_live_presentation_service.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  // Initialise the MethodChannel handler for native → Flutter timer actions
+  // and notification-tap navigation.
+  TimerLivePresentationService.instance.init();
   runApp(const GoalifyApp());
 }
 
@@ -67,6 +72,29 @@ class MainNav extends StatefulWidget {
 class _MainNavState extends State<MainNav> {
   // 0:Progress, 1:Daily, 2:Gym, 3:Functions
   int currentIndex = 1;
+
+  @override
+  void initState() {
+    super.initState();
+    // Listen for notification-tap navigation requests from native side
+    TimerLivePresentationService.navigateToTabNotifier
+        .addListener(_onTimerNavigation);
+  }
+
+  @override
+  void dispose() {
+    TimerLivePresentationService.navigateToTabNotifier
+        .removeListener(_onTimerNavigation);
+    super.dispose();
+  }
+
+  void _onTimerNavigation() {
+    final tab = TimerLivePresentationService.navigateToTabNotifier.value;
+    if (tab != null && mounted) {
+      setState(() => currentIndex = tab);
+      TimerLivePresentationService.navigateToTabNotifier.value = null;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

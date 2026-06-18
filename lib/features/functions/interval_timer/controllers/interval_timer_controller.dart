@@ -2,10 +2,13 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../models/interval_timer_state.dart';
 import '../../../../core/utils/local_storage.dart';
+import '../../../../core/models/timer_live_state.dart';
+import '../../../../core/services/timer_live_presentation_service.dart';
 
 class IntervalTimerController extends ChangeNotifier {
   static const String _profilesStorageKey = 'interval_timer_profiles';
-  static const String _selectedProfileStorageKey = 'interval_timer_selected_profile';
+  static const String _selectedProfileStorageKey =
+      'interval_timer_selected_profile';
 
   // Profile
   final List<IntervalTaskProfileItem> _tasks = [];
@@ -21,16 +24,20 @@ class IntervalTimerController extends ChangeNotifier {
   int _pendingTaskIndex = 0;
 
   Timer? _timer;
+  final _liveService = TimerLivePresentationService.instance;
 
   // Getters
   List<IntervalTaskProfileItem> get tasks => List.unmodifiable(_tasks);
-  List<IntervalTimerProfile> get customProfiles => List.unmodifiable(_customProfiles);
+  List<IntervalTimerProfile> get customProfiles =>
+      List.unmodifiable(_customProfiles);
   String? get selectedProfileId => _selectedProfileId;
   String get selectedProfileName {
     if (_selectedProfileId == null) return 'No profile';
-    final profile = _customProfiles.where((p) => p.id == _selectedProfileId).firstOrNull;
+    final profile =
+        _customProfiles.where((p) => p.id == _selectedProfileId).firstOrNull;
     return profile?.name ?? 'No profile';
   }
+
   IntervalTimerPhase get currentPhase => _currentPhase;
   IntervalTimerState get timerState => _timerState;
   int get remainingSeconds => _remainingSeconds;
@@ -39,13 +46,8 @@ class IntervalTimerController extends ChangeNotifier {
   bool get hasTasks => _tasks.isNotEmpty;
   bool get isInPause => _currentPhase == IntervalTimerPhase.pause;
 
-  IntervalTimerController() {
-    _loadProfiles();
-  }
-
-  String get currentPhaseLabel {
-    return _currentPhase == IntervalTimerPhase.task ? 'Task' : 'Pause';
-  }
+  String get currentPhaseLabel =>
+      _currentPhase == IntervalTimerPhase.task ? 'Aufgabe' : 'Pause';
 
   String get formattedTime {
     final minutes = _remainingSeconds ~/ 60;
@@ -56,7 +58,7 @@ class IntervalTimerController extends ChangeNotifier {
   String get currentItemLabel {
     if (_tasks.isEmpty) return 'No profile created';
     if (_currentPhase == IntervalTimerPhase.pause) {
-      return 'Pause before ${_tasks[_pendingTaskIndex].name}';
+      return 'Pause vor ${_tasks[_pendingTaskIndex].name}';
     }
     return _tasks[_currentTaskIndex].name;
   }
@@ -74,6 +76,35 @@ class IntervalTimerController extends ChangeNotifier {
     return (1.0 - (_remainingSeconds / total)).clamp(0.0, 1.0);
   }
 
+  IntervalTimerController() {
+    _loadProfiles();
+    _liveService.registerCallbacks(
+      'interval',
+      onPause: pause,
+      onResume: resume,
+      onStop: reset,
+      onSkip: _skipCurrentPhase,
+    );
+  }
+
+  TimerLiveState _buildLiveState() => TimerLiveState(
+        timerId: 'interval',
+        timerType: TimerType.interval,
+        title: 'Interval Timer',
+        remainingSeconds: _remainingSeconds,
+        totalSeconds: totalSecondsForPhase,
+        isRunning: _timerState == IntervalTimerState.running,
+        isPaused: _timerState == IntervalTimerState.paused,
+        currentPhase: currentItemLabel,
+        currentRound: currentTaskNumber,
+        totalRounds: totalTasks,
+        additionalActions: const ['skip'],
+      );
+
+  // -----------------------------------------------------------------------
+  // Task management
+  // -----------------------------------------------------------------------
+
   void addTask({
     required String name,
     required int durationSeconds,
@@ -82,33 +113,27 @@ class IntervalTimerController extends ChangeNotifier {
     final sanitizedName = name.trim();
     final safeDuration = durationSeconds < 1 ? 1 : durationSeconds;
     final safePause = pauseBeforeSeconds < 0 ? 0 : pauseBeforeSeconds;
-
     if (sanitizedName.isEmpty) return;
     if (_timerState != IntervalTimerState.idle) return;
 
-    _tasks.add(
-      IntervalTaskProfileItem(
-        name: sanitizedName,
-        durationSeconds: safeDuration,
-        pauseBeforeSeconds: _tasks.isEmpty ? 0 : safePause,
-      ),
-    );
+    _tasks.add(IntervalTaskProfileItem(
+      name: sanitizedName,
+      durationSeconds: safeDuration,
+      pauseBeforeSeconds: _tasks.isEmpty ? 0 : safePause,
+    ));
 
     if (_tasks.length == 1) {
       _currentTaskIndex = 0;
       _currentPhase = IntervalTimerPhase.task;
       _remainingSeconds = _tasks.first.durationSeconds;
     }
-
     _selectedProfileId = null;
-
     notifyListeners();
   }
 
   void removeTask(int index) {
     if (_timerState != IntervalTimerState.idle) return;
     if (index < 0 || index >= _tasks.length) return;
-
     _tasks.removeAt(index);
     if (_tasks.isEmpty) {
       _currentTaskIndex = 0;
@@ -117,12 +142,10 @@ class IntervalTimerController extends ChangeNotifier {
       notifyListeners();
       return;
     }
-
     _currentTaskIndex = 0;
     _currentPhase = IntervalTimerPhase.task;
     _remainingSeconds = _tasks.first.durationSeconds;
     _selectedProfileId = null;
-
     if (_tasks.first.pauseBeforeSeconds != 0) {
       _tasks[0] = IntervalTaskProfileItem(
         name: _tasks[0].name,
@@ -130,7 +153,6 @@ class IntervalTimerController extends ChangeNotifier {
         pauseBeforeSeconds: 0,
       );
     }
-
     notifyListeners();
   }
 
@@ -142,7 +164,6 @@ class IntervalTimerController extends ChangeNotifier {
   }) {
     if (_timerState != IntervalTimerState.idle) return;
     if (index < 0 || index >= _tasks.length) return;
-
     final sanitizedName = name.trim();
     final safeDuration = durationSeconds < 1 ? 1 : durationSeconds;
     final safePause = pauseBeforeSeconds < 0 ? 0 : pauseBeforeSeconds;
@@ -153,14 +174,12 @@ class IntervalTimerController extends ChangeNotifier {
       durationSeconds: safeDuration,
       pauseBeforeSeconds: index == 0 ? 0 : safePause,
     );
-
     _currentTaskIndex = 0;
     _pendingTaskIndex = 0;
     _currentPauseSeconds = 0;
     _currentPhase = IntervalTimerPhase.task;
     _remainingSeconds = _tasks.first.durationSeconds;
     _selectedProfileId = null;
-
     notifyListeners();
   }
 
@@ -168,10 +187,7 @@ class IntervalTimerController extends ChangeNotifier {
     if (_timerState != IntervalTimerState.idle) return;
     if (oldIndex < 0 || oldIndex >= _tasks.length) return;
     if (newIndex < 0 || newIndex > _tasks.length) return;
-
-    if (newIndex > oldIndex) {
-      newIndex -= 1;
-    }
+    if (newIndex > oldIndex) newIndex -= 1;
     if (oldIndex == newIndex) return;
 
     final movedTask = _tasks.removeAt(oldIndex);
@@ -184,20 +200,17 @@ class IntervalTimerController extends ChangeNotifier {
         pauseBeforeSeconds: 0,
       );
     }
-
     _currentTaskIndex = 0;
     _pendingTaskIndex = 0;
     _currentPauseSeconds = 0;
     _currentPhase = IntervalTimerPhase.task;
     _remainingSeconds = _tasks.isEmpty ? 0 : _tasks.first.durationSeconds;
     _selectedProfileId = null;
-
     notifyListeners();
   }
 
   void clearProfile() {
     if (_timerState != IntervalTimerState.idle) return;
-
     _tasks.clear();
     _currentTaskIndex = 0;
     _pendingTaskIndex = 0;
@@ -211,7 +224,6 @@ class IntervalTimerController extends ChangeNotifier {
   Future<void> createCustomProfile(String profileName) async {
     if (_timerState != IntervalTimerState.idle) return;
     if (_tasks.isEmpty) return;
-
     final trimmedName = profileName.trim();
     if (trimmedName.isEmpty) return;
 
@@ -219,16 +231,13 @@ class IntervalTimerController extends ChangeNotifier {
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       name: trimmedName,
       tasks: _tasks
-          .map(
-            (task) => IntervalTaskProfileItem(
-              name: task.name,
-              durationSeconds: task.durationSeconds,
-              pauseBeforeSeconds: task.pauseBeforeSeconds,
-            ),
-          )
+          .map((task) => IntervalTaskProfileItem(
+                name: task.name,
+                durationSeconds: task.durationSeconds,
+                pauseBeforeSeconds: task.pauseBeforeSeconds,
+              ))
           .toList(),
     );
-
     _customProfiles.add(newProfile);
     _selectedProfileId = newProfile.id;
     await _saveProfiles();
@@ -238,29 +247,23 @@ class IntervalTimerController extends ChangeNotifier {
 
   Future<void> applyCustomProfile(String profileId) async {
     if (_timerState != IntervalTimerState.idle) return;
-
-    final profile = _customProfiles.where((p) => p.id == profileId).firstOrNull;
+    final profile =
+        _customProfiles.where((p) => p.id == profileId).firstOrNull;
     if (profile == null || profile.tasks.isEmpty) return;
 
     _tasks
       ..clear()
-      ..addAll(
-        profile.tasks.map(
-          (task) => IntervalTaskProfileItem(
+      ..addAll(profile.tasks.map((task) => IntervalTaskProfileItem(
             name: task.name,
             durationSeconds: task.durationSeconds,
             pauseBeforeSeconds: task.pauseBeforeSeconds,
-          ),
-        ),
-      );
-
+          )));
     _selectedProfileId = profile.id;
     _currentTaskIndex = 0;
     _pendingTaskIndex = 0;
     _currentPauseSeconds = 0;
     _currentPhase = IntervalTimerPhase.task;
     _remainingSeconds = _tasks.first.durationSeconds;
-
     await _saveSelectedProfile();
     notifyListeners();
   }
@@ -275,6 +278,10 @@ class IntervalTimerController extends ChangeNotifier {
     notifyListeners();
   }
 
+  // -----------------------------------------------------------------------
+  // Timer control
+  // -----------------------------------------------------------------------
+
   void start() {
     if (_timerState == IntervalTimerState.running) return;
     if (_tasks.isEmpty) return;
@@ -288,14 +295,16 @@ class IntervalTimerController extends ChangeNotifier {
 
     _timerState = IntervalTimerState.running;
     _startTicker();
+
+    _liveService.startLiveTimer(_buildLiveState());
     notifyListeners();
   }
 
   void pause() {
     if (_timerState != IntervalTimerState.running) return;
-
     _timer?.cancel();
     _timerState = IntervalTimerState.paused;
+    _liveService.pauseLiveTimer();
     notifyListeners();
   }
 
@@ -303,6 +312,7 @@ class IntervalTimerController extends ChangeNotifier {
     if (_timerState != IntervalTimerState.paused) return;
     _timerState = IntervalTimerState.running;
     _startTicker();
+    _liveService.resumeLiveTimer(_buildLiveState());
     notifyListeners();
   }
 
@@ -314,7 +324,15 @@ class IntervalTimerController extends ChangeNotifier {
     _currentPauseSeconds = 0;
     _currentTaskIndex = 0;
     _remainingSeconds = _tasks.isEmpty ? 0 : _tasks.first.durationSeconds;
+    _liveService.stopLiveTimer();
     notifyListeners();
+  }
+
+  // Skip current phase (go to next task or next pause)
+  void _skipCurrentPhase() {
+    if (_timerState == IntervalTimerState.idle) return;
+    _timer?.cancel();
+    _completePhase();
   }
 
   void _completePhase() {
@@ -331,18 +349,21 @@ class IntervalTimerController extends ChangeNotifier {
       _remainingSeconds = _tasks[_currentTaskIndex].durationSeconds;
       _timerState = IntervalTimerState.running;
       _startTicker();
+      _liveService.updatePhase(_buildLiveState());
       notifyListeners();
       return;
     }
 
     final nextTaskIndex = _currentTaskIndex + 1;
     if (nextTaskIndex >= _tasks.length) {
+      // All tasks done
       _timerState = IntervalTimerState.idle;
       _currentPhase = IntervalTimerPhase.task;
       _currentTaskIndex = 0;
       _pendingTaskIndex = 0;
       _currentPauseSeconds = 0;
       _remainingSeconds = _tasks.first.durationSeconds;
+      _liveService.finishLiveTimer('Alle Aufgaben abgeschlossen! Gut gemacht!');
       notifyListeners();
       return;
     }
@@ -361,6 +382,7 @@ class IntervalTimerController extends ChangeNotifier {
 
     _timerState = IntervalTimerState.running;
     _startTicker();
+    _liveService.updatePhase(_buildLiveState());
     notifyListeners();
   }
 
@@ -371,20 +393,22 @@ class IntervalTimerController extends ChangeNotifier {
         _completePhase();
         return;
       }
-
       _remainingSeconds--;
-
       if (_remainingSeconds <= 0) {
         _completePhase();
         return;
       }
-
       notifyListeners();
     });
   }
 
+  // -----------------------------------------------------------------------
+  // Persistence
+  // -----------------------------------------------------------------------
+
   Future<void> _loadProfiles() async {
-    final profilesData = await LocalStorage.loadJson(_profilesStorageKey, fallback: null);
+    final profilesData =
+        await LocalStorage.loadJson(_profilesStorageKey, fallback: null);
     if (profilesData is List) {
       _customProfiles = profilesData
           .whereType<Map<String, dynamic>>()
@@ -393,22 +417,20 @@ class IntervalTimerController extends ChangeNotifier {
           .toList();
     }
 
-    final selectedId = await LocalStorage.loadJson(_selectedProfileStorageKey, fallback: null);
+    final selectedId =
+        await LocalStorage.loadJson(_selectedProfileStorageKey, fallback: null);
     if (selectedId is String && selectedId.isNotEmpty) {
       _selectedProfileId = selectedId;
-      final selectedProfile = _customProfiles.where((p) => p.id == selectedId).firstOrNull;
+      final selectedProfile =
+          _customProfiles.where((p) => p.id == selectedId).firstOrNull;
       if (selectedProfile != null && selectedProfile.tasks.isNotEmpty) {
         _tasks
           ..clear()
-          ..addAll(
-            selectedProfile.tasks.map(
-              (task) => IntervalTaskProfileItem(
+          ..addAll(selectedProfile.tasks.map((task) => IntervalTaskProfileItem(
                 name: task.name,
                 durationSeconds: task.durationSeconds,
                 pauseBeforeSeconds: task.pauseBeforeSeconds,
-              ),
-            ),
-          );
+              )));
         _currentTaskIndex = 0;
         _currentPhase = IntervalTimerPhase.task;
         _remainingSeconds = _tasks.first.durationSeconds;

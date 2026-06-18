@@ -3,172 +3,205 @@ package com.example.goalify
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings
 import android.util.Log
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import com.example.goalify.services.AppBlockingForegroundService
 import com.example.goalify.services.AppBlockingAccessibilityService
+import com.example.goalify.services.TimerForegroundService
 import android.media.AudioManager
 import android.view.KeyEvent
-import android.os.Handler
-import android.os.Looper
 
 class MainActivity : FlutterActivity() {
-    
-    private val CHANNEL = "com.goalify/app_blocking"
+
+    private val BLOCKING_CHANNEL = "com.goalify/app_blocking"
+    private val TIMER_CHANNEL = "com.goalify/timer_service"
     private val TAG = "MainActivity"
-    
+
+    companion object {
+        // Static reference so BroadcastReceivers can invoke Flutter methods
+        // even when the activity is in the background.
+        @Volatile private var timerMethodChannel: MethodChannel? = null
+        private val mainHandler = Handler(Looper.getMainLooper())
+
+        /**
+         * Invoke a Flutter method on the timer channel from any thread.
+         * Safe to call from BroadcastReceivers. Returns false if the channel
+         * is not available (Flutter engine not running).
+         */
+        fun invokeTimerAction(method: String, arguments: Any? = null): Boolean {
+            val channel = timerMethodChannel ?: return false
+            mainHandler.post {
+                try {
+                    channel.invokeMethod(method, arguments)
+                } catch (e: Exception) {
+                    Log.w("MainActivity", "invokeTimerAction failed: ${e.message}")
+                }
+            }
+            return true
+        }
+    }
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
-            when (call.method) {
-                "startAppBlocking" -> {
-                    try {
-                        val blockedApps = call.argument<List<String>>("blockedApps") ?: emptyList()
-                        Log.d(TAG, "Starting app blocking for ${blockedApps.size} apps")
-                        
-                        // Check if accessibility service is enabled
-                        if (!isAccessibilityServiceEnabled()) {
-                            Log.w(TAG, "Accessibility service is not enabled")
-                            result.error("SERVICE_NOT_ENABLED", "Accessibility service is not enabled", null)
-                            return@setMethodCallHandler
-                        }
-                        
-                        // Check notification permission on Android 13+ (API 33+)
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                            if (!hasNotificationPermission()) {
-                                Log.w(TAG, "Notification permission is not granted")
-                                result.error("NOTIFICATION_PERMISSION_DENIED", "Notification permission is required to start foreground service", null)
+        setupAppBlockingChannel(flutterEngine)
+        setupTimerChannel(flutterEngine)
+    }
+
+    // ---------- App Blocking Channel (unchanged) ----------
+
+    private fun setupAppBlockingChannel(flutterEngine: FlutterEngine) {
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, BLOCKING_CHANNEL)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "startAppBlocking" -> {
+                        try {
+                            val blockedApps = call.argument<List<String>>("blockedApps") ?: emptyList()
+                            Log.d(TAG, "Starting app blocking for ${blockedApps.size} apps")
+                            if (!isAccessibilityServiceEnabled()) {
+                                result.error("SERVICE_NOT_ENABLED", "Accessibility service is not enabled", null)
                                 return@setMethodCallHandler
                             }
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                if (!hasNotificationPermission()) {
+                                    result.error("NOTIFICATION_PERMISSION_DENIED", "Notification permission required", null)
+                                    return@setMethodCallHandler
+                                }
+                            }
+                            AppBlockingForegroundService.startService(this, blockedApps)
+                            result.success(true)
+                        } catch (e: Exception) {
+                            result.error("START_ERROR", e.message, null)
                         }
-                        
-                        // Start the foreground service
-                        AppBlockingForegroundService.startService(this, blockedApps)
-                        
-                        result.success(true)
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Error starting app blocking: ${e.message}")
-                        result.error("START_ERROR", e.message, null)
                     }
-                }
-                
-                "stopAppBlocking" -> {
-                    try {
-                        Log.d(TAG, "Stopping app blocking")
-                        
-                        // Stop the foreground service
-                        AppBlockingForegroundService.stopService(this)
-                        
-                        result.success(true)
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Error stopping app blocking: ${e.message}")
-                        result.error("STOP_ERROR", e.message, null)
+                    "stopAppBlocking" -> {
+                        try {
+                            AppBlockingForegroundService.stopService(this)
+                            result.success(true)
+                        } catch (e: Exception) {
+                            result.error("STOP_ERROR", e.message, null)
+                        }
                     }
-                }
-                
-                "isAccessibilityServiceEnabled" -> {
-                    try {
-                        val enabled = isAccessibilityServiceEnabled()
-                        Log.d(TAG, "Accessibility service enabled: $enabled")
-                        result.success(enabled)
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Error checking accessibility service: ${e.message}")
-                        result.success(false)
+                    "isAccessibilityServiceEnabled" -> {
+                        result.success(isAccessibilityServiceEnabled())
                     }
-                }
-                
-                "openAccessibilitySettings" -> {
-                    try {
-                        Log.d(TAG, "Opening accessibility settings")
-                        val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
-                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                        startActivity(intent)
-                        result.success(true)
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Error opening accessibility settings: ${e.message}")
-                        result.error("OPEN_SETTINGS_ERROR", e.message, null)
+                    "openAccessibilitySettings" -> {
+                        try {
+                            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
+                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                            })
+                            result.success(true)
+                        } catch (e: Exception) {
+                            result.error("OPEN_SETTINGS_ERROR", e.message, null)
+                        }
                     }
+                    "getBlockedAttemptsCount" -> {
+                        result.success(AppBlockingAccessibilityService.getBlockedAttemptsCount(this))
+                    }
+                    "pauseMusic" -> {
+                        try {
+                            val fadeDurationMs = call.argument<Int>("fadeDurationMs") ?: 4000
+                            val restoreDelayMs = call.argument<Int>("restoreDelayMs") ?: 800
+                            pauseMusicWithFade(fadeDurationMs, restoreDelayMs) { paused ->
+                                result.success(paused)
+                            }
+                        } catch (e: Exception) {
+                            result.error("PAUSE_MUSIC_ERROR", e.message, null)
+                        }
+                    }
+                    "isMusicPlaying" -> {
+                        result.success(isMusicPlaying())
+                    }
+                    else -> result.notImplemented()
                 }
+            }
+    }
 
-                "getBlockedAttemptsCount" -> {
-                    try {
-                        val attempts = AppBlockingAccessibilityService.getBlockedAttemptsCount(this)
-                        result.success(attempts)
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Error getting blocked attempts count: ${e.message}")
-                        result.success(0)
+    // ---------- Timer Channel ----------
+
+    private fun setupTimerChannel(flutterEngine: FlutterEngine) {
+        val channel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, TIMER_CHANNEL)
+        timerMethodChannel = channel
+
+        channel.setMethodCallHandler { call, result ->
+            try {
+                when (call.method) {
+                    "startTimer" -> {
+                        @Suppress("UNCHECKED_CAST")
+                        val data = call.arguments as? Map<String, Any?> ?: emptyMap()
+                        TimerForegroundService.startTimer(this, data)
+                        result.success(null)
                     }
-                }
-                
-                "pauseMusic" -> {
-                    try {
-                        val fadeDurationMs = call.argument<Int>("fadeDurationMs") ?: 4000
-                        val restoreDelayMs = call.argument<Int>("restoreDelayMs") ?: 800
-                        Log.d(TAG, "Pausing music with fade (fadeDurationMs=$fadeDurationMs, restoreDelayMs=$restoreDelayMs)")
-                        pauseMusicWithFade(fadeDurationMs, restoreDelayMs) { paused ->
-                            result.success(paused)
-                        }
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Error pausing music: ${e.message}")
-                        result.error("PAUSE_MUSIC_ERROR", e.message, null)
+                    "pauseTimer" -> {
+                        TimerForegroundService.pauseTimer(this)
+                        result.success(null)
                     }
-                }
-                
-                "isMusicPlaying" -> {
-                    try {
-                        val playing = isMusicPlaying()
-                        result.success(playing)
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Error checking music status: ${e.message}")
-                        result.success(false)
+                    "resumeTimer" -> {
+                        @Suppress("UNCHECKED_CAST")
+                        val data = call.arguments as? Map<String, Any?> ?: emptyMap()
+                        val remaining = (data["remainingSeconds"] as? Number)?.toInt() ?: 0
+                        TimerForegroundService.resumeTimer(this, remaining)
+                        result.success(null)
                     }
+                    "stopTimer" -> {
+                        TimerForegroundService.stopTimer(this)
+                        result.success(null)
+                    }
+                    "finishTimer" -> {
+                        @Suppress("UNCHECKED_CAST")
+                        val data = call.arguments as? Map<String, Any?> ?: emptyMap()
+                        val message = data["message"] as? String ?: "Timer abgeschlossen"
+                        TimerForegroundService.finishTimer(this, message)
+                        result.success(null)
+                    }
+                    "updatePhase" -> {
+                        @Suppress("UNCHECKED_CAST")
+                        val data = call.arguments as? Map<String, Any?> ?: emptyMap()
+                        TimerForegroundService.updatePhase(this, data)
+                        result.success(null)
+                    }
+                    else -> result.notImplemented()
                 }
-                
-                else -> {
-                    result.notImplemented()
-                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Timer channel error [${call.method}]: ${e.message}", e)
+                result.error("TIMER_ERROR", e.message, null)
             }
         }
     }
-    
-    /**
-     * Check if our accessibility service is enabled
-     */
+
+    // Handle notification tap → bring app to front and navigate to timer screen
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        val timerType = intent.getStringExtra("timer_type")
+        if (timerType != null) {
+            // Notify Flutter to navigate to the Functions tab
+            invokeTimerAction("navigateToTimer", timerType)
+        }
+    }
+
+    // ---------- Helpers (unchanged from before) ----------
+
     private fun isAccessibilityServiceEnabled(): Boolean {
         val serviceName = "${packageName}/${AppBlockingAccessibilityService::class.java.name}"
         val enabledServices = Settings.Secure.getString(
-            contentResolver,
-            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+            contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
         ) ?: return false
-        
         return enabledServices.contains(serviceName)
     }
-    
-    /**
-     * Check if notification permission is granted (Android 13+)
-     */
+
     private fun hasNotificationPermission(): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             ContextCompat.checkSelfPermission(
-                this,
-                android.Manifest.permission.POST_NOTIFICATIONS
+                this, android.Manifest.permission.POST_NOTIFICATIONS
             ) == PackageManager.PERMISSION_GRANTED
-        } else {
-            // Before Android 13, notification permission is not required
-            true
-        }
+        } else true
     }
-    
-    /**
-     * Fade out currently playing music, pause it, then restore previous volume.
-     * Works with any media app that responds to media controls.
-     */
+
     private fun pauseMusicWithFade(
         fadeDurationMs: Int,
         restoreDelayMs: Int,
@@ -176,65 +209,57 @@ class MainActivity : FlutterActivity() {
     ) {
         try {
             val audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
-
             if (!audioManager.isMusicActive) {
-                Log.d(TAG, "No music is currently playing")
                 onComplete(false)
                 return
             }
-
             val originalVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
             if (originalVolume <= 0) {
                 sendPauseMediaKey(audioManager)
                 onComplete(true)
                 return
             }
-
             val safeFadeDuration = fadeDurationMs.coerceAtLeast(300)
             val stepDelayMs = (safeFadeDuration / originalVolume).coerceAtLeast(50)
             val handler = Handler(Looper.getMainLooper())
-
             fun fadeStep(volume: Int) {
                 if (volume > 0) {
                     audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, volume, 0)
                     handler.postDelayed({ fadeStep(volume - 1) }, stepDelayMs.toLong())
                     return
                 }
-
                 audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 0, 0)
                 sendPauseMediaKey(audioManager)
-
                 handler.postDelayed({
                     audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, originalVolume, 0)
-                    Log.d(TAG, "Music paused and volume restored to $originalVolume")
                     onComplete(true)
                 }, restoreDelayMs.coerceAtLeast(0).toLong())
             }
-
             fadeStep(originalVolume)
         } catch (e: Exception) {
-            Log.e(TAG, "Error pausing music with fade: ${e.message}")
+            Log.e(TAG, "pauseMusicWithFade error: ${e.message}")
             onComplete(false)
         }
     }
 
     private fun sendPauseMediaKey(audioManager: AudioManager) {
-        val downEvent = KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MEDIA_PAUSE)
-        val upEvent = KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_MEDIA_PAUSE)
-        audioManager.dispatchMediaKeyEvent(downEvent)
-        audioManager.dispatchMediaKeyEvent(upEvent)
+        audioManager.dispatchMediaKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MEDIA_PAUSE))
+        audioManager.dispatchMediaKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_MEDIA_PAUSE))
     }
-    
-    /**
-     * Check if music is currently playing
-     */
+
     private fun isMusicPlaying(): Boolean {
         return try {
-            val audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
-            audioManager.isMusicActive
+            (getSystemService(AUDIO_SERVICE) as AudioManager).isMusicActive
         } catch (e: Exception) {
-            Log.e(TAG, "Error checking if music is playing: ${e.message}")
             false
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        // Clear static reference when activity is destroyed
+        if (timerMethodChannel != null) {
+            timerMethodChannel = null
         }
     }
 }

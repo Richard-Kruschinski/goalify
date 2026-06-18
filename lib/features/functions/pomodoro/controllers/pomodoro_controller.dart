@@ -5,6 +5,8 @@ import '../models/pomodoro_stats.dart';
 import '../models/pomodoro_profile.dart';
 import '../services/platform_channel_service.dart';
 import '../../../../core/utils/local_storage.dart';
+import '../../../../core/models/timer_live_state.dart';
+import '../../../../core/services/timer_live_presentation_service.dart';
 
 class PomodoroController extends ChangeNotifier {
   // Current profile
@@ -18,13 +20,15 @@ class PomodoroController extends ChangeNotifier {
   int _currentCycle = 1; // 1-4
   PomodoroStats _stats = PomodoroStats();
   DateTime? _phaseEndsAt;
-  
+
   Timer? _timer;
   final PlatformChannelService _platformService = PlatformChannelService();
+  final _liveService = TimerLivePresentationService.instance;
 
   // Getters
   PomodoroProfile get currentProfile => _currentProfile;
-  List<PomodoroProfile> get allProfiles => [...PomodoroProfile.defaultProfiles, ..._customProfiles];
+  List<PomodoroProfile> get allProfiles =>
+      [...PomodoroProfile.defaultProfiles, ..._customProfiles];
   PomodoroPhase get currentPhase => _currentPhase;
   PomodoroTimerState get timerState => _timerState;
   int get remainingSeconds => _remainingSeconds;
@@ -37,11 +41,11 @@ class PomodoroController extends ChangeNotifier {
   String get currentPhaseLabel {
     switch (_currentPhase) {
       case PomodoroPhase.work:
-        return 'Work';
+        return 'Fokus';
       case PomodoroPhase.shortBreak:
-        return 'Short Break';
+        return 'Kurze Pause';
       case PomodoroPhase.longBreak:
-        return 'Long Break';
+        return 'Lange Pause';
     }
   }
 
@@ -70,7 +74,32 @@ class PomodoroController extends ChangeNotifier {
     _loadStats();
     _loadProfile();
     _loadCustomProfiles();
+    _registerLiveCallbacks();
   }
+
+  void _registerLiveCallbacks() {
+    _liveService.registerCallbacks(
+      'pomodoro',
+      onPause: pause,
+      onResume: () => start(),
+      onStop: reset,
+      onSkip: skipToNextPhase,
+    );
+  }
+
+  TimerLiveState _buildLiveState() => TimerLiveState(
+        timerId: 'pomodoro',
+        timerType: TimerType.pomodoro,
+        title: 'Pomodoro',
+        remainingSeconds: _remainingSeconds,
+        totalSeconds: totalSecondsForPhase,
+        isRunning: _timerState == PomodoroTimerState.running,
+        isPaused: _timerState == PomodoroTimerState.paused,
+        currentPhase: currentPhaseLabel,
+        currentRound: _currentCycle,
+        totalRounds: _currentProfile.cyclesBeforeLongBreak,
+        additionalActions: const ['skip'],
+      );
 
   // Load profile from local storage
   Future<void> _loadProfile() async {
@@ -84,77 +113,64 @@ class PomodoroController extends ChangeNotifier {
     }
   }
 
-  // Save profile to local storage
   Future<void> _saveProfile() async {
     await LocalStorage.saveJson('pomodoro_profile', _currentProfile.toJson());
   }
 
-  // Load custom profiles from local storage
   Future<void> _loadCustomProfiles() async {
-    final data = await LocalStorage.loadJson('pomodoro_custom_profiles', fallback: null);
+    final data =
+        await LocalStorage.loadJson('pomodoro_custom_profiles', fallback: null);
     if (data != null && data is List) {
-      _customProfiles = data.map((item) => PomodoroProfile.fromJson(item)).toList();
+      _customProfiles =
+          data.map((item) => PomodoroProfile.fromJson(item)).toList();
       notifyListeners();
     }
   }
 
-  // Save custom profiles to local storage
   Future<void> _saveCustomProfiles() async {
-    await LocalStorage.saveJson('pomodoro_custom_profiles', _customProfiles.map((p) => p.toJson()).toList());
+    await LocalStorage.saveJson('pomodoro_custom_profiles',
+        _customProfiles.map((p) => p.toJson()).toList());
   }
 
-  // Change profile
   Future<void> changeProfile(PomodoroProfile profile) async {
-    if (_timerState == PomodoroTimerState.running) {
-      return; // Don't change profile while timer is running
-    }
-
+    if (_timerState == PomodoroTimerState.running) return;
     _currentProfile = profile;
     _remainingSeconds = totalSecondsForPhase;
     await _saveProfile();
     notifyListeners();
   }
 
-  // Add custom profile
   Future<void> addCustomProfile(PomodoroProfile profile) async {
     _customProfiles.add(profile);
     await _saveCustomProfiles();
     notifyListeners();
   }
 
-  // Update custom profile
   Future<void> updateCustomProfile(PomodoroProfile updatedProfile) async {
     final index = _customProfiles.indexWhere((p) => p.id == updatedProfile.id);
     if (index == -1) return;
-
     _customProfiles[index] = updatedProfile;
-
     if (_currentProfile.id == updatedProfile.id) {
       _currentProfile = updatedProfile;
       _remainingSeconds = totalSecondsForPhase;
       await _saveProfile();
     }
-
     await _saveCustomProfiles();
     notifyListeners();
   }
 
-  // Delete custom profile
   Future<void> deleteCustomProfile(String profileId) async {
     final wasCurrentProfile = _currentProfile.id == profileId;
     _customProfiles.removeWhere((p) => p.id == profileId);
-
     if (wasCurrentProfile) {
       _currentProfile = PomodoroProfile.classic;
       _remainingSeconds = totalSecondsForPhase;
       await _saveProfile();
     }
-
     await _saveCustomProfiles();
     notifyListeners();
   }
 
-  // Load stats from local storage
   Future<void> _loadStats() async {
     final data = await LocalStorage.loadJson('pomodoro_stats', fallback: null);
     if (data != null) {
@@ -164,13 +180,10 @@ class PomodoroController extends ChangeNotifier {
     }
   }
 
-  // Check if we need to reset daily stats
   void _checkAndResetDailyStats() {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day).toIso8601String();
-    
     if (_stats.lastResetDate != today) {
-      // New day - reset daily stats but keep weekly
       _stats = _stats.copyWith(
         completedSessionsToday: 0,
         totalFocusTimeToday: 0,
@@ -181,40 +194,25 @@ class PomodoroController extends ChangeNotifier {
     }
   }
 
-  // Save stats to local storage
   Future<void> _saveStats() async {
     await LocalStorage.saveJson('pomodoro_stats', _stats.toJson());
   }
 
-  // Calculate daily focus score
   int _calculateDailyFocusScore() {
     int score = _stats.completedSessionsToday * 10;
-    
-    // Bonus for completing full cycles (4 work sessions + 1 long break)
     final fullCycles = _stats.completedSessionsToday ~/ 4;
     score += fullCycles * 5;
-    
-    // Cap at 100
     return score > 100 ? 100 : score;
   }
 
-  // Check and request notification permission (Android 13+)
   Future<bool> checkAndRequestNotificationPermission() async {
-    if (!_platformService.isAndroid) {
-      return true; // iOS doesn't need this permission for our use case
-    }
-
+    if (!_platformService.isAndroid) return true;
     final status = await Permission.notification.status;
-    if (status.isGranted) {
-      return true;
-    }
-
+    if (status.isGranted) return true;
     if (status.isDenied) {
       final result = await Permission.notification.request();
       return result.isGranted;
     }
-
-    // Permanently denied - user needs to go to settings
     return false;
   }
 
@@ -222,43 +220,21 @@ class PomodoroController extends ChangeNotifier {
   Future<bool> start() async {
     if (_timerState == PomodoroTimerState.running) return true;
 
-    // Check notification permission before starting
     if (_platformService.isAndroid) {
-      if (kDebugMode) {
-        print('Checking notification permission...');
-      }
       final hasPermission = await checkAndRequestNotificationPermission();
       if (!hasPermission) {
-        if (kDebugMode) {
-          print('Notification permission not granted');
-        }
-        // Permission not granted - return false to indicate failure
+        if (kDebugMode) print('Notification permission not granted');
         return false;
-      }
-      if (kDebugMode) {
-        print('Notification permission granted');
       }
     }
 
     _timerState = PomodoroTimerState.running;
     _phaseEndsAt = DateTime.now().add(Duration(seconds: _remainingSeconds));
-    
-    // Start app blocking if in work phase, on Android, and profile has it enabled
-    if (_currentPhase == PomodoroPhase.work && _platformService.isAndroid && _currentProfile.shouldBlockApps) {
-      if (kDebugMode) {
-        print('Starting app blocking...');
-      }
-      final blockingStarted = await _platformService.startAppBlocking();
-      if (!blockingStarted) {
-        // App blocking failed, but timer can still work
-        if (kDebugMode) {
-          print('App blocking failed to start, but timer will continue');
-        }
-      } else {
-        if (kDebugMode) {
-          print('App blocking started successfully');
-        }
-      }
+
+    if (_currentPhase == PomodoroPhase.work &&
+        _platformService.isAndroid &&
+        _currentProfile.shouldBlockApps) {
+      await _platformService.startAppBlocking();
     }
 
     _timer?.cancel();
@@ -270,6 +246,9 @@ class PomodoroController extends ChangeNotifier {
         _completePhase();
       }
     });
+
+    // Start live notification
+    await _liveService.startLiveTimer(_buildLiveState());
 
     notifyListeners();
     return true;
@@ -283,10 +262,10 @@ class PomodoroController extends ChangeNotifier {
     _timer?.cancel();
     _timerState = PomodoroTimerState.paused;
     _phaseEndsAt = null;
-    
-    // Stop app blocking when paused
+
     await _platformService.stopAppBlocking();
-    
+    await _liveService.pauseLiveTimer();
+
     notifyListeners();
   }
 
@@ -296,10 +275,10 @@ class PomodoroController extends ChangeNotifier {
     _timerState = PomodoroTimerState.idle;
     _remainingSeconds = totalSecondsForPhase;
     _phaseEndsAt = null;
-    
-    // Stop app blocking
+
     await _platformService.stopAppBlocking();
-    
+    await _liveService.stopLiveTimer();
+
     notifyListeners();
   }
 
@@ -307,48 +286,37 @@ class PomodoroController extends ChangeNotifier {
   void _completePhase() async {
     _timer?.cancel();
     _phaseEndsAt = null;
-    
-    // Stop app blocking
     await _platformService.stopAppBlocking();
 
-    // Update stats
     if (_currentPhase == PomodoroPhase.work) {
-      // Completed a work session
       _stats = _stats.copyWith(
         completedSessionsToday: _stats.completedSessionsToday + 1,
-        totalFocusTimeToday: _stats.totalFocusTimeToday + _currentProfile.workDuration,
-        totalFocusTimeThisWeek: _stats.totalFocusTimeThisWeek + _currentProfile.workDuration,
+        totalFocusTimeToday:
+            _stats.totalFocusTimeToday + _currentProfile.workDuration,
+        totalFocusTimeThisWeek:
+            _stats.totalFocusTimeThisWeek + _currentProfile.workDuration,
       );
-      
-      // Move to next cycle or break
       if (_currentCycle >= _currentProfile.cyclesBeforeLongBreak) {
-        // Time for long break
         _currentPhase = PomodoroPhase.longBreak;
         _currentCycle = 1;
-        _stats = _stats.copyWith(
-          completedCycles: _stats.completedCycles + 1,
-        );
+        _stats = _stats.copyWith(completedCycles: _stats.completedCycles + 1);
       } else {
-        // Short break
         _currentPhase = PomodoroPhase.shortBreak;
         _currentCycle++;
       }
     } else {
-      // Completed a break - back to work
       _currentPhase = PomodoroPhase.work;
     }
 
-    // Calculate and update daily focus score
-    _stats = _stats.copyWith(
-      dailyFocusScore: _calculateDailyFocusScore(),
-    );
-    
+    _stats = _stats.copyWith(dailyFocusScore: _calculateDailyFocusScore());
     await _saveStats();
 
-    // Reset timer for next phase
     _remainingSeconds = totalSecondsForPhase;
     _timerState = PomodoroTimerState.idle;
-    
+
+    // Notify live service: phase completed, timer goes idle
+    await _liveService.finishLiveTimer('Phase abgeschlossen! Nächste Phase bereit.');
+
     notifyListeners();
   }
 
@@ -372,19 +340,22 @@ class PomodoroController extends ChangeNotifier {
 
     _remainingSeconds = totalSecondsForPhase;
     _timerState = PomodoroTimerState.idle;
+
+    await _liveService.stopLiveTimer();
     notifyListeners();
   }
 
   void _syncRemainingWithClock() {
-    if (_timerState != PomodoroTimerState.running || _phaseEndsAt == null) return;
-
-    final secondsLeft = _phaseEndsAt!.difference(DateTime.now()).inSeconds;
+    if (_timerState != PomodoroTimerState.running || _phaseEndsAt == null) {
+      return;
+    }
+    final secondsLeft =
+        _phaseEndsAt!.difference(DateTime.now()).inSeconds;
     _remainingSeconds = secondsLeft > 0 ? secondsLeft : 0;
   }
 
   void syncWithSystemTime() {
     if (_timerState != PomodoroTimerState.running) return;
-
     _syncRemainingWithClock();
     if (_remainingSeconds <= 0) {
       _completePhase();
