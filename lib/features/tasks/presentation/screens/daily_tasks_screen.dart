@@ -375,6 +375,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   final Set<String> _creatineDates = <String>{};
 
   int _todayPoints = 0;
+  int _todayDoneCount = 0;
 
   // Freeze-State
   int _freezeTokens = 0;
@@ -569,6 +570,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     _sortCompletedToBottom(todayKey);
 
     _recalcTodayPoints();
+    _recalcTodayDoneCount();
     await _saveProgressToday();
     if (mounted) setState(() {});
   }
@@ -1042,6 +1044,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     await _cleanupOldHistory();
 
     _recalcTodayPoints();
+    _recalcTodayDoneCount();
     await _markRolloverDoneForToday();
     await _saveProgressToday();
     await _saveFreezeState();
@@ -1162,6 +1165,10 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
         .fold<int>(0, (s, t) => s + t.points);
   }
 
+  void _recalcTodayDoneCount() {
+    _todayDoneCount = _orderedTasksFor(_todayKey()).where((t) => t.done).length;
+  }
+
   // ===============================================================
   // Congrats: only for TODAY and only when everything (keep + today’s one-offs) is done
   // ===============================================================
@@ -1233,6 +1240,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
           _keepTasks.add(created.task..done = false);
           _orderKeep.add(created.task.id); // legacy
           _recalcTodayPoints();
+          _recalcTodayDoneCount();
         });
         await _saveKeepTasks();
         await _saveOrderKeep();
@@ -1287,6 +1295,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     setState(() {
       t.done = !t.done;
       _recalcTodayPoints();
+      _recalcTodayDoneCount();
       _sortCompletedToBottom(dateKey);
     });
 
@@ -1371,6 +1380,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
       }
       _orderCombined[dateKey]?.remove(t.id); // remove from combined
       _recalcTodayPoints();
+      _recalcTodayDoneCount();
     });
 
     if (t.keep) {
@@ -2386,7 +2396,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                           const Icon(Icons.star, size: 16, color: Color(0xFFFF9800)),
                           const SizedBox(width: 4),
                           Text(
-                            '$_todayPoints',
+                            '$_todayDoneCount',
                             style: const TextStyle(
                               fontWeight: FontWeight.w600,
                               color: Color(0xFFFF9800),
@@ -2937,6 +2947,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
         t.done = false;
       }
       _recalcTodayPoints();
+      _recalcTodayDoneCount();
     });
     await _saveKeepTasks();
     await _saveProgressToday(); // 0 points
