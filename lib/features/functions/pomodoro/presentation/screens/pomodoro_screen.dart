@@ -822,14 +822,13 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
   }
 
   void _showProfileSelector(BuildContext context) {
-    final controller = context.read<PomodoroController>();
     final parentContext = context;
-    
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => FractionallySizedBox(
+      builder: (sheetContext) => FractionallySizedBox(
         heightFactor: 0.85,
         child: Container(
           decoration: BoxDecoration(
@@ -837,72 +836,74 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
             borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           ),
           padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
+            bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
           ),
           child: SafeArea(
             top: false,
-            child: Column(
-              children: [
-                // Handle bar
-                Container(
-                  margin: const EdgeInsets.only(top: 12, bottom: 8),
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(2),
+            child: Consumer<PomodoroController>(
+              builder: (_, controller, __) => Column(
+                children: [
+                  // Handle bar
+                  Container(
+                    margin: const EdgeInsets.only(top: 12, bottom: 8),
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
-                ),
-                
-                // Header
-                Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Select Timer Profile',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.add_circle_outline),
-                        onPressed: () {
-                          Navigator.pop(context);
-                          _showCreateProfileDialog(parentContext);
-                        },
-                        color: const Color(0xFFFF6B6B),
-                      ),
-                    ],
-                  ),
-                ),
 
-                // Profile list
-                Expanded(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.only(bottom: 20),
-                    itemCount: controller.allProfiles.length,
-                    itemBuilder: (context, index) {
-                      final profile = controller.allProfiles[index];
-                      final isSelected = profile.id == controller.currentProfile.id;
-                      
-                      return _ProfileTile(
-                        profile: profile,
-                        isSelected: isSelected,
-                        onLongPress: () => _showProfileActions(parentContext, profile),
-                        onTap: () async {
-                          await controller.changeProfile(profile);
-                          if (context.mounted) {
-                            Navigator.pop(context);
-                          }
-                        },
-                      );
-                    },
+                  // Header
+                  Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Select Timer Profile',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.add_circle_outline),
+                          onPressed: () {
+                            Navigator.pop(sheetContext);
+                            _showCreateProfileDialog(parentContext);
+                          },
+                          color: const Color(0xFFFF6B6B),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+
+                  // Profile list
+                  Expanded(
+                    child: ListView.builder(
+                      padding: const EdgeInsets.only(bottom: 20),
+                      itemCount: controller.allProfiles.length,
+                      itemBuilder: (context, index) {
+                        final profile = controller.allProfiles[index];
+                        final isSelected = profile.id == controller.currentProfile.id;
+
+                        return _ProfileTile(
+                          profile: profile,
+                          isSelected: isSelected,
+                          onLongPress: () => _showProfileActions(parentContext, profile),
+                          onTap: () async {
+                            await controller.changeProfile(profile);
+                            if (sheetContext.mounted) {
+                              Navigator.pop(sheetContext);
+                            }
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
