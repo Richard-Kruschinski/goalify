@@ -617,6 +617,7 @@ class _GymScreenState extends State<GymScreen> {
   
   // Best-Set-Cache Storage
   static const _kBestSetCacheKey = 'gym_best_set_cache_v1';
+  static const _kAlternativeIdsByDayKey = 'gym_alternative_ids_by_day_v1';
 
   // Available icons (loaded dynamically from IconMapper)
   late List<IconData> _availableIcons = [];
@@ -631,9 +632,10 @@ class _GymScreenState extends State<GymScreen> {
   List<String> _orderActive = <String>[];
   final Map<String, List<String>> _orderByDay = <String, List<String>>{};
 
-  // Zuweisungen „Übung gehört zu Day“, auch ohne History
+  // Zuweisungen „Übung gehört zu Day”, auch ohne History
   final Map<String, List<String>> _assignmentsByDay = <String, List<String>>{};
   final Map<String, String> _exerciseNotesByWorkoutId = <String, String>{};
+  final Map<String, Set<String>> _alternativeWorkoutIdsByDay = <String, Set<String>>{};
 
   // Reihenfolge der Workout-Days
   List<String> _orderDays = <String>[];
@@ -811,6 +813,17 @@ class _GymScreenState extends State<GymScreen> {
         ? splitOrderRaw.map((e) => e.toString()).toList(growable: true)
         : <String>[];
 
+    // Alternative exercise IDs per day
+    final altRaw = await LocalStorage.loadJson(_kAlternativeIdsByDayKey, fallback: {});
+    _alternativeWorkoutIdsByDay.clear();
+    if (altRaw is Map) {
+      altRaw.forEach((k, v) {
+        if (v is List) {
+          _alternativeWorkoutIdsByDay[k.toString()] = v.map((e) => e.toString()).toSet();
+        }
+      });
+    }
+
     _syncOrderDaysWithAssignments();
     _syncSplitsWithDays();
   }
@@ -825,6 +838,9 @@ class _GymScreenState extends State<GymScreen> {
       LocalStorage.saveJson(_kGymViewKey, _mode.name);
   Future<void> _saveOrderActive() async =>
       LocalStorage.saveJson(_kOrderActiveKey, _orderActive);
+  Future<void> _saveAlternativeIds() async =>
+      LocalStorage.saveJson(_kAlternativeIdsByDayKey,
+          _alternativeWorkoutIdsByDay.map((k, v) => MapEntry(k, v.toList())));
   Future<void> _saveOrderByDay() async =>
       LocalStorage.saveJson(_kOrderByDayKey, _orderByDay);
   Future<void> _saveAssignments() async =>
@@ -1303,7 +1319,7 @@ class _GymScreenState extends State<GymScreen> {
     return active;
   }
 
-  void _reorderActive(int oldIndex, int newIndex) {
+  void _reorderMainOnly(int oldIndex, int newIndex) {
     if (newIndex > oldIndex) newIndex -= 1;
     final active = _getActiveWorkouts();
     if (active.isEmpty) return;
@@ -3894,7 +3910,7 @@ class _GymScreenState extends State<GymScreen> {
     return ReorderableListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       itemCount: active.length,
-      onReorder: _reorderActive,
+      onReorder: _reorderMainOnly,
       buildDefaultDragHandles: false,
       itemBuilder: (_, i) {
         final w = active[i];
@@ -4704,6 +4720,18 @@ class _GymScreenState extends State<GymScreen> {
           onToggleDoneToday: (v) => _setDayMarkedToday(day, v),
           dayColor: _resolveDayColor(day, cs),
           onPickColor: () => _pickColorForDay(day),
+          alternativeWorkoutIds: Set<String>.from(_alternativeWorkoutIdsByDay[day] ?? {}),
+          onToggleAlternative: (id) {
+            setState(() {
+              final daySet = _alternativeWorkoutIdsByDay.putIfAbsent(day, () => {});
+              if (daySet.contains(id)) {
+                daySet.remove(id);
+              } else {
+                daySet.add(id);
+              }
+            });
+            _saveAlternativeIds();
+          },
         ),
       ),
     );
@@ -5237,6 +5265,8 @@ class DayDetailScreen extends StatefulWidget {
   final Future<void> Function(bool value) onToggleDoneToday;
   final Color dayColor;
   final Future<Color?> Function() onPickColor;
+  final Set<String> alternativeWorkoutIds;
+  final void Function(String workoutId) onToggleAlternative;
 
   const DayDetailScreen({
     super.key,
@@ -5257,6 +5287,8 @@ class DayDetailScreen extends StatefulWidget {
     required this.onToggleDoneToday,
     required this.dayColor,
     required this.onPickColor,
+    required this.alternativeWorkoutIds,
+    required this.onToggleAlternative,
   });
 
   @override
@@ -5267,6 +5299,7 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
   late List<Workout> _list;
   late bool _checkedToday;
   late Color _currentColor;
+  late Set<String> _alternativeIds;
 
   @override
   void initState() {
@@ -5274,18 +5307,80 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
     _list = List<Workout>.from(widget.orderedWorkouts);
     _checkedToday = widget.isDoneToday();
     _currentColor = widget.dayColor;
+    _alternativeIds = Set<String>.from(widget.alternativeWorkoutIds);
   }
 
-  void _onReorder(int oldIndex, int newIndex) {
+  void _onReorderMain(int oldIndex, int newIndex) {
     if (newIndex > oldIndex) newIndex -= 1;
-    final item = _list.removeAt(oldIndex);
-    _list.insert(newIndex, item);
-    setState(() {});
+    final mainIds = _list
+        .where((w) => !_alternativeIds.contains(w.id))
+        .map((w) => w.id)
+        .toList();
+    final moved = mainIds.removeAt(oldIndex);
+    mainIds.insert(newIndex, moved);
+
+    final altWorkouts = _list.where((w) => _alternativeIds.contains(w.id)).toList();
+    final mainWorkouts = mainIds.map((id) => _list.firstWhere((w) => w.id == id)).toList();
+
+    setState(() {
+      _list
+        ..clear()
+        ..addAll(mainWorkouts)
+        ..addAll(altWorkouts);
+    });
     widget.onReorder(_list.map((w) => w.id).toList());
+  }
+
+  void _onReorderAlternatives(int oldIndex, int newIndex) {
+    if (newIndex > oldIndex) newIndex -= 1;
+    final altIds = _list
+        .where((w) => _alternativeIds.contains(w.id))
+        .map((w) => w.id)
+        .toList();
+    final moved = altIds.removeAt(oldIndex);
+    altIds.insert(newIndex, moved);
+
+    final mainWorkouts = _list.where((w) => !_alternativeIds.contains(w.id)).toList();
+    final altWorkouts = altIds.map((id) => _list.firstWhere((w) => w.id == id)).toList();
+
+    setState(() {
+      _list
+        ..clear()
+        ..addAll(mainWorkouts)
+        ..addAll(altWorkouts);
+    });
+    widget.onReorder(_list.map((w) => w.id).toList());
+  }
+
+  Widget _buildAlternativesDivider() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(0, 8, 0, 8),
+      child: Row(
+        children: [
+          Expanded(child: Container(height: 1, color: const Color(0xFFE5E7EB))),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 12),
+            child: Text(
+              'Alternativen',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF9CA3AF),
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+          Expanded(child: Container(height: 1, color: const Color(0xFFE5E7EB))),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final mainExercises = _list.where((w) => !_alternativeIds.contains(w.id)).toList();
+    final altExercises = _list.where((w) => _alternativeIds.contains(w.id)).toList();
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       body: SafeArea(
@@ -5295,16 +5390,41 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
             Expanded(
               child: _list.isEmpty
                   ? _buildModernEmptyDay()
-                  : ReorderableListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                      onReorder: _onReorder,
-                      buildDefaultDragHandles: false,
-                      itemCount: _list.length,
-                      itemBuilder: (_, i) {
-                        final workout = _list[i];
-                        final latest = widget.latestForDay(workout.id, widget.day);
-                        return _buildModernDayExerciseCard(workout, i, latest);
-                      },
+                  : CustomScrollView(
+                      slivers: [
+                        SliverPadding(
+                          padding: EdgeInsets.fromLTRB(20, 16, 20, altExercises.isEmpty ? 100 : 0),
+                          sliver: SliverReorderableList(
+                            itemCount: mainExercises.length,
+                            onReorder: _onReorderMain,
+                            itemBuilder: (_, i) {
+                              final workout = mainExercises[i];
+                              final latest = widget.latestForDay(workout.id, widget.day);
+                              return _buildModernDayExerciseCard(workout, i, latest);
+                            },
+                          ),
+                        ),
+                        if (altExercises.isNotEmpty) ...[
+                          SliverToBoxAdapter(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 20),
+                              child: _buildAlternativesDivider(),
+                            ),
+                          ),
+                          SliverPadding(
+                            padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
+                            sliver: SliverReorderableList(
+                              itemCount: altExercises.length,
+                              onReorder: _onReorderAlternatives,
+                              itemBuilder: (_, i) {
+                                final workout = altExercises[i];
+                                final latest = widget.latestForDay(workout.id, widget.day);
+                                return _buildModernDayExerciseCard(workout, i, latest, isAlternative: true);
+                              },
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
             ),
           ],
@@ -5417,9 +5537,9 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
     );
   }
 
-  Widget _buildModernDayExerciseCard(Workout w, int index, WorkoutLog? latest) {
+  Widget _buildModernDayExerciseCard(Workout w, int index, WorkoutLog? latest, {bool isAlternative = false}) {
     return Container(
-      key: ValueKey('day_${w.id}'),
+      key: ValueKey(isAlternative ? 'day_alt_${w.id}' : 'day_${w.id}'),
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -5658,6 +5778,80 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
                               ),
                             ),
                             Icon(
+                              Icons.chevron_right,
+                              color: Color(0xFFD1D5DB),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  Container(
+                    height: 1,
+                    color: const Color(0xFFF0F4F8),
+                  ),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        final isAlt = _alternativeIds.contains(w.id);
+                        setState(() {
+                          if (isAlt) {
+                            _alternativeIds.remove(w.id);
+                          } else {
+                            _alternativeIds.add(w.id);
+                          }
+                        });
+                        widget.onToggleAlternative(w.id);
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFF3E0),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Icon(
+                                _alternativeIds.contains(w.id)
+                                    ? Icons.star_rounded
+                                    : Icons.swap_horiz_rounded,
+                                color: const Color(0xFFFF9800),
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _alternativeIds.contains(w.id)
+                                        ? 'Als Hauptübung setzen'
+                                        : 'Als Alternative markieren',
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF1A1D1F),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    _alternativeIds.contains(w.id)
+                                        ? 'Zurück in die Hauptliste verschieben'
+                                        : 'In separaten Bereich verschieben',
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      color: Color(0xFF6F7789),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(
                               Icons.chevron_right,
                               color: Color(0xFFD1D5DB),
                             ),
