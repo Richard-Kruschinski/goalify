@@ -3282,7 +3282,7 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
       title: _titleCtrl.text.trim(),
       description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
       category: (_category?.trim().isEmpty ?? true) ? null : _category!.trim(),
-      points: effectiveKeep && !_isLimited ? _points : 0,
+      points: (effectiveKeep && !_isLimited) || (_isLimited && _limitedCycleIntervalDays != null) ? _points : 0,
       keep: effectiveKeep,
       repeatPattern: effectiveKeep && !_isLimited ? _repeatPattern : TaskRepeatPattern.daily,
       customDays: effectiveKeep && !_isLimited ? _customDays : 1,
@@ -3633,9 +3633,8 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
                   children: _buildLimitedCycleChips(),
                 ),
               ],
-              if (_keep && !_isLimited) ...[
+              if ((_keep && !_isLimited) || (_isLimited && _limitedCycleIntervalDays != null)) ...[
                 const SizedBox(height: 16),
-                // Points are only relevant for recurring tasks.
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
@@ -3934,7 +3933,7 @@ class _EditDailyTaskSheetState extends State<_EditDailyTaskSheet> {
     _titleCtrl = TextEditingController(text: widget.task.title);
     _descCtrl = TextEditingController(text: widget.task.description ?? '');
     _category = widget.task.category;
-    _points = widget.task.points;
+    _points = widget.task.points > 0 ? widget.task.points : 1;
     _keep = widget.task.keep;
     _repeatPattern = widget.task.repeatPattern;
     _customDays = widget.task.customDays;
@@ -4131,7 +4130,7 @@ class _EditDailyTaskSheetState extends State<_EditDailyTaskSheet> {
         description:
         _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
         category: (_category?.trim().isEmpty ?? true) ? null : _category!.trim(),
-        points: _keep && !isLimited ? _points : 0,
+        points: (_keep && !isLimited) || (isLimited && _limitedCycleIntervalDays != null) ? _points : 0,
         keep: _keep,
         repeatPattern: isLimited ? TaskRepeatPattern.daily : _repeatPattern,
         customDays: isLimited ? 1 : _customDays,
@@ -4470,6 +4469,60 @@ class _EditDailyTaskSheetState extends State<_EditDailyTaskSheet> {
                   runSpacing: 8,
                   children: _buildLimitedCycleChips(),
                 ),
+                if (_limitedCycleIntervalDays != null) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.star, size: 20, color: Color(0xFFFF9800)),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'Points',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF1A1D1F),
+                              ),
+                            ),
+                            const Spacer(),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFF3E0),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                '$_points',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFFFF9800),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        Slider(
+                          value: 1.0 * _points,
+                          min: 1,
+                          max: 10,
+                          divisions: 9,
+                          activeColor: const Color(0xFFE53935),
+                          inactiveColor: const Color(0xFFFFEBEE),
+                          onChanged: (v) => setState(() => _points = v.round()),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ] else ...[
               if (_keep) ...[
                 Container(
