@@ -1293,10 +1293,21 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
       return;
     }
     setState(() {
+      final wasChecked = t.done;
       t.done = !t.done;
       _recalcTodayPoints();
       _recalcTodayDoneCount();
-      _sortCompletedToBottom(dateKey);
+      if (wasChecked) {
+        // Uncheck: move task back to top so it's easily reachable
+        final ids = List<String>.from(_orderCombined[dateKey] ?? const <String>[]);
+        ids.remove(t.id);
+        ids.insert(0, t.id);
+        _orderCombined[dateKey] = ids;
+        _saveOrderCombined();
+      } else {
+        // Check: sort completed tasks to bottom
+        _sortCompletedToBottom(dateKey);
+      }
     });
 
     await _maybeToggleCreatine(t, dateKey: dateKey);
@@ -1616,20 +1627,28 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
 
   // NEW: single combined reorder across keep + one-off
   void _onReorder(int oldIndex, int newIndex, {required String dateKey}) {
-    // Block reordering for past dates
-    if (_isPastDate(dateKey, _todayKey())) {
-      return;
-    }
-    
-    _syncCombinedForDate(dateKey);
+    if (_isPastDate(dateKey, _todayKey())) return;
     if (newIndex > oldIndex) newIndex -= 1;
-    final ids = _orderCombined[dateKey] ?? <String>[];
-    if (oldIndex < 0 || oldIndex >= ids.length || newIndex < 0 || newIndex >= ids.length) {
-      return;
+
+    // Use visual IDs to avoid index mismatch with non-visible tasks in _orderCombined
+    // (e.g. weekly/biweekly tasks not scheduled for today are in _orderCombined but hidden)
+    final visibleIds = _orderedTasksFor(dateKey).map((t) => t.id).toList();
+    if (oldIndex < 0 || oldIndex >= visibleIds.length || newIndex < 0 || newIndex >= visibleIds.length) return;
+
+    final movedId = visibleIds.removeAt(oldIndex);
+    visibleIds.insert(newIndex, movedId);
+
+    // Rebuild combined order: slot in reordered visible IDs, leave non-visible IDs in place
+    final combined = List<String>.from(_orderCombined[dateKey] ?? const <String>[]);
+    final visibleSet = visibleIds.toSet();
+    int vIdx = 0;
+    for (int i = 0; i < combined.length; i++) {
+      if (visibleSet.contains(combined[i])) {
+        combined[i] = visibleIds[vIdx++];
+      }
     }
-    final moved = ids.removeAt(oldIndex);
-    ids.insert(newIndex, moved);
-    _orderCombined[dateKey] = ids;
+
+    _orderCombined[dateKey] = combined;
     _saveOrderCombined();
     setState(() {});
   }
