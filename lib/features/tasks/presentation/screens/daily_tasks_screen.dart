@@ -808,8 +808,15 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
       final isFutureDate = checkDate != null && todayDate != null && checkDate.isAfter(todayDate);
       final effectiveCount = task.completedCount + (isFutureDate && task.done ? 1 : 0);
 
-      // Cycle still has remaining completions → visible
-      if (effectiveCount < task.targetCount!) return true;
+      // Cycle still has remaining completions → visible (optionally filtered by weekday)
+      if (effectiveCount < task.targetCount!) {
+        if (task.weeklyDays.isNotEmpty &&
+            checkDate != null &&
+            !task.weeklyDays.contains(checkDate.weekday)) {
+          return false;
+        }
+        return true;
+      }
       // Cycle done — permanent tasks vanish, recurring tasks hide until next cycle
       if (task.limitedCycleIntervalDays == null) return false;
       final cycleStart = _tryParseDateKey(task.limitedCycleStartKey ?? '');
@@ -3008,6 +3015,12 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
 
   late DateTime _scheduledDate;
 
+  // Max targetCount when specific weekdays are chosen: weekdays × weeks-in-cycle
+  int get _weekdayMaxCount {
+    final weeksInCycle = ((_limitedCycleIntervalDays ?? 7) / 7).floor().clamp(1, 999);
+    return _weeklyDays.length * weeksInCycle;
+  }
+
   static const _suggestedCategories = [
     'Gym',
     'Work',
@@ -3306,12 +3319,14 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
       repeatPattern: effectiveKeep && !_isLimited ? _repeatPattern : TaskRepeatPattern.daily,
       customDays: effectiveKeep && !_isLimited ? _customDays : 1,
       repeatStartKey: effectiveKeep ? widget.defaultDateKey : null,
-      weeklyDays: effectiveKeep && !_isLimited
-        ? ((_repeatPattern == TaskRepeatPattern.weekly_days ||
-            _repeatPattern == TaskRepeatPattern.biweekly)
-          ? (_weeklyDays.isEmpty ? <int>{_scheduledDate.weekday}.toList() : _weeklyDays.toList())
-          : const <int>[])
-        : const <int>[],
+      weeklyDays: _isLimited && _limitedCycleIntervalDays != null
+        ? _weeklyDays.toList()
+        : (effectiveKeep && !_isLimited
+          ? ((_repeatPattern == TaskRepeatPattern.weekly_days ||
+              _repeatPattern == TaskRepeatPattern.biweekly)
+            ? (_weeklyDays.isEmpty ? <int>{_scheduledDate.weekday}.toList() : _weeklyDays.toList())
+            : const <int>[])
+          : const <int>[]),
       targetCount: _isLimited ? _targetCount : null,
       completedCount: 0,
       limitedCycleIntervalDays: _isLimited ? _limitedCycleIntervalDays : null,
@@ -3532,7 +3547,7 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
                     ),
                     Expanded(
                       child: GestureDetector(
-                        onTap: () => setState(() { _keep = false; _isLimited = true; }),
+                        onTap: () => setState(() { _keep = false; _isLimited = true; _weeklyDays = {}; }),
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           decoration: BoxDecoration(
@@ -3610,7 +3625,9 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
                         ),
                       ),
                       IconButton(
-                        onPressed: _limitedCycleIntervalDays != null && _targetCount >= _limitedCycleIntervalDays!
+                        onPressed: (_weeklyDays.isNotEmpty && _weeklyDays.length < 7
+                            ? _targetCount >= _weekdayMaxCount
+                            : _limitedCycleIntervalDays != null && _targetCount >= _limitedCycleIntervalDays!)
                             ? null
                             : () => setState(() => _targetCount++),
                         icon: const Icon(Icons.add_circle_outline),
@@ -3619,7 +3636,8 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
                     ],
                   ),
                 ),
-                if (_limitedCycleIntervalDays != null && _targetCount == _limitedCycleIntervalDays)
+                if (_limitedCycleIntervalDays != null && _targetCount == _limitedCycleIntervalDays &&
+                    !(_weeklyDays.isNotEmpty && _weeklyDays.length < 7))
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
                     child: Row(
@@ -3651,6 +3669,34 @@ class _CreateDailyTaskSheetState extends State<_CreateDailyTaskSheet> {
                   runSpacing: 8,
                   children: _buildLimitedCycleChips(),
                 ),
+                if (_limitedCycleIntervalDays != null) ...[
+                  const SizedBox(height: 14),
+                  const Text(
+                    'Choose weekdays',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF6F7789),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Optional – leave empty to show every day',
+                    style: TextStyle(fontSize: 12, color: Color(0xFF9E9E9E)),
+                  ),
+                  const SizedBox(height: 8),
+                  _WeekdayPicker(
+                    selectedDays: _weeklyDays,
+                    onChanged: (days) => setState(() {
+                      _weeklyDays = days;
+                      if (days.isNotEmpty && days.length < 7) {
+                        final weeksInCycle = ((_limitedCycleIntervalDays ?? 7) / 7).floor().clamp(1, 999);
+                        final newMax = days.length * weeksInCycle;
+                        if (_targetCount > newMax) _targetCount = newMax;
+                      }
+                    }),
+                  ),
+                ],
               ],
               if ((_keep && !_isLimited) || (_isLimited && _limitedCycleIntervalDays != null)) ...[
                 const SizedBox(height: 16),
@@ -3936,6 +3982,12 @@ class _EditDailyTaskSheetState extends State<_EditDailyTaskSheet> {
   int _targetCount = 2;
   int? _limitedCycleIntervalDays;
 
+  // Max targetCount when specific weekdays are chosen: weekdays × weeks-in-cycle
+  int get _weekdayMaxCount {
+    final weeksInCycle = ((_limitedCycleIntervalDays ?? 7) / 7).floor().clamp(1, 999);
+    return _weeklyDays.length * weeksInCycle;
+  }
+
   static const _suggestedCategories = [
     'Gym',
     'Work',
@@ -3958,7 +4010,7 @@ class _EditDailyTaskSheetState extends State<_EditDailyTaskSheet> {
     _customDays = widget.task.customDays;
     _weeklyDays = widget.task.weeklyDays.isNotEmpty
       ? widget.task.weeklyDays.toSet()
-      : <int>{DateTime.now().weekday};
+      : (widget.task.isLimited ? <int>{} : <int>{DateTime.now().weekday});
     _targetCount = widget.task.targetCount ?? 2;
     _limitedCycleIntervalDays = widget.task.limitedCycleIntervalDays;
   }
@@ -4138,10 +4190,12 @@ class _EditDailyTaskSheetState extends State<_EditDailyTaskSheet> {
     if (!_formKey.currentState!.validate()) return;
 
     final isLimited = widget.task.isLimited;
-    final weeklyDays = (!isLimited && (_repeatPattern == TaskRepeatPattern.weekly_days ||
-        _repeatPattern == TaskRepeatPattern.biweekly))
-        ? (_weeklyDays.isEmpty ? <int>{DateTime.now().weekday}.toList() : _weeklyDays.toList())
-        : const <int>[];
+    final weeklyDays = isLimited && _limitedCycleIntervalDays != null
+        ? _weeklyDays.toList()
+        : (!isLimited && (_repeatPattern == TaskRepeatPattern.weekly_days ||
+            _repeatPattern == TaskRepeatPattern.biweekly))
+          ? (_weeklyDays.isEmpty ? <int>{DateTime.now().weekday}.toList() : _weeklyDays.toList())
+          : const <int>[];
     Navigator.pop(
       context,
       _TaskFormData(
@@ -4436,7 +4490,9 @@ class _EditDailyTaskSheetState extends State<_EditDailyTaskSheet> {
                             ),
                           ),
                           IconButton(
-                            onPressed: _limitedCycleIntervalDays != null && _targetCount >= _limitedCycleIntervalDays!
+                            onPressed: (_weeklyDays.isNotEmpty && _weeklyDays.length < 7
+                                ? _targetCount >= _weekdayMaxCount
+                                : _limitedCycleIntervalDays != null && _targetCount >= _limitedCycleIntervalDays!)
                                 ? null
                                 : () => setState(() => _targetCount++),
                             icon: const Icon(Icons.add_circle_outline),
@@ -4457,7 +4513,8 @@ class _EditDailyTaskSheetState extends State<_EditDailyTaskSheet> {
                     ],
                   ),
                 ),
-                if (_limitedCycleIntervalDays != null && _targetCount == _limitedCycleIntervalDays)
+                if (_limitedCycleIntervalDays != null && _targetCount == _limitedCycleIntervalDays &&
+                    !(_weeklyDays.isNotEmpty && _weeklyDays.length < 7))
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
                     child: Row(
@@ -4489,6 +4546,32 @@ class _EditDailyTaskSheetState extends State<_EditDailyTaskSheet> {
                   children: _buildLimitedCycleChips(),
                 ),
                 if (_limitedCycleIntervalDays != null) ...[
+                  const SizedBox(height: 14),
+                  const Text(
+                    'Choose weekdays',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF6F7789),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Optional – leave empty to show every day',
+                    style: TextStyle(fontSize: 12, color: Color(0xFF9E9E9E)),
+                  ),
+                  const SizedBox(height: 8),
+                  _WeekdayPicker(
+                    selectedDays: _weeklyDays,
+                    onChanged: (days) => setState(() {
+                      _weeklyDays = days;
+                      if (days.isNotEmpty && days.length < 7) {
+                        final weeksInCycle = ((_limitedCycleIntervalDays ?? 7) / 7).floor().clamp(1, 999);
+                        final newMax = days.length * weeksInCycle;
+                        if (_targetCount > newMax) _targetCount = newMax;
+                      }
+                    }),
+                  ),
                   const SizedBox(height: 16),
                   Container(
                     padding: const EdgeInsets.all(16),
