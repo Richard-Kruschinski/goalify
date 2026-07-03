@@ -8,7 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../../../core/utils/local_storage.dart'; // saveJson/loadJson
 import '../../../../core/utils/icon_mapper.dart'; // IconMapper für zentrale Icon-Verwaltung
-import '../../../tasks/presentation/screens/daily_tasks_screen.dart'; // for markGymTaskDoneForToday
+import '../../../tasks/domain/usecases/daily_tasks_helper.dart'; // for markGymTaskDoneForToday
 
 enum ViewMode { byExercise, byDay, bySplit }
 

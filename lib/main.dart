@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'features/progress/presentation/screens/progress_screen.dart';
-import 'features/tasks/presentation/screens/daily_tasks_screen.dart';
+import 'features/tasks/presentation/pages/daily_tasks_screen.dart';
 import 'features/gym/presentation/screens/gym_screen.dart';
 import 'features/functions/presentation/screens/functions_screen.dart';
 import 'features/functions/pomodoro/controllers/pomodoro_controller.dart';
