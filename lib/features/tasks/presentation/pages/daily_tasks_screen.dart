@@ -8,7 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import '../../../../core/utils/icon_mapper.dart'; // IconMapper für zentrale Icon-Verwaltung
 import '../../data/repositories/tasks_repository_impl.dart';
 import '../../domain/repositories/tasks_repository.dart';
-import '../../../progress/presentation/screens/congrats_screen.dart';
+import '../../../progress/presentation/pages/congrats_screen.dart';
 import '../../data/models/daily_task.dart';
 import '../widgets/create_daily_task_sheet.dart';
 import '../widgets/edit_daily_task_sheet.dart';

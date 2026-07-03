@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
-import 'features/progress/presentation/screens/progress_screen.dart';
+import 'features/progress/presentation/pages/progress_screen.dart';
 import 'features/tasks/presentation/pages/daily_tasks_screen.dart';
 import 'features/gym/presentation/pages/gym_screen.dart';
-import 'features/functions/presentation/screens/functions_screen.dart';
-import 'features/functions/pomodoro/controllers/pomodoro_controller.dart';
-import 'features/functions/distraction_blocker/controllers/distraction_blocker_controller.dart';
-import 'features/functions/music_timer/controllers/music_timer_controller.dart';
-import 'features/functions/interval_timer/controllers/interval_timer_controller.dart';
+import 'features/functions/presentation/pages/functions_screen.dart';
+import 'features/functions/pomodoro/presentation/controllers/pomodoro_controller.dart';
+import 'features/functions/distraction_blocker/presentation/controllers/distraction_blocker_controller.dart';
+import 'features/functions/music_timer/presentation/controllers/music_timer_controller.dart';
+import 'features/functions/interval_timer/presentation/controllers/interval_timer_controller.dart';
 import 'core/services/timer_live_presentation_service.dart';
 
 void main() {
