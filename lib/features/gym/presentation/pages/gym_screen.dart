@@ -6,10 +6,11 @@ import 'package:flutter/services.dart'; // rootBundle, SystemChrome, DeviceOrien
 import 'package:fl_chart/fl_chart.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
-import '../../../../core/utils/local_storage.dart'; // saveJson/loadJson
 import '../../../../core/utils/icon_mapper.dart'; // IconMapper für zentrale Icon-Verwaltung
 import '../../../tasks/domain/usecases/daily_tasks_helper.dart'; // for markGymTaskDoneForToday
 import '../../data/models/gym_models.dart';
+import '../../data/repositories/gym_repository_impl.dart';
+import '../../domain/repositories/gym_repository.dart';
 import '../../domain/usecases/best_set_cache.dart';
 import 'day_detail_screen.dart';
 import 'full_screen_chart_page.dart';
@@ -253,27 +254,10 @@ class GymScreen extends StatefulWidget {
 }
 
 class _GymScreenState extends State<GymScreen> {
-  // Storage Keys
-  static const _kGymLogsKey = 'gym_logs_v1';
-  static const _kGymViewKey = 'gym_view_mode_v1';
-  static const _kOrderActiveKey = 'gym_order_by_exercise_v1';
-  static const _kOrderByDayKey = 'gym_order_by_day_v1';
-  static const _kAssignmentsKey = 'gym_assignments_by_day_v1';
-  static const _kOrderDaysKey = 'gym_order_days_v1';
-  static const _kExerciseNotesKey = 'gym_exercise_notes_v1';
-  static const _kSplitsKey = 'gym_splits_v1';
-  static const _kSplitOrderKey = 'gym_split_order_v1';
-
-  // Kalender-Storage (Map<yyyy-MM-dd, Set<DayName>>)
-  static const _kCalendarKey = 'gym_calendar_v1';
-  static const _kDayColorsKey = 'gym_day_colors_v1';
-  static const _kDayIconsKey = 'gym_day_icons_v1';
-  static const _kDayCustomIconsKey = 'gym_day_custom_icons_v1';
-  static const _kCreatineKey = 'gym_creatine_intake_v1';
-  
-  // Best-Set-Cache Storage
-  static const _kBestSetCacheKey = 'gym_best_set_cache_v1';
-  static const _kAlternativeIdsByDayKey = 'gym_alternative_ids_by_day_v1';
+  // All persistence goes through the repository abstraction so the storage
+  // backend (local today, database/server later) can be swapped without
+  // touching this screen.
+  final GymRepository _repo = GymRepositoryImpl();
 
   // Available icons (loaded dynamically from IconMapper)
   late List<IconData> _availableIcons = [];
@@ -348,8 +332,7 @@ class _GymScreenState extends State<GymScreen> {
   // ----------------------------- Persistenter State -----------------------------
   Future<void> _loadState() async {
     // View mode
-    final vm =
-    await LocalStorage.loadJson(_kGymViewKey, fallback: 'byExercise');
+    final vm = await _repo.loadViewMode();
     if (vm == 'byDay') {
       _mode = ViewMode.byDay;
     } else if (vm == 'bySplit') {
@@ -359,203 +342,111 @@ class _GymScreenState extends State<GymScreen> {
     }
 
     // Logs
-    final raw = await LocalStorage.loadJson(_kGymLogsKey, fallback: {});
-    _logs.clear();
-    if (raw is Map) {
-      raw.forEach((key, value) {
-        final List list = value as List? ?? [];
-        final parsed = list
-            .map((e) => WorkoutLog.fromMap(Map<String, dynamic>.from(e)))
-            .toList()
-          ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
-        _logs[key as String] = parsed;
-      });
-    }
+    _logs
+      ..clear()
+      ..addAll(await _repo.loadLogs());
 
     // Order exercise
-    final orderActiveRaw =
-    await LocalStorage.loadJson(_kOrderActiveKey, fallback: []);
-    _orderActive = (orderActiveRaw is List)
-        ? orderActiveRaw.map((e) => e.toString()).toList()
-        : <String>[];
+    _orderActive = await _repo.loadOrderActive();
 
     // Order per day
-    final orderByDayRaw =
-    await LocalStorage.loadJson(_kOrderByDayKey, fallback: {});
-    _orderByDay.clear();
-    if (orderByDayRaw is Map) {
-      orderByDayRaw.forEach((k, v) {
-        if (v is List) {
-          _orderByDay[k.toString()] =
-              v.map((e) => e.toString()).toList(growable: true);
-        }
-      });
-    }
+    _orderByDay
+      ..clear()
+      ..addAll(await _repo.loadOrderByDay());
 
     // Assignments
-    final assignmentsRaw =
-    await LocalStorage.loadJson(_kAssignmentsKey, fallback: {});
-    _assignmentsByDay.clear();
-    if (assignmentsRaw is Map) {
-      assignmentsRaw.forEach((k, v) {
-        if (v is List) {
-          _assignmentsByDay[k.toString()] =
-              v.map((e) => e.toString()).toList(growable: true);
-        }
-      });
-    }
+    _assignmentsByDay
+      ..clear()
+      ..addAll(await _repo.loadAssignments());
 
     // Exercise notes
-    final notesRaw = await LocalStorage.loadJson(_kExerciseNotesKey, fallback: {});
-    _exerciseNotesByWorkoutId.clear();
-    if (notesRaw is Map) {
-      notesRaw.forEach((k, v) {
-        final note = v.toString().trim();
-        if (note.isNotEmpty) {
-          _exerciseNotesByWorkoutId[k.toString()] = note;
-        }
-      });
-    }
+    _exerciseNotesByWorkoutId
+      ..clear()
+      ..addAll(await _repo.loadExerciseNotes());
 
     // Day colors
-    final colorsRaw = await LocalStorage.loadJson(_kDayColorsKey, fallback: {});
-    _dayColors.clear();
-    if (colorsRaw is Map) {
-      colorsRaw.forEach((k, v) {
-        if (v is num) _dayColors[k.toString()] = v.toInt();
-      });
-    }
+    _dayColors
+      ..clear()
+      ..addAll(await _repo.loadDayColors());
 
     // Day icons
-    final iconsRaw = await LocalStorage.loadJson(_kDayIconsKey, fallback: {});
-    _dayIcons.clear();
-    if (iconsRaw is Map) {
-      iconsRaw.forEach((k, v) {
-        if (v is num) _dayIcons[k.toString()] = v.toInt();
-      });
-    }
+    _dayIcons
+      ..clear()
+      ..addAll(await _repo.loadDayIcons());
 
     // Day custom icons
-    final customIconsRaw = await LocalStorage.loadJson(_kDayCustomIconsKey, fallback: {});
-    _dayCustomIcons.clear();
-    if (customIconsRaw is Map) {
-      customIconsRaw.forEach((k, v) {
-        _dayCustomIcons[k.toString()] = v.toString();
-      });
-    }
+    _dayCustomIcons
+      ..clear()
+      ..addAll(await _repo.loadDayCustomIcons());
 
     // Order der Days
-    final orderDaysRaw =
-    await LocalStorage.loadJson(_kOrderDaysKey, fallback: []);
-    _orderDays = (orderDaysRaw is List)
-        ? orderDaysRaw.map((e) => e.toString()).toList()
-        : <String>[];
+    _orderDays = await _repo.loadOrderDays();
 
     // Splits
-    final splitsRaw = await LocalStorage.loadJson(_kSplitsKey, fallback: {});
-    _splitsByName.clear();
-    if (splitsRaw is Map) {
-      splitsRaw.forEach((k, v) {
-        if (v is List) {
-          _splitsByName[k.toString()] =
-              v.map((e) => e.toString()).toList(growable: true);
-        }
-      });
-    }
+    _splitsByName
+      ..clear()
+      ..addAll(await _repo.loadSplits());
 
-    final splitOrderRaw =
-    await LocalStorage.loadJson(_kSplitOrderKey, fallback: []);
-    _splitOrder = (splitOrderRaw is List)
-        ? splitOrderRaw.map((e) => e.toString()).toList(growable: true)
-        : <String>[];
+    _splitOrder = await _repo.loadSplitOrder();
 
     // Alternative exercise IDs per day
-    final altRaw = await LocalStorage.loadJson(_kAlternativeIdsByDayKey, fallback: {});
-    _alternativeWorkoutIdsByDay.clear();
-    if (altRaw is Map) {
-      altRaw.forEach((k, v) {
-        if (v is List) {
-          _alternativeWorkoutIdsByDay[k.toString()] = v.map((e) => e.toString()).toSet();
-        }
-      });
-    }
+    _alternativeWorkoutIdsByDay
+      ..clear()
+      ..addAll(await _repo.loadAlternativeIdsByDay());
 
     _syncOrderDaysWithAssignments();
     _syncSplitsWithDays();
   }
 
   Future<void> _saveLogs() async {
-    final encoded =
-    _logs.map((k, v) => MapEntry(k, v.map((e) => e.toMap()).toList()));
-    await LocalStorage.saveJson(_kGymLogsKey, encoded);
+    await _repo.saveLogs(_logs);
   }
 
-  Future<void> _saveViewMode() async =>
-      LocalStorage.saveJson(_kGymViewKey, _mode.name);
+  Future<void> _saveViewMode() async => _repo.saveViewMode(_mode.name);
   Future<void> _saveOrderActive() async =>
-      LocalStorage.saveJson(_kOrderActiveKey, _orderActive);
+      _repo.saveOrderActive(_orderActive);
   Future<void> _saveAlternativeIds() async =>
-      LocalStorage.saveJson(_kAlternativeIdsByDayKey,
-          _alternativeWorkoutIdsByDay.map((k, v) => MapEntry(k, v.toList())));
-  Future<void> _saveOrderByDay() async =>
-      LocalStorage.saveJson(_kOrderByDayKey, _orderByDay);
+      _repo.saveAlternativeIdsByDay(_alternativeWorkoutIdsByDay);
+  Future<void> _saveOrderByDay() async => _repo.saveOrderByDay(_orderByDay);
   Future<void> _saveAssignments() async =>
-      LocalStorage.saveJson(_kAssignmentsKey, _assignmentsByDay);
-    Future<void> _saveExerciseNotes() async =>
-      LocalStorage.saveJson(_kExerciseNotesKey, _exerciseNotesByWorkoutId);
-  Future<void> _saveOrderDays() async =>
-      LocalStorage.saveJson(_kOrderDaysKey, _orderDays);
-  Future<void> _saveDayColors() async =>
-      LocalStorage.saveJson(_kDayColorsKey, _dayColors);
-  Future<void> _saveDayIcons() async =>
-      LocalStorage.saveJson(_kDayIconsKey, _dayIcons);
+      _repo.saveAssignments(_assignmentsByDay);
+  Future<void> _saveExerciseNotes() async =>
+      _repo.saveExerciseNotes(_exerciseNotesByWorkoutId);
+  Future<void> _saveOrderDays() async => _repo.saveOrderDays(_orderDays);
+  Future<void> _saveDayColors() async => _repo.saveDayColors(_dayColors);
+  Future<void> _saveDayIcons() async => _repo.saveDayIcons(_dayIcons);
   Future<void> _saveDayCustomIcons() async =>
-      LocalStorage.saveJson(_kDayCustomIconsKey, _dayCustomIcons);
-    Future<void> _saveSplits() async =>
-      LocalStorage.saveJson(_kSplitsKey, _splitsByName);
-    Future<void> _saveSplitOrder() async =>
-      LocalStorage.saveJson(_kSplitOrderKey, _splitOrder);
+      _repo.saveDayCustomIcons(_dayCustomIcons);
+  Future<void> _saveSplits() async => _repo.saveSplits(_splitsByName);
+  Future<void> _saveSplitOrder() async => _repo.saveSplitOrder(_splitOrder);
 
   // ----------------------------- Kalender: Load/Save -----------------------------
   Future<void> _loadCalendar() async {
-    final raw = await LocalStorage.loadJson(_kCalendarKey, fallback: {});
-    _calendarByDate.clear();
-    if (raw is Map) {
-      raw.forEach((dateStr, list) {
-        final l =
-            (list as List?)?.map((e) => e.toString()).toSet() ?? <String>{};
-        _calendarByDate[dateStr.toString()] = l;
-      });
-    }
+    _calendarByDate
+      ..clear()
+      ..addAll(await _repo.loadCalendar());
   }
 
   Future<void> _saveCalendar() async {
-    final enc = _calendarByDate.map((k, v) => MapEntry(k, v.toList()));
-    await LocalStorage.saveJson(_kCalendarKey, enc);
+    await _repo.saveCalendar(_calendarByDate);
   }
 
   Future<void> _loadCreatineIntake() async {
-    final raw = await LocalStorage.loadJson(_kCreatineKey, fallback: []);
     _creatineDates
       ..clear()
-      ..addAll((raw is List)
-          ? raw.map((e) => e.toString())
-          : const <String>[]);
+      ..addAll(await _repo.loadCreatineDates());
   }
 
   Future<void> _saveCreatineIntake() async {
-    await LocalStorage.saveJson(_kCreatineKey, _creatineDates.toList());
+    await _repo.saveCreatineDates(_creatineDates);
   }
 
   Future<void> _loadBestSetCache() async {
-    final raw = await LocalStorage.loadJson(_kBestSetCacheKey, fallback: {});
-    if (raw is Map<String, dynamic>) {
-      _bestSetCache.loadFromMap(raw);
-    }
+    _bestSetCache.loadFromMap(await _repo.loadBestSetCacheMap());
   }
 
   Future<void> _saveBestSetCache() async {
-    await LocalStorage.saveJson(_kBestSetCacheKey, _bestSetCache.toMap());
+    await _repo.saveBestSetCacheMap(_bestSetCache.toMap());
   }
 
   String _dateKey(DateTime dt) =>
@@ -584,7 +475,7 @@ class _GymScreenState extends State<GymScreen> {
     bool changedOneOff = false;
 
     // Update keep tasks (daily_tasks_v1)
-    final rawKeep = await LocalStorage.loadJson('daily_tasks_v1', fallback: []);
+    final rawKeep = await _repo.loadDailyTasksRaw();
     if (rawKeep is List) {
       final updated = <Map<String, dynamic>>[];
       for (final e in rawKeep) {
@@ -599,12 +490,12 @@ class _GymScreenState extends State<GymScreen> {
         updated.add(m);
       }
       if (changedKeep) {
-        await LocalStorage.saveJson('daily_tasks_v1', updated);
+        await _repo.saveDailyTasksRaw(updated);
       }
     }
 
     // Update one-off tasks for today (daily_oneoff_by_date_v1)
-    final rawOneOff = await LocalStorage.loadJson('daily_oneoff_by_date_v1', fallback: {});
+    final rawOneOff = await _repo.loadDailyOneOffByDateRaw();
     if (rawOneOff is Map && rawOneOff.containsKey(dateKey)) {
       final list = rawOneOff[dateKey];
       if (list is List) {
@@ -622,17 +513,16 @@ class _GymScreenState extends State<GymScreen> {
         }
         if (changedOneOff) {
           rawOneOff[dateKey] = updatedList;
-          await LocalStorage.saveJson('daily_oneoff_by_date_v1', rawOneOff);
+          await _repo.saveDailyOneOffByDateRaw(rawOneOff);
         }
       }
     }
 
     // Keep progress_history in sync when we changed any keep task
     if (changedKeep) {
-      final rawProgress = await LocalStorage.loadJson('progress_history_v1', fallback: {});
-      final map = (rawProgress is Map) ? Map<String, dynamic>.from(rawProgress) : <String, dynamic>{};
+      final map = await _repo.loadProgressHistory();
       int todayPts = 0;
-      final keepRaw = await LocalStorage.loadJson('daily_tasks_v1', fallback: []);
+      final keepRaw = await _repo.loadDailyTasksRaw();
       if (keepRaw is List) {
         for (final e in keepRaw) {
           final m = Map<String, dynamic>.from(e as Map);
@@ -643,7 +533,7 @@ class _GymScreenState extends State<GymScreen> {
         }
       }
       map[todayKey] = todayPts;
-      await LocalStorage.saveJson('progress_history_v1', map);
+      await _repo.saveProgressHistory(map);
     }
   }
 
