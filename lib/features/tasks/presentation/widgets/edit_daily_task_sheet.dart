@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../data/models/daily_task.dart';
-import 'weekday_picker.dart';
+import '../../../../core/widgets/weekday_picker.dart';
 
 class TaskFormData {
   final String title;

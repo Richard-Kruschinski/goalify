@@ -5,13 +5,14 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
-import '../../../../core/utils/local_storage.dart';
 import '../../../../core/utils/icon_mapper.dart'; // IconMapper für zentrale Icon-Verwaltung
+import '../../data/repositories/tasks_repository_impl.dart';
+import '../../domain/repositories/tasks_repository.dart';
 import '../../../progress/presentation/screens/congrats_screen.dart';
 import '../../data/models/daily_task.dart';
 import '../widgets/create_daily_task_sheet.dart';
 import '../widgets/edit_daily_task_sheet.dart';
-import '../widgets/modern_date_picker_dialog.dart';
+import '../../../../core/widgets/modern_date_picker_dialog.dart';
 
 /// View modes
 enum DailyViewMode { today, byDate }
@@ -30,40 +31,10 @@ class DailyTasksScreen extends StatefulWidget {
 
 class _DailyTasksScreenState extends State<DailyTasksScreen>
     with WidgetsBindingObserver {
-  // Storage Keys (keep tasks)
-  static const _kDailyTasksKey = 'daily_tasks_v1';
-  static const _kDailyRolloverKey = 'daily_last_rollover_v1';
-  static const _kCongratsShownKey = 'daily_congrats_shown_v1';
-
-  // Legacy orders (kept for compatibility / seeding)
-  static const _kDailyOrderKey = 'daily_tasks_order_v1'; // keep tasks order
-  static const _kOrderByDateKey =
-      'daily_tasks_order_by_date_v1'; // Map<dateKey, List<id>>
-
-  // NEW: combined order (keep + one-offs) per date
-  static const _kOrderCombinedKey =
-      'daily_order_combined_v1'; // Map<dateKey, List<id>>
-
-  // Freeze
-  static const _kFreezeTokensKey = 'daily_freeze_tokens_v1';
-  static const _kFreezeDaysCounterKey = 'daily_freeze_days_counter_v1';
-  static const _kFreezeUsageKey =
-      'daily_freeze_usage_v1'; // Map<dateKey, List<taskId>>
-
-  // NEW: one-off tasks per day (only keep=false live here)
-  static const _kOneOffByDateKey =
-      'daily_oneoff_by_date_v1'; // Map<dateKey, List<task>>
-
-  // Task History: stores snapshots of all tasks (keep + one-offs) for last 7 days
-  static const _kTasksHistoryKey =
-      'daily_tasks_history_v1'; // Map<dateKey, List<task snapshots>>
-
-  // Shared with gym_screen: creatine intake per date
-  static const _kCreatineKey = 'gym_creatine_intake_v1';
-
-  // Task Icons (standard and custom)
-  static const _kTaskIconsKey = 'daily_task_icons_v1'; // Map<taskId, codePoint>
-  static const _kTaskCustomIconsKey = 'daily_task_custom_icons_v1'; // Map<taskId, filePath>
+  // All persistence goes through the repository abstraction so the storage
+  // backend (local today, database/server later) can be swapped without
+  // touching this screen.
+  final TasksRepository _repo = TasksRepositoryImpl();
 
   // State
   final List<DailyTask> _keepTasks = []; // keep=true
@@ -152,11 +123,9 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   // ---- Progress: save today’s points ----
   Future<void> _saveProgressToday() async {
     final key = _todayKey();
-    final raw =
-    await LocalStorage.loadJson('progress_history_v1', fallback: {});
-    final hist = Map<String, dynamic>.from(raw as Map);
+    final hist = await _repo.loadProgressHistory();
     hist[key] = _todayPoints;
-    await LocalStorage.saveJson('progress_history_v1', hist);
+    await _repo.saveProgressHistory(hist);
   }
 
   // ===============================================================
@@ -168,14 +137,9 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     await _loadTaskIcons();
     await _loadTaskCustomIcons();
     // Keep-tasks (legacy list)
-    final rawKeep = await LocalStorage.loadJson(_kDailyTasksKey, fallback: []);
-    if (rawKeep is List) {
-      _keepTasks
-        ..clear()
-        ..addAll(
-          rawKeep.map((e) => DailyTask.fromMap(Map<String, dynamic>.from(e))),
-        );
-    }
+    _keepTasks
+      ..clear()
+      ..addAll(await _repo.loadKeepTasks());
 
     await _normalizeRecurringAnchors();
 
@@ -186,92 +150,38 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
       _keepTasks.removeWhere((t) => !t.keep);
       final list = _oneOffByDate.putIfAbsent(today, () => <DailyTask>[]);
       list.addAll(off.map((t) => t..done = t.done));
-      await LocalStorage.saveJson(
-          _kDailyTasksKey, _keepTasks.map((t) => t.toMap()).toList());
+      await _repo.saveKeepTasks(_keepTasks);
     }
 
     // Legacy orders
-    final orderKeepRaw =
-    await LocalStorage.loadJson(_kDailyOrderKey, fallback: []);
-    _orderKeep = (orderKeepRaw is List)
-        ? orderKeepRaw.map((e) => e.toString()).toList()
-        : <String>[];
+    _orderKeep = await _repo.loadOrderKeep();
 
-    final orderByDateRaw =
-    await LocalStorage.loadJson(_kOrderByDateKey, fallback: {});
-    _orderByDate.clear();
-    if (orderByDateRaw is Map) {
-      orderByDateRaw.forEach((k, v) {
-        if (v is List) {
-          _orderByDate[k.toString()] =
-              v.map((e) => e.toString()).toList(growable: true);
-        }
-      });
-    }
+    _orderByDate
+      ..clear()
+      ..addAll(await _repo.loadOrderByDate());
 
     // One-offs by date
-    final oneOffRaw =
-    await LocalStorage.loadJson(_kOneOffByDateKey, fallback: {});
-    _oneOffByDate.clear();
-    if (oneOffRaw is Map) {
-      oneOffRaw.forEach((k, v) {
-        if (v is List) {
-          final list = v
-              .map((e) => DailyTask.fromMap(Map<String, dynamic>.from(e)))
-              .where((t) => !t.keep)
-              .toList();
-          _oneOffByDate[k.toString()] = list;
-        }
-      });
-    }
+    _oneOffByDate
+      ..clear()
+      ..addAll(await _repo.loadOneOffByDate());
 
     // Combined order
-    final combinedRaw =
-    await LocalStorage.loadJson(_kOrderCombinedKey, fallback: {});
-    _orderCombined.clear();
-    if (combinedRaw is Map) {
-      combinedRaw.forEach((k, v) {
-        if (v is List) {
-          _orderCombined[k.toString()] =
-              v.map((e) => e.toString()).toList(growable: true);
-        }
-      });
-    }
+    _orderCombined
+      ..clear()
+      ..addAll(await _repo.loadOrderCombined());
 
     // Freeze state
-    _freezeTokens =
-        (await LocalStorage.loadJson(_kFreezeTokensKey, fallback: null))
-        as int? ??
-            2;
-    _freezeDaysCounter =
-        (await LocalStorage.loadJson(_kFreezeDaysCounterKey, fallback: 0))
-        as int? ??
-            0;
+    _freezeTokens = (await _repo.loadFreezeTokens()) ?? 2;
+    _freezeDaysCounter = (await _repo.loadFreezeDaysCounter()) ?? 0;
 
-    final fuRaw = await LocalStorage.loadJson(_kFreezeUsageKey, fallback: {});
-    _freezeUsageByDate.clear();
-    if (fuRaw is Map) {
-      fuRaw.forEach((k, v) {
-        if (v is List) {
-          _freezeUsageByDate[k.toString()] =
-              v.map((e) => e.toString()).toList();
-        }
-      });
-    }
+    _freezeUsageByDate
+      ..clear()
+      ..addAll(await _repo.loadFreezeUsage());
 
     // Load task history (last 7 days)
-    final historyRaw = await LocalStorage.loadJson(_kTasksHistoryKey, fallback: {});
-    _tasksHistory.clear();
-    if (historyRaw is Map) {
-      historyRaw.forEach((k, v) {
-        if (v is List) {
-          final list = v
-              .map((e) => DailyTask.fromMap(Map<String, dynamic>.from(e)))
-              .toList();
-          _tasksHistory[k.toString()] = list;
-        }
-      });
-    }
+    _tasksHistory
+      ..clear()
+      ..addAll(await _repo.loadTasksHistory());
 
     await _dailyRolloverIfNeeded(); // apply rollover
 
@@ -288,52 +198,40 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   }
 
   Future<void> _saveKeepTasks() async {
-    await LocalStorage.saveJson(
-      _kDailyTasksKey,
-      _keepTasks.map((t) => t.toMap()).toList(),
-    );
+    await _repo.saveKeepTasks(_keepTasks);
   }
 
   Future<void> _saveOneOffMap() async {
-    final map = <String, List<Map<String, dynamic>>>{};
-    _oneOffByDate.forEach((k, v) {
-      map[k] = v.map((t) => t.toMap()).toList();
-    });
-    await LocalStorage.saveJson(_kOneOffByDateKey, map);
+    await _repo.saveOneOffByDate(_oneOffByDate);
   }
 
-  Future<void> _saveOrderKeep() async =>
-      LocalStorage.saveJson(_kDailyOrderKey, _orderKeep);
+  Future<void> _saveOrderKeep() async => _repo.saveOrderKeep(_orderKeep);
 
-  Future<void> _saveOrderByDate() async =>
-      LocalStorage.saveJson(_kOrderByDateKey, _orderByDate);
+  Future<void> _saveOrderByDate() async => _repo.saveOrderByDate(_orderByDate);
 
   Future<void> _saveOrderCombined() async =>
-      LocalStorage.saveJson(_kOrderCombinedKey, _orderCombined);
+      _repo.saveOrderCombined(_orderCombined);
 
   Future<void> _saveTasksHistory() async {
-    final map = <String, List<Map<String, dynamic>>>{};
-    _tasksHistory.forEach((k, v) {
-      map[k] = v.map((t) => t.toMap()).toList();
-    });
-    await LocalStorage.saveJson(_kTasksHistoryKey, map);
+    await _repo.saveTasksHistory(_tasksHistory);
   }
 
   Future<void> _saveFreezeState() async {
-    await LocalStorage.saveJson(_kFreezeTokensKey, _freezeTokens);
-    await LocalStorage.saveJson(_kFreezeDaysCounterKey, _freezeDaysCounter);
-    await LocalStorage.saveJson(_kFreezeUsageKey, _freezeUsageByDate);
+    await _repo.saveFreezeState(
+      tokens: _freezeTokens,
+      daysCounter: _freezeDaysCounter,
+      usage: _freezeUsageByDate,
+    );
   }
 
   Future<void> _loadCreatine() async {
-    final raw = await LocalStorage.loadJson(_kCreatineKey, fallback: []);
     _creatineDates
       ..clear()
-      ..addAll((raw is List) ? raw.map((e) => e.toString()) : const <String>[]);
+      ..addAll(await _repo.loadCreatineDates());
   }
 
   Future<void> _saveCreatine() async {
-    await LocalStorage.saveJson(_kCreatineKey, _creatineDates.toList());
+    await _repo.saveCreatineDates(_creatineDates);
   }
 
   Future<void> _setCreatineForDate(String dateKey, bool value) async {
@@ -346,30 +244,21 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   }
 
   Future<void> _loadTaskIcons() async {
-    final raw = await LocalStorage.loadJson(_kTaskIconsKey, fallback: {});
-    _taskIcons.clear();
-    if (raw is Map) {
-      raw.forEach((key, value) {
-        _taskIcons[key.toString()] = (value as num?)?.toInt() ?? 0;
-      });
-    }
+    _taskIcons
+      ..clear()
+      ..addAll(await _repo.loadTaskIcons());
   }
 
-  Future<void> _saveTaskIcons() async =>
-      LocalStorage.saveJson(_kTaskIconsKey, _taskIcons);
+  Future<void> _saveTaskIcons() async => _repo.saveTaskIcons(_taskIcons);
 
   Future<void> _loadTaskCustomIcons() async {
-    final raw = await LocalStorage.loadJson(_kTaskCustomIconsKey, fallback: {});
-    _taskCustomIcons.clear();
-    if (raw is Map) {
-      raw.forEach((key, value) {
-        _taskCustomIcons[key.toString()] = value.toString();
-      });
-    }
+    _taskCustomIcons
+      ..clear()
+      ..addAll(await _repo.loadTaskCustomIcons());
   }
 
   Future<void> _saveTaskCustomIcons() async =>
-      LocalStorage.saveJson(_kTaskCustomIconsKey, _taskCustomIcons);
+      _repo.saveTaskCustomIcons(_taskCustomIcons);
 
   Future<void> _normalizeRecurringAnchors() async {
     final todayKey = _todayKey();
@@ -629,7 +518,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   // Daily rollover + streak/freeze logic (keep tasks)
   // ===============================================================
   Future<void> _markRolloverDoneForToday() async {
-    await LocalStorage.saveJson(_kDailyRolloverKey, _todayKey());
+    await _repo.saveLastRollover(_todayKey());
   }
 
   bool _wasFrozenOn(String dateKey, String taskId) {
@@ -642,8 +531,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   }
 
   Future<void> _dailyRolloverIfNeeded() async {
-    final rawLast =
-        await LocalStorage.loadJson(_kDailyRolloverKey, fallback: '');
+    final rawLast = await _repo.loadLastRollover();
     final todayKey = _todayKey();
     if (rawLast == todayKey) return;
 
@@ -651,7 +539,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     final today = DateTime(todayDate.year, todayDate.month, todayDate.day);
 
     // If no valid rollover exists, keep legacy behavior and process only 1 day.
-    final parsedLast = _tryParseDateKey((rawLast ?? '').toString());
+    final parsedLast = _tryParseDateKey(rawLast);
     var cursor = parsedLast ?? today.subtract(const Duration(days: 1));
     cursor = DateTime(cursor.year, cursor.month, cursor.day);
 
@@ -901,11 +789,10 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     );
     if (!allDone) return;
 
-    final lastShown =
-    await LocalStorage.loadJson(_kCongratsShownKey, fallback: '');
+    final lastShown = await _repo.loadCongratsShown();
     if (lastShown == todayKey) return;
 
-    await LocalStorage.saveJson(_kCongratsShownKey, todayKey);
+    await _repo.saveCongratsShown(todayKey);
     if (!mounted) return;
 
     await Navigator.of(context).push(
