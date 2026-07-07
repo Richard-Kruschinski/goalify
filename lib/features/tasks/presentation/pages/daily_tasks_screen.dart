@@ -871,8 +871,10 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
       _syncCombinedForDate(key);
       if (!_orderCombined[key]!.contains(created.task.id)) {
         _orderCombined[key]!.add(created.task.id);
-        await _saveOrderCombined();
       }
+      // keep the new task below existing active tasks but above completed ones
+      _sortCompletedToBottom(key);
+      await _saveOrderCombined();
       if (mounted) setState(() {});
     }
   }
