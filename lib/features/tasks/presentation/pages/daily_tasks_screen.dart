@@ -443,6 +443,18 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     }
   }
 
+  bool _isFutureDate(String dateKey, String todayKey) {
+    try {
+      final parts = dateKey.split('-').map(int.parse).toList();
+      final date = DateTime(parts[0], parts[1], parts[2]);
+      final todayParts = todayKey.split('-').map(int.parse).toList();
+      final today = DateTime(todayParts[0], todayParts[1], todayParts[2]);
+      return date.isAfter(today);
+    } catch (e) {
+      return false;
+    }
+  }
+
   DateTime? _tryParseDateKey(String dateKey) {
     try {
       final parts = dateKey.split('-').map(int.parse).toList();
@@ -893,6 +905,17 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
       return;
     }
     
+    // Block changes to future dates (read-only preview)
+    if (_isFutureDate(dateKey, _todayKey())) {
+      ScaffoldMessenger.of(context).showSingleSnackBar(
+        const SnackBar(
+          duration: Duration(seconds: 2),
+          content: Text('Cannot modify tasks from future dates.'),
+        ),
+      );
+      return;
+    }
+
     if (t.keep && dateKey != _todayKey()) {
       ScaffoldMessenger.of(context).showSingleSnackBar(
         const SnackBar(
@@ -1971,6 +1994,22 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                         SizedBox(width: 4),
                         Text(
                           'History (read-only)',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF9CA3AF),
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ] else if (!isToday) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      children: const [
+                        Icon(Icons.update, size: 14, color: Color(0xFF9CA3AF)),
+                        SizedBox(width: 4),
+                        Text(
+                          'Future (read-only)',
                           style: TextStyle(
                             fontSize: 12,
                             color: Color(0xFF9CA3AF),
