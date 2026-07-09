@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/utils/snackbar_utils.dart';
 import '../../data/models/daily_task.dart';
 import '../../../../core/widgets/weekday_picker.dart';
 
@@ -221,7 +222,7 @@ class _EditDailyTaskSheetState extends State<EditDailyTaskSheet> {
                           Navigator.pop(context, value);
                         } else {
                           // Show error feedback
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          ScaffoldMessenger.of(context).showSingleSnackBar(
                             const SnackBar(
                               content: Text('Please enter a valid number (1 or greater)'),
                               backgroundColor: Color(0xFFE53935),

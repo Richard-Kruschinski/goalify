@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/utils/snackbar_utils.dart';
 import 'package:provider/provider.dart';
 import '../../pomodoro/presentation/pages/pomodoro_screen.dart';
 import '../../pomodoro/presentation/controllers/pomodoro_controller.dart';
@@ -172,7 +173,7 @@ class FunctionCard extends StatelessWidget {
       child: InkWell(
         onTap: isInteractive
             ? (onTap ?? () {
-                ScaffoldMessenger.of(context).showSnackBar(
+                ScaffoldMessenger.of(context).showSingleSnackBar(
                   const SnackBar(content: Text('Coming Soon')),
                 );
               })

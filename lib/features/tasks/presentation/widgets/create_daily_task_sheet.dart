@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/utils/snackbar_utils.dart';
 import '../../data/models/daily_task.dart';
 import '../../../../core/widgets/weekday_picker.dart';
 import '../../../../core/widgets/modern_date_picker_dialog.dart';
@@ -202,7 +203,7 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
                           Navigator.pop(context, value);
                         } else {
                           // Show error feedback
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          ScaffoldMessenger.of(context).showSingleSnackBar(
                             const SnackBar(
                               content: Text('Please enter a valid number (1 or greater)'),
                               backgroundColor: Color(0xFFE53935),
@@ -319,7 +320,7 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
     if (!_formKey.currentState!.validate()) return;
 
     if (!_keep && !_isLimited && _isPastDate(_scheduledDate)) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context).showSingleSnackBar(
         const SnackBar(
           duration: Duration(seconds: 2),
           content: Text('Cannot create tasks for past dates.'),
@@ -866,7 +867,7 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
                         initialDate: _scheduledDate,
                         onDateSelected: (picked) {
                           if (_isPastDate(picked)) {
-                            ScaffoldMessenger.of(context).showSnackBar(
+                            ScaffoldMessenger.of(context).showSingleSnackBar(
                               const SnackBar(
                                 duration: Duration(seconds: 2),
                                 content: Text('Cannot create tasks for past dates.'),

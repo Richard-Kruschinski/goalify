@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../../core/utils/snackbar_utils.dart';
 import 'package:provider/provider.dart';
 import '../controllers/interval_timer_controller.dart';
 import '../../data/models/interval_timer_state.dart';
@@ -230,7 +231,7 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                         final pauseSeconds = (pauseMinutes * 60).round();
 
                         if (newName.isEmpty || newDurationSeconds <= 0) {
-                          messenger.showSnackBar(
+                          messenger.showSingleSnackBar(
                             const SnackBar(content: Text('Please enter valid values.')),
                           );
                           return;
@@ -307,7 +308,7 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                       if (sheetContext.mounted) {
                         Navigator.pop(sheetContext);
                       }
-                      messenger.showSnackBar(
+                      messenger.showSingleSnackBar(
                         const SnackBar(content: Text('Profile deleted.')),
                       );
                     },
@@ -317,7 +318,7 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                     if (sheetContext.mounted) {
                       Navigator.pop(sheetContext);
                     }
-                    messenger.showSnackBar(
+                    messenger.showSingleSnackBar(
                       SnackBar(content: Text('Profile "${profile.name}" loaded.')),
                     );
                   },
@@ -438,7 +439,7 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                     ),
                     onPressed: () async {
                       if (!controller.hasTasks) {
-                        messenger.showSnackBar(
+                        messenger.showSingleSnackBar(
                           const SnackBar(content: Text('Create at least one task first.')),
                         );
                         return;
@@ -446,7 +447,7 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
 
                       final profileName = nameController.text.trim();
                       if (profileName.isEmpty) {
-                        messenger.showSnackBar(
+                        messenger.showSingleSnackBar(
                           const SnackBar(content: Text('Please enter a profile name.')),
                         );
                         return;
@@ -456,7 +457,7 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                       if (dialogContext.mounted) {
                         Navigator.pop(dialogContext);
                       }
-                      messenger.showSnackBar(
+                      messenger.showSingleSnackBar(
                         SnackBar(content: Text('Profile "$profileName" saved.')),
                       );
                     },
@@ -523,7 +524,7 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
     final pauseSeconds = (pauseMinutes * 60).round();
 
     if (name.isEmpty || durationSeconds <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context).showSingleSnackBar(
         const SnackBar(content: Text('Please enter a valid task and duration in minutes.')),
       );
       return;

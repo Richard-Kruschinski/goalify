@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/utils/snackbar_utils.dart';
 import '../../data/models/gym_models.dart';
 
 const List<String> kSuggestedWorkdays = <String>[
@@ -219,7 +220,7 @@ class _LogInputDialogState extends State<LogInputDialog> {
   }
 
   void _showSnackBar(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    ScaffoldMessenger.of(context).showSingleSnackBar(SnackBar(content: Text(msg)));
   }
 
   void _addSet() {

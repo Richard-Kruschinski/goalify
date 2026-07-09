@@ -3,6 +3,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import '../../../../core/utils/snackbar_utils.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../../../core/utils/icon_mapper.dart'; // IconMapper für zentrale Icon-Verwaltung
@@ -71,7 +72,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
 
   // Helpers
   void _showFreezeHelp() {
-    ScaffoldMessenger.of(context).showSnackBar(
+    ScaffoldMessenger.of(context).showSingleSnackBar(
       const SnackBar(
         duration: Duration(seconds: 3),
         content: Text(
@@ -817,7 +818,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   Future<void> _openCreateTaskSheet({required String forDateKey}) async {
     // Block creating tasks for past dates
     if (_isPastDate(forDateKey, _todayKey())) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context).showSingleSnackBar(
         const SnackBar(
           duration: Duration(seconds: 2),
           content: Text('Cannot create tasks for past dates.'),
@@ -882,7 +883,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   Future<void> _toggleDone(DailyTask t, {required String dateKey}) async {
     // Block changes to past dates (read-only history)
     if (_isPastDate(dateKey, _todayKey())) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context).showSingleSnackBar(
         const SnackBar(
           duration: Duration(seconds: 2),
           content: Text('Cannot modify tasks from past dates.'),
@@ -892,7 +893,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     }
     
     if (t.keep && dateKey != _todayKey()) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context).showSingleSnackBar(
         const SnackBar(
           duration: Duration(seconds: 2),
           content: Text('Recurring tasks can only be checked for today.'),
@@ -971,7 +972,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   Future<void> _deleteAt(int indexInOrdered, {required String dateKey}) async {
     // Block deleting tasks from past dates
     if (_isPastDate(dateKey, _todayKey())) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context).showSingleSnackBar(
         const SnackBar(
           duration: Duration(seconds: 2),
           content: Text('Cannot delete tasks from past dates.'),
@@ -1265,7 +1266,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
       DailyTask t, int indexInOrdered, String dateKey) async {
     // For past dates, show read-only info
     if (_isPastDate(dateKey, _todayKey())) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context).showSingleSnackBar(
         const SnackBar(
           duration: Duration(seconds: 2),
           content: Text('Tasks from past dates are read-only.'),
@@ -1840,13 +1841,13 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
         }
         
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
+          ScaffoldMessenger.of(context).showSingleSnackBar(
             const SnackBar(content: Text('Custom icon saved!')),
           );
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
+          ScaffoldMessenger.of(context).showSingleSnackBar(
             SnackBar(content: Text('Error saving image: $e')),
           );
         }

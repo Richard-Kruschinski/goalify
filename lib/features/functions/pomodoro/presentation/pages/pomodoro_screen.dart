@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../../core/utils/snackbar_utils.dart';
 import 'package:provider/provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../controllers/pomodoro_controller.dart';
@@ -31,7 +32,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
     final isDefaultProfile = _isDefaultProfile(profile);
 
     if (isDefaultProfile) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context).showSingleSnackBar(
         const SnackBar(
           content: Text('Default profiles cannot be edited or deleted.'),
           backgroundColor: Color(0xFFFF6B6B),
@@ -234,7 +235,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                           onPressed: () async {
                             final newName = nameController.text.trim();
                             if (newName.isEmpty) {
-                              messenger.showSnackBar(
+                              messenger.showSingleSnackBar(
                                 const SnackBar(
                                   content: Text('Bitte geben Sie einen Profil-Namen ein'),
                                   backgroundColor: Color(0xFFFF6B6B),
@@ -256,7 +257,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
 
                             if (dialogContext.mounted) {
                               Navigator.pop(dialogContext);
-                              messenger.showSnackBar(
+                              messenger.showSingleSnackBar(
                                 const SnackBar(
                                   content: Text('Profile successfully updated'),
                                   backgroundColor: Color(0xFF51CF66),
@@ -394,7 +395,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                           await pomodoroController.deleteCustomProfile(profile.id);
                           if (dialogContext.mounted) {
                             Navigator.pop(dialogContext);
-                            messenger.showSnackBar(
+                            messenger.showSingleSnackBar(
                               const SnackBar(
                                 content: Text('Profile deleted'),
                                 backgroundColor: Color(0xFF51CF66),
@@ -1071,7 +1072,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                         child: ElevatedButton(
                           onPressed: () async {
                             if (nameController.text.trim().isEmpty) {
-                              messenger.showSnackBar(
+                              messenger.showSingleSnackBar(
                                 const SnackBar(
                                   content: Text('Please enter a profile name'),
                                   backgroundColor: Color(0xFFFF6B6B),
@@ -1093,7 +1094,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                                 shortBreakDuration <= 0 ||
                                 longBreakDuration <= 0 ||
                                 cyclesBeforeLongBreak <= 0) {
-                              messenger.showSnackBar(
+                              messenger.showSingleSnackBar(
                                 const SnackBar(
                                   content: Text('Please enter valid values for all durations and cycles'),
                                   backgroundColor: Color(0xFFFF6B6B),
@@ -1116,7 +1117,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                             
                             if (dialogContext.mounted) {
                               Navigator.pop(dialogContext);
-                              messenger.showSnackBar(
+                              messenger.showSingleSnackBar(
                                 SnackBar(
                                   content: Text('Profile "${profile.name}" created'),
                                   backgroundColor: const Color(0xFF51CF66),
@@ -1433,7 +1434,7 @@ class _ControlButtons extends StatelessWidget {
     } else {
       final success = await controller.start();
       if (!success && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        ScaffoldMessenger.of(context).showSingleSnackBar(
           const SnackBar(
             content: Text('Notification permission required. Please allow notifications in settings.'),
             duration: Duration(seconds: 4),

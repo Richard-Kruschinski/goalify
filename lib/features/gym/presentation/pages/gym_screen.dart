@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../../../../core/utils/snackbar_utils.dart';
 import 'package:flutter/services.dart'; // rootBundle, SystemChrome, DeviceOrientation
 import 'package:fl_chart/fl_chart.dart';
 import 'package:image_picker/image_picker.dart';
@@ -1225,7 +1226,7 @@ class _GymScreenState extends State<GymScreen> {
 
     if (!mounted) return;
     final info = note.isEmpty ? 'Note removed.' : 'Note saved.';
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(info)));
+    ScaffoldMessenger.of(context).showSingleSnackBar(SnackBar(content: Text(info)));
   }
 
   Future<void> _openWorkoutLongPressMenu(Workout w) async {
@@ -2078,7 +2079,7 @@ class _GymScreenState extends State<GymScreen> {
     }
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context).showSingleSnackBar(
         SnackBar(content: Text('Renamed "$oldName" to "$newName"${renameTracked ? ' (including tracked workouts)' : ''}')),
       );
     }
@@ -2145,13 +2146,13 @@ class _GymScreenState extends State<GymScreen> {
         }
         
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
+          ScaffoldMessenger.of(context).showSingleSnackBar(
             const SnackBar(content: Text('Custom icon saved!')),
           );
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
+          ScaffoldMessenger.of(context).showSingleSnackBar(
             SnackBar(content: Text('Error saving image: $e')),
           );
         }
@@ -2510,7 +2511,7 @@ class _GymScreenState extends State<GymScreen> {
 
     if (!mounted) return;
     setState(() {});
-    ScaffoldMessenger.of(context).showSnackBar(
+    ScaffoldMessenger.of(context).showSingleSnackBar(
       SnackBar(
         content: Text(
           removeTrackedHistory
@@ -4003,7 +4004,7 @@ class _GymScreenState extends State<GymScreen> {
     final availableDays = _getOrderedDays();
     if (availableDays.isEmpty) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context).showSingleSnackBar(
         const SnackBar(content: Text('Create workout days first before adding a split.')),
       );
       return;
@@ -4182,13 +4183,13 @@ class _GymScreenState extends State<GymScreen> {
                       onPressed: () {
                         final name = controller.text.trim();
                         if (name.isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          ScaffoldMessenger.of(context).showSingleSnackBar(
                             const SnackBar(content: Text('Please enter a split name.')),
                           );
                           return;
                         }
                         if (selected.isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          ScaffoldMessenger.of(context).showSingleSnackBar(
                             const SnackBar(content: Text('Select at least one workout day.')),
                           );
                           return;
@@ -4196,7 +4197,7 @@ class _GymScreenState extends State<GymScreen> {
 
                         final nameTaken = _splitsByName.containsKey(name) && name != existingName;
                         if (nameTaken) {
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          ScaffoldMessenger.of(context).showSingleSnackBar(
                             SnackBar(content: Text('A split named "$name" already exists.')),
                           );
                           return;
