@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
+import '../../../../../core/utils/local_storage.dart';
 import '../../../pomodoro/data/datasources/platform_channel_service.dart';
 
 /// Controller for the Distraction Blocker feature
@@ -194,8 +195,10 @@ class DistractionBlockerController extends ChangeNotifier {
       
       // Calculate session duration and add to total
       if (_activatedAt != null) {
-        final sessionDuration = DateTime.now().difference(_activatedAt!);
+        final now = DateTime.now();
+        final sessionDuration = now.difference(_activatedAt!);
         _totalBlockingSeconds += sessionDuration.inSeconds;
+        await _recordBlockingHistory(_activatedAt!, now);
       }
       
       _isActive = false;
@@ -210,6 +213,53 @@ class DistractionBlockerController extends ChangeNotifier {
       rethrow;
     }
   }
+
+  /// Adds a finished blocking session to the per-day history
+  /// (`Map<dateKey yyyy-mm-dd, blocked seconds>`) that feeds the weekly review
+  /// on the progress screen. Sessions spanning midnight are split across the
+  /// days they cover; entries older than 30 days are dropped.
+  Future<void> _recordBlockingHistory(DateTime start, DateTime end) async {
+    if (!end.isAfter(start)) return;
+
+    final raw = await LocalStorage.loadJson(
+      'distraction_blocker_history_v1',
+      fallback: {},
+    );
+    final history = <String, int>{};
+    if (raw is Map) {
+      raw.forEach((k, v) {
+        if (v is num) history[k.toString()] = v.toInt();
+      });
+    }
+
+    var cursor = start;
+    while (cursor.isBefore(end)) {
+      final nextMidnight =
+          DateTime(cursor.year, cursor.month, cursor.day + 1);
+      final sliceEnd = nextMidnight.isBefore(end) ? nextMidnight : end;
+      final key = _dateKey(cursor);
+      history[key] =
+          (history[key] ?? 0) + sliceEnd.difference(cursor).inSeconds;
+      cursor = sliceEnd;
+    }
+
+    final cutoff = DateTime.now().subtract(const Duration(days: 30));
+    history.removeWhere((key, _) {
+      final parts = key.split('-');
+      if (parts.length != 3) return true;
+      final date = DateTime(
+        int.tryParse(parts[0]) ?? 0,
+        int.tryParse(parts[1]) ?? 1,
+        int.tryParse(parts[2]) ?? 1,
+      );
+      return date.isBefore(cutoff);
+    });
+
+    await LocalStorage.saveJson('distraction_blocker_history_v1', history);
+  }
+
+  String _dateKey(DateTime dt) =>
+      '${dt.year.toString().padLeft(4, '0')}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
 
   /// Get current live session duration in seconds
   int getCurrentSessionSeconds() {

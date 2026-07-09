@@ -31,4 +31,11 @@ class PomodoroRepositoryImpl implements PomodoroRepository {
 
   @override
   Future<void> saveStats(PomodoroStats stats) => _local.saveStats(stats);
+
+  @override
+  Future<Map<String, int>> loadFocusHistory() => _local.loadFocusHistory();
+
+  @override
+  Future<void> saveFocusHistory(Map<String, int> history) =>
+      _local.saveFocusHistory(history);
 }

@@ -12,4 +12,9 @@ abstract class PomodoroRepository {
   Future<void> saveCustomProfiles(List<PomodoroProfile> profiles);
   Future<PomodoroStats?> loadStats();
   Future<void> saveStats(PomodoroStats stats);
+
+  /// Focus minutes per day (dateKey yyyy-mm-dd -> minutes). Feeds the
+  /// weekly review on the progress screen.
+  Future<Map<String, int>> loadFocusHistory();
+  Future<void> saveFocusHistory(Map<String, int> history);
 }

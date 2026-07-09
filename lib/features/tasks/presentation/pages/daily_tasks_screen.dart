@@ -45,7 +45,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   final Map<String, int> _taskIcons = <String, int>{}; // standard icons by task id (codePoint)
   final Map<String, String> _taskCustomIcons = <String, String>{}; // custom icons by task id (file path)
 
-  // Task History (last 7 days) - snapshots of all tasks per date
+  // Task History (last 14 days) - snapshots of all tasks per date
   final Map<String, List<DailyTask>> _tasksHistory = {};
 
   // legacy/local orders
@@ -728,11 +728,12 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     await _saveTasksHistory();
   }
 
-  /// Remove history entries older than 7 days
-  /// Keeps: today + 7 previous days = max 8 entries
+  /// Remove history entries older than 14 days
+  /// Keeps: today + 14 previous days, so the weekly review can always compare
+  /// the current week against the full previous week (Mon-Sun).
   Future<void> _cleanupOldHistory() async {
     final today = DateTime.now();
-    final cutoffDate = today.subtract(const Duration(days: 8));
+    final cutoffDate = today.subtract(const Duration(days: 15));
     final cutoffKey = _dateKey(cutoffDate);
     
     final keysToRemove = <String>[];

@@ -200,6 +200,32 @@ class PomodoroController extends ChangeNotifier {
     await _repo.saveStats(_stats);
   }
 
+  /// Adds completed focus minutes to the per-day history (feeds the weekly
+  /// review) and drops entries older than 30 days.
+  Future<void> _recordFocusMinutes(int minutes) async {
+    final history = await _repo.loadFocusHistory();
+    final now = DateTime.now();
+    final todayKey = _dateKey(now);
+    history[todayKey] = (history[todayKey] ?? 0) + minutes;
+
+    final cutoff = now.subtract(const Duration(days: 30));
+    history.removeWhere((key, _) {
+      final parts = key.split('-');
+      if (parts.length != 3) return true;
+      final date = DateTime(
+        int.tryParse(parts[0]) ?? 0,
+        int.tryParse(parts[1]) ?? 1,
+        int.tryParse(parts[2]) ?? 1,
+      );
+      return date.isBefore(cutoff);
+    });
+
+    await _repo.saveFocusHistory(history);
+  }
+
+  String _dateKey(DateTime dt) =>
+      '${dt.year.toString().padLeft(4, '0')}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+
   int _calculateDailyFocusScore() {
     int score = _stats.completedSessionsToday * 10;
     final fullCycles = _stats.completedSessionsToday ~/ 4;
@@ -298,6 +324,7 @@ class PomodoroController extends ChangeNotifier {
         totalFocusTimeThisWeek:
             _stats.totalFocusTimeThisWeek + _currentProfile.workDuration,
       );
+      await _recordFocusMinutes(_currentProfile.workDuration);
       if (_currentCycle >= _currentProfile.cyclesBeforeLongBreak) {
         _currentPhase = PomodoroPhase.longBreak;
         _currentCycle = 1;

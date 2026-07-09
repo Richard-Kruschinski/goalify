@@ -12,6 +12,7 @@ class PomodoroLocalDataSource {
   static const _kProfileKey = 'pomodoro_profile';
   static const _kCustomProfilesKey = 'pomodoro_custom_profiles';
   static const _kStatsKey = 'pomodoro_stats';
+  static const _kFocusHistoryKey = 'pomodoro_focus_history_v1';
 
   Future<PomodoroProfile?> loadProfile() async {
     final data = await LocalStorage.loadJson(_kProfileKey, fallback: null);
@@ -43,4 +44,19 @@ class PomodoroLocalDataSource {
 
   Future<void> saveStats(PomodoroStats stats) =>
       LocalStorage.saveJson(_kStatsKey, stats.toJson());
+
+  // --- Focus history (Map<dateKey yyyy-mm-dd, focus minutes>) ---
+  Future<Map<String, int>> loadFocusHistory() async {
+    final raw = await LocalStorage.loadJson(_kFocusHistoryKey, fallback: {});
+    final result = <String, int>{};
+    if (raw is Map) {
+      raw.forEach((k, v) {
+        if (v is num) result[k.toString()] = v.toInt();
+      });
+    }
+    return result;
+  }
+
+  Future<void> saveFocusHistory(Map<String, int> history) =>
+      LocalStorage.saveJson(_kFocusHistoryKey, history);
 }

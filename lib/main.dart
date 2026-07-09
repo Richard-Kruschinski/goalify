@@ -120,7 +120,7 @@ class _MainNavState extends State<MainNav> {
           BottomNavigationBarItem(icon: Icon(Icons.show_chart),     label: 'Progress'),
           BottomNavigationBarItem(icon: Icon(Icons.check_circle),   label: 'Daily'),
           BottomNavigationBarItem(icon: Icon(Icons.fitness_center), label: 'Gym'),
-          BottomNavigationBarItem(icon: Icon(Icons.settings),       label: 'Funktionen'),
+          BottomNavigationBarItem(icon: Icon(Icons.settings),       label: 'Functions'),
         ],
       ),
     );

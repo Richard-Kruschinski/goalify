@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../data/models/activity_point.dart';
+import '../../data/models/weekly_review_data.dart';
 import '../../data/repositories/progress_repository_impl.dart';
+import '../../data/repositories/weekly_review_repository_impl.dart';
 import '../../domain/repositories/progress_repository.dart';
+import '../../domain/repositories/weekly_review_repository.dart';
 
 enum Range { week, month, year }
 enum DisplayMode { points, ratio }
@@ -18,11 +21,13 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
   // backend (local today, database/server later) can be swapped without
   // touching this screen.
   final ProgressRepository _repo = ProgressRepositoryImpl();
+  final WeeklyReviewRepository _weeklyRepo = WeeklyReviewRepositoryImpl();
 
   Range range = Range.week;                 // wird beim Laden aus Prefs überschrieben
   DisplayMode _mode = DisplayMode.ratio;    // Punkte- vs Verhältnis-Kurve
   Map<DateTime, int> _history = {};         // Mitternacht -> Punkte
   Map<DateTime, int> _ratioHistory = {};    // Mitternacht -> Verhältnis in %
+  WeeklyReviewData _weeklyReview = const WeeklyReviewData();
 
   @override
   void initState() {
@@ -43,6 +48,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
     if (state == AppLifecycleState.resumed) {
       _loadHistory(); // neu einlesen, falls der Tag gewechselt hat
       _loadRatioHistory();
+      _loadWeeklyReview();
     }
   }
 
@@ -74,6 +80,13 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
     }
     await _loadHistory();
     await _loadRatioHistory();
+    await _loadWeeklyReview();
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _loadWeeklyReview() async {
+    final review = await _weeklyRepo.loadWeeklyReview();
+    _weeklyReview = review;
     if (mounted) setState(() {});
   }
 
@@ -526,6 +539,10 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
                         ],
                       ],
                     ),
+
+                    const SizedBox(height: 16),
+
+                    _buildWeeklyReviewCard(),
                   ],
                 ),
               ),
@@ -533,6 +550,190 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
           ],
         ),
       ),
+    );
+  }
+
+  String _formatFocusMinutes(int minutes) {
+    if (minutes < 60) return '$minutes min.';
+    final h = minutes ~/ 60;
+    final m = minutes % 60;
+    return m == 0 ? '${h}h' : '${h}h $m min.';
+  }
+
+  Widget _buildWeeklyReviewCard() {
+    final r = _weeklyReview;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0F000000),
+            blurRadius: 10,
+            offset: Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFEBEE),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.insights,
+                  color: Color(0xFFE53935),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 10),
+              const Text(
+                'Weekly Review',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1A1D1F),
+                ),
+              ),
+              const Spacer(),
+              Text(
+                'vs. last week',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _weeklyReviewRow(
+            icon: Icons.timer_outlined,
+            label: 'Focus time',
+            value: _formatFocusMinutes(r.focusMinutes),
+            delta: r.focusMinutes - r.prevFocusMinutes,
+            deltaLabel: _formatFocusMinutes(
+              (r.focusMinutes - r.prevFocusMinutes).abs(),
+            ),
+          ),
+          const SizedBox(height: 12),
+          _weeklyReviewRow(
+            icon: Icons.app_blocking_outlined,
+            label: 'Blocker time',
+            value: _formatFocusMinutes(r.blockerMinutes),
+            delta: r.blockerMinutes - r.prevBlockerMinutes,
+            deltaLabel: _formatFocusMinutes(
+              (r.blockerMinutes - r.prevBlockerMinutes).abs(),
+            ),
+          ),
+          const SizedBox(height: 12),
+          _weeklyReviewRow(
+            icon: Icons.check_circle_outline,
+            label: 'Tasks done',
+            value: '${r.tasksDone}',
+            delta: r.tasksDone - r.prevTasksDone,
+            deltaLabel: '${(r.tasksDone - r.prevTasksDone).abs()}',
+          ),
+          const SizedBox(height: 12),
+          _weeklyReviewRow(
+            icon: Icons.fitness_center,
+            label: 'Workouts',
+            value: '${r.workouts}',
+            delta: r.workouts - r.prevWorkouts,
+            deltaLabel: '${(r.workouts - r.prevWorkouts).abs()}',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _weeklyReviewRow({
+    required IconData icon,
+    required String label,
+    required String value,
+    required int delta,
+    required String deltaLabel,
+  }) {
+    final Color deltaColor;
+    final Color deltaBg;
+    final IconData deltaIcon;
+    if (delta > 0) {
+      deltaColor = const Color(0xFF2E7D32);
+      deltaBg = const Color(0xFFE8F5E9);
+      deltaIcon = Icons.arrow_upward;
+    } else if (delta < 0) {
+      deltaColor = const Color(0xFFE53935);
+      deltaBg = const Color(0xFFFFEBEE);
+      deltaIcon = Icons.arrow_downward;
+    } else {
+      deltaColor = const Color(0xFF6F7789);
+      deltaBg = const Color(0xFFEFF1F5);
+      deltaIcon = Icons.remove;
+    }
+
+    return Row(
+      children: [
+        Icon(icon, size: 20, color: const Color(0xFF6F7789)),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF1A1D1F),
+            ),
+          ),
+        ),
+        // Fixed-width columns so values and delta chips line up across rows.
+        SizedBox(
+          width: 80,
+          child: Text(
+            value,
+            textAlign: TextAlign.right,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1A1D1F),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        SizedBox(
+          width: 90,
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: deltaBg,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(deltaIcon, size: 12, color: deltaColor),
+                  const SizedBox(width: 3),
+                  Text(
+                    deltaLabel,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: deltaColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -623,6 +824,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
                 onPressed: () async {
                   await _loadHistory();
                   await _loadRatioHistory();
+                  await _loadWeeklyReview();
                 },
                 icon: const Icon(Icons.refresh, color: Color(0xFF6F7789)),
               ),
