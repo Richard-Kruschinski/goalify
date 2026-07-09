@@ -2425,8 +2425,10 @@ class _GymScreenState extends State<GymScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
+              Wrap(
+                alignment: WrapAlignment.end,
+                spacing: 8,
+                runSpacing: 8,
                 children: [
                   TextButton(
                     onPressed: () => Navigator.pop(ctx, null),
@@ -2438,7 +2440,6 @@ class _GymScreenState extends State<GymScreen> {
                       style: TextStyle(color: Color(0xFF6F7789)),
                     ),
                   ),
-                  const SizedBox(width: 4),
                   TextButton(
                     onPressed: () => Navigator.pop(ctx, false),
                     style: TextButton.styleFrom(
@@ -2449,7 +2450,6 @@ class _GymScreenState extends State<GymScreen> {
                       style: TextStyle(color: Color(0xFF6F7789), fontWeight: FontWeight.w600),
                     ),
                   ),
-                  const SizedBox(width: 8),
                   ElevatedButton(
                     onPressed: () => Navigator.pop(ctx, true),
                     style: ElevatedButton.styleFrom(
