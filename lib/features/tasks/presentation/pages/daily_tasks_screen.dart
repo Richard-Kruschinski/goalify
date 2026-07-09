@@ -2039,19 +2039,24 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                   // Menu
                   PopupMenuButton<int>(
                     icon: const Icon(Icons.more_horiz, color: Color(0xFF6F7789)),
+                    color: Colors.white,
+                    surfaceTintColor: Colors.white,
+                    elevation: 10,
+                    shadowColor: const Color(0x29000000),
+                    offset: const Offset(0, 44),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(16),
                     ),
                     onSelected: (val) {
                       if (val == 1) {
-                        setState(() {
-                          _mode = _mode == DailyViewMode.today
-                              ? DailyViewMode.byDate
-                              : DailyViewMode.today;
-                          if (_mode == DailyViewMode.today) {
+                        if (_mode == DailyViewMode.today) {
+                          _pickDate();
+                        } else {
+                          setState(() {
+                            _mode = DailyViewMode.today;
                             _selectedDate = DateTime.now();
-                          }
-                        });
+                          });
+                        }
                       } else if (val == 2) {
                         _pickDate();
                       } else if (val == 3) {
@@ -2059,21 +2064,27 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                       }
                     },
                     itemBuilder: (_) => [
-                      PopupMenuItem(
+                      _buildHeaderMenuItem(
                         value: 1,
-                        child: Text(_mode == DailyViewMode.today
+                        icon: _mode == DailyViewMode.today
+                            ? Icons.calendar_month
+                            : Icons.today,
+                        label: _mode == DailyViewMode.today
                             ? 'View by date'
-                            : 'Back to Today'),
+                            : 'Back to Today',
                       ),
                       if (_mode == DailyViewMode.byDate)
-                        const PopupMenuItem(
+                        _buildHeaderMenuItem(
                           value: 2,
-                          child: Text('Pick another date'),
+                          icon: Icons.event,
+                          label: 'Pick another date',
                         ),
                       if (_mode == DailyViewMode.today)
-                        const PopupMenuItem(
+                        _buildHeaderMenuItem(
                           value: 3,
-                          child: Text('Reset all'),
+                          icon: Icons.restart_alt,
+                          label: 'Reset all',
+                          destructive: true,
                         ),
                     ],
                   ),
@@ -2084,6 +2095,40 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
           const SizedBox(height: 16),
           // Mini Calendar Week View
           _buildWeekCalendar(),
+        ],
+      ),
+    );
+  }
+
+  PopupMenuItem<int> _buildHeaderMenuItem({
+    required int value,
+    required IconData icon,
+    required String label,
+    bool destructive = false,
+  }) {
+    final accent = destructive ? const Color(0xFFE53935) : const Color(0xFF374151);
+    return PopupMenuItem<int>(
+      value: value,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: destructive ? const Color(0xFFFFEBEE) : const Color(0xFFF0F4F8),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, size: 18, color: accent),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: destructive ? const Color(0xFFE53935) : const Color(0xFF1A1D1F),
+            ),
+          ),
         ],
       ),
     );
@@ -2561,7 +2606,10 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
       builder: (dialogContext) => ModernDatePickerDialog(
         initialDate: _selectedDate,
         onDateSelected: (picked) {
-          setState(() => _selectedDate = picked);
+          setState(() {
+            _selectedDate = picked;
+            _mode = DailyViewMode.byDate;
+          });
           Navigator.of(dialogContext).pop();
         },
       ),
