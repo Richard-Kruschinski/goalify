@@ -12,7 +12,8 @@ class AppBlockingConfig {
     'com.snapchat.android',
     'com.zhiliaoapp.musically', // TikTok
     'com.reddit.frontpage',
-    
+    'com.ninegag.android.app', // 9GAG
+
     // Entertainment
     'com.google.android.youtube',
     'com.netflix.mediaclient',
@@ -33,6 +34,8 @@ class AppBlockingConfig {
     'com.activision.callofduty.shooter', // Call of Duty Mobile
     'com.ea.gp.fifamobile', // FIFA Mobile
     'com.riotgames.league.wildrift', // League of Legends: Wild Rift
+    'com.riotgames.mobile.leagueconnect', // Riot Mobile
+    'app.cranberry.splash', // Splash - Imposter Game
     'com.garena.game.codm', // COD Mobile (Garena)
     'com.supercell.hayday', // Hay Day
     'com.playrix.homescapes', // Homescapes
@@ -45,6 +48,7 @@ class AppBlockingConfig {
     // Shopping
     'com.ebay.mobile', // eBay
     'com.amazon.mShop.android.shopping', // Amazon Shopping
+    'com.saramart.android', // Hacoo (ehem. SaraMart)
     
     // Browsers (optional - be careful with this)
     // 'com.android.chrome',

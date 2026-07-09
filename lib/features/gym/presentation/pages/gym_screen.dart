@@ -8,6 +8,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../../../core/utils/icon_mapper.dart'; // IconMapper für zentrale Icon-Verwaltung
+import '../../../../core/widgets/gym_icons.dart'; // Custom Push/Pull/Cardio Icons
 import '../../../tasks/domain/usecases/daily_tasks_helper.dart'; // for markGymTaskDoneForToday
 import '../../data/models/gym_models.dart';
 import '../../data/repositories/gym_repository_impl.dart';
@@ -2113,6 +2114,14 @@ class _GymScreenState extends State<GymScreen> {
         ),
       );
     }
+    final stored = _dayIcons[day];
+    if (GymIcons.isCustom(stored)) {
+      return GymIcons.icon(
+        stored!,
+        color: const Color(0xFFE53935),
+        size: 24,
+      );
+    }
     return Icon(
       _getDayIcon(day),
       color: const Color(0xFFE53935),
@@ -2523,7 +2532,7 @@ class _GymScreenState extends State<GymScreen> {
   }
 
   Future<void> _changeIconDialog(String day) async {
-    final selectedIcon = await showDialog<IconData>(
+    final selectedCode = await showDialog<int>(
       context: context,
       builder: (ctx) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -2587,10 +2596,42 @@ class _GymScreenState extends State<GymScreen> {
                     mainAxisSpacing: 14,
                     crossAxisSpacing: 14,
                   ),
-                  itemCount: _availableIcons.length + 1,
+                  itemCount: GymIcons.all.length + _availableIcons.length + 1,
                   itemBuilder: (_, index) {
+                    // Custom Push/Pull/Cardio icons first
+                    if (index < GymIcons.all.length) {
+                      final code = GymIcons.all[index];
+                      final isSelected = _dayIcons[day] == code;
+
+                      return Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () => Navigator.pop(ctx, code),
+                          borderRadius: BorderRadius.circular(14),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? const Color(0xFFFFEBEE)
+                                  : const Color(0xFFF5F7FA),
+                              borderRadius: BorderRadius.circular(14),
+                              border: isSelected
+                                  ? Border.all(color: const Color(0xFFE53935), width: 2.5)
+                                  : Border.all(color: const Color(0xFFE0E0E0), width: 1),
+                            ),
+                            child: GymIcons.icon(
+                              code,
+                              size: 28,
+                              color: isSelected
+                                  ? const Color(0xFFE53935)
+                                  : const Color(0xFF6F7789),
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+
                     // Plus button at the end
-                    if (index == _availableIcons.length) {
+                    if (index == GymIcons.all.length + _availableIcons.length) {
                       return Material(
                         color: Colors.transparent,
                         child: InkWell(
@@ -2615,13 +2656,14 @@ class _GymScreenState extends State<GymScreen> {
                       );
                     }
 
-                    final icon = _availableIcons[index];
-                    final isSelected = _getDayIcon(day).codePoint == icon.codePoint;
-                    
+                    final icon = _availableIcons[index - GymIcons.all.length];
+                    final isSelected =
+                        (_dayIcons[day] ?? Icons.event_note.codePoint) == icon.codePoint;
+
                     return Material(
                       color: Colors.transparent,
                       child: InkWell(
-                        onTap: () => Navigator.pop(ctx, icon),
+                        onTap: () => Navigator.pop(ctx, icon.codePoint),
                         borderRadius: BorderRadius.circular(14),
                         child: Container(
                           decoration: BoxDecoration(
@@ -2652,9 +2694,9 @@ class _GymScreenState extends State<GymScreen> {
       ),
     );
 
-    if (selectedIcon != null) {
+    if (selectedCode != null) {
       setState(() {
-        _dayIcons[day] = selectedIcon.codePoint;
+        _dayIcons[day] = selectedCode;
         // Remove custom icon when switching to predefined icon
         _dayCustomIcons.remove(day);
       });
