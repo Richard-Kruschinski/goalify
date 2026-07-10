@@ -1,6 +1,19 @@
 import 'package:intl/intl.dart';
 import '../../features/tasks/data/models/daily_task.dart';
+import '../../features/gym/data/models/gym_models.dart';
 import '../../l10n/generated/app_localizations.dart';
+
+/// Builds localized workout unit labels from the current localization.
+WorkoutUnits workoutUnitsOf(AppLocalizations l10n) => WorkoutUnits(
+      kg: l10n.unitKg,
+      reps: l10n.unitReps,
+      minShort: l10n.unitMin,
+      secShort: l10n.unitSec,
+      sets: l10n.setsWord,
+      dropset: l10n.dropsetLabel,
+      noProgress: l10n.noProgressYet,
+      update: l10n.updateLabel,
+    );
 
 /// Localized display labels for task repeat patterns.
 /// Mirrors the English label logic in the models (DailyTask /

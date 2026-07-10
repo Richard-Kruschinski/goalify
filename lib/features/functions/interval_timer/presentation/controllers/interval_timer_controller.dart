@@ -50,6 +50,19 @@ class IntervalTimerController extends ChangeNotifier {
   String get currentPhaseLabel =>
       _currentPhase == IntervalTimerPhase.task ? 'Aufgabe' : 'Pause';
 
+  /// True while in the task phase (used by the UI to pick a localized label).
+  bool get isTaskPhase => _currentPhase == IntervalTimerPhase.task;
+
+  /// Name of the currently running task, or null when no tasks exist.
+  String? get currentTaskName =>
+      _tasks.isEmpty ? null : _tasks[_currentTaskIndex].name;
+
+  /// Name of the task the current pause precedes, or null when unavailable.
+  String? get pendingTaskName =>
+      (_pendingTaskIndex >= 0 && _pendingTaskIndex < _tasks.length)
+          ? _tasks[_pendingTaskIndex].name
+          : null;
+
   String get formattedTime {
     final minutes = _remainingSeconds ~/ 60;
     final seconds = _remainingSeconds % 60;

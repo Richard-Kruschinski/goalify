@@ -17,41 +17,71 @@ IconData _iconFromString(String? name) {
   }
 }
 
-String formatDurationShort(int seconds) {
-  if (seconds <= 0) return '0 s';
+/// Localized unit / label strings used when rendering workout values.
+/// Kept as a plain data holder so the model layer stays independent of the
+/// generated l10n code; the presentation layer builds it from AppLocalizations
+/// (see `workoutUnitsOf` in core/i18n/task_labels.dart). Defaults to English.
+class WorkoutUnits {
+  final String kg;
+  final String reps;
+  final String minShort;
+  final String secShort;
+  final String sets;
+  final String dropset;
+  final String noProgress;
+  final String update;
+
+  const WorkoutUnits({
+    this.kg = 'kg',
+    this.reps = 'reps',
+    this.minShort = 'min',
+    this.secShort = 's',
+    this.sets = 'Sets',
+    this.dropset = 'Dropset',
+    this.noProgress = 'No progress yet',
+    this.update = 'Update',
+  });
+
+  static const WorkoutUnits en = WorkoutUnits();
+}
+
+String formatDurationShort(int seconds, [WorkoutUnits u = WorkoutUnits.en]) {
+  if (seconds <= 0) return '0 ${u.secShort}';
   final int minutes = seconds ~/ 60;
   final int secs = seconds % 60;
-  if (minutes > 0 && secs > 0) return '$minutes min $secs s';
-  if (minutes > 0) return '$minutes min';
-  return '$seconds s';
+  if (minutes > 0 && secs > 0) return '$minutes ${u.minShort} $secs ${u.secShort}';
+  if (minutes > 0) return '$minutes ${u.minShort}';
+  return '$seconds ${u.secShort}';
 }
 
 bool isDurationWorkout(Workout workout) => workout.isDurationBased;
 
-String latestSummaryText(Workout workout, WorkoutLog? latest) {
-  if (latest == null) return 'No progress yet';
+String latestSummaryText(Workout workout, WorkoutLog? latest,
+    [WorkoutUnits u = WorkoutUnits.en]) {
+  if (latest == null) return u.noProgress;
   if (isDurationWorkout(workout)) {
     final dur = latest.longestDurationSeconds;
-    final value = dur > 0 ? formatDurationShort(dur) : '${latest.setCount} Sets';
+    final value = dur > 0 ? formatDurationShort(dur, u) : '${latest.setCount} ${u.sets}';
     return '${latest.day} • $value';
   }
   final value = latest.hasAnyDropsets
-      ? 'Dropset'
-      : '${latest.maxWeightKg.toStringAsFixed(1)} kg × ${latest.heaviestSetReps} reps';
+      ? u.dropset
+      : '${latest.maxWeightKg.toStringAsFixed(1)} ${u.kg} × ${latest.heaviestSetReps} ${u.reps}';
   return '${latest.day} • $value';
 }
 
-String latestUpdateText(Workout workout, WorkoutLog? latest) {
-  if (latest == null) return 'No progress yet';
+String latestUpdateText(Workout workout, WorkoutLog? latest,
+    [WorkoutUnits u = WorkoutUnits.en]) {
+  if (latest == null) return u.noProgress;
   if (isDurationWorkout(workout)) {
     final dur = latest.longestDurationSeconds;
-    final value = dur > 0 ? formatDurationShort(dur) : '${latest.setCount} Sets';
-    return 'Update: $value';
+    final value = dur > 0 ? formatDurationShort(dur, u) : '${latest.setCount} ${u.sets}';
+    return '${u.update}: $value';
   }
   final value = latest.hasAnyDropsets
-      ? 'Dropset'
-      : '${latest.maxWeightKg.toStringAsFixed(1)} kg × ${latest.heaviestSetReps} reps';
-  return 'Update: $value';
+      ? u.dropset
+      : '${latest.maxWeightKg.toStringAsFixed(1)} ${u.kg} × ${latest.heaviestSetReps} ${u.reps}';
+  return '${u.update}: $value';
 }
 
 class Workout {

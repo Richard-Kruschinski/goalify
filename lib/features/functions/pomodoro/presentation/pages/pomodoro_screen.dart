@@ -8,6 +8,38 @@ import '../controllers/pomodoro_controller.dart';
 import '../../data/models/pomodoro_stats.dart';
 import '../../data/models/pomodoro_profile.dart';
 
+/// Localized display name for a Pomodoro profile. Default (built-in) profiles
+/// are stored with stable ids and English names; only the display is
+/// translated, so persisted data and custom names stay untouched.
+String pomodoroProfileName(AppLocalizations l10n, PomodoroProfile profile) {
+  switch (profile.id) {
+    case 'classic':
+      return l10n.profileClassic;
+    case 'short':
+      return l10n.profileShort;
+    case 'long':
+      return l10n.profileLong;
+    case 'intense':
+      return l10n.profileIntense;
+    default:
+      return profile.name;
+  }
+}
+
+/// Localized Pomodoro phase label (the controller keeps a context-free
+/// fallback for native notifications).
+String _localizedPhaseLabel(BuildContext context, PomodoroPhase phase) {
+  final l10n = AppLocalizations.of(context);
+  switch (phase) {
+    case PomodoroPhase.work:
+      return l10n.pomodoroFocus;
+    case PomodoroPhase.shortBreak:
+      return l10n.shortBreak;
+    case PomodoroPhase.longBreak:
+      return l10n.longBreak;
+  }
+}
+
 class PomodoroScreen extends StatelessWidget {
   const PomodoroScreen({super.key});
 
@@ -222,7 +254,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                             ),
                           ),
                           child: Text(
-                            'Cancel',
+                            AppLocalizations.of(context).cancel,
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -1060,7 +1092,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                             ),
                           ),
                           child: Text(
-                            'Cancel',
+                            AppLocalizations.of(context).cancel,
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -1136,9 +1168,9 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          child: const Text(
-                            'Create',
-                            style: TextStyle(
+                          child: Text(
+                            AppLocalizations.of(context).create,
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
                             ),
@@ -1243,7 +1275,7 @@ class _CurrentProfileIndicator extends StatelessWidget {
           Icon(Icons.timer_outlined, size: 16, color: AppColors.muted(context)),
           const SizedBox(width: 8),
           Text(
-            profile.name,
+            pomodoroProfileName(AppLocalizations.of(context), profile),
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
@@ -1252,7 +1284,7 @@ class _CurrentProfileIndicator extends StatelessWidget {
           ),
           const SizedBox(width: 4),
           Text(
-            '(${profile.workDuration}min)',
+            '(${profile.workDuration} ${AppLocalizations.of(context).unitMin})',
             style: TextStyle(
               fontSize: 12,
               color: AppColors.faint(context),
@@ -1301,7 +1333,7 @@ class _PhaseIndicator extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                controller.currentPhaseLabel,
+                _localizedPhaseLabel(context, controller.currentPhase),
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -1859,7 +1891,7 @@ class _ProfileTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    profile.name,
+                    pomodoroProfileName(AppLocalizations.of(context), profile),
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -1868,7 +1900,11 @@ class _ProfileTile extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${profile.workDuration}min Work • ${profile.shortBreakDuration}min Break • ${profile.longBreakDuration}min Long Break',
+                    AppLocalizations.of(context).profileDurations(
+                      '${profile.workDuration} ${AppLocalizations.of(context).unitMin}',
+                      '${profile.shortBreakDuration} ${AppLocalizations.of(context).unitMin}',
+                      '${profile.longBreakDuration} ${AppLocalizations.of(context).unitMin}',
+                    ),
                     style: TextStyle(
                       fontSize: 12,
                       color: AppColors.muted(context),

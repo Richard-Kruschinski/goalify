@@ -1,5 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import '../../../../l10n/generated/app_localizations.dart';
+import '../../../../core/i18n/task_labels.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/models/gym_models.dart';
 
@@ -370,7 +371,7 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        latestSummaryText(w, latest),
+                        latestSummaryText(w, latest, workoutUnitsOf(AppLocalizations.of(context))),
                         style: TextStyle(fontSize: 13, color: AppColors.muted(context)),
                       ),
                     ],

@@ -309,8 +309,11 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
               return touchedSpots.map((spot) {
                 final index = spot.x.toInt();
                 final point = data[index];
+                final valueStr = _mode == DisplayMode.ratio
+                    ? '${point.value}%'
+                    : AppLocalizations.of(context).ptsValue('${point.value}');
                 return LineTooltipItem(
-                  '${_dateLabel(point.t)}\n${point.value}${_mode == DisplayMode.ratio ? '%' : ' pts'}',
+                  '${_dateLabel(point.t)}\n$valueStr',
                   const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
@@ -566,10 +569,11 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
   }
 
   String _formatFocusMinutes(int minutes) {
-    if (minutes < 60) return '$minutes min.';
+    final l10n = AppLocalizations.of(context);
+    if (minutes < 60) return '$minutes ${l10n.unitMin}';
     final h = minutes ~/ 60;
     final m = minutes % 60;
-    return m == 0 ? '${h}h' : '${h}h $m min.';
+    return m == 0 ? '$h ${l10n.unitHour}' : '$h ${l10n.unitHour} $m ${l10n.unitMin}';
   }
 
   Widget _buildWeeklyReviewCard() {

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../../../l10n/generated/app_localizations.dart';
+import '../../../../core/i18n/task_labels.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/snackbar_utils.dart';
 import 'package:flutter/services.dart'; // rootBundle, SystemChrome, DeviceOrientation
@@ -32,7 +33,7 @@ Future<bool> _showModernConfirmationDialog({
   required String title,
   required String message,
   required String confirmButtonText,
-  String cancelButtonText = 'Cancel',
+  String? cancelButtonText,
   required Color iconColor,
   required IconData icon,
   bool isDangerous = false,
@@ -99,7 +100,7 @@ Future<bool> _showModernConfirmationDialog({
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   ),
                   child: Text(
-                    cancelButtonText,
+                    cancelButtonText ?? AppLocalizations.of(context).cancel,
                     style: TextStyle(color: AppColors.muted(context)),
                   ),
                 ),
@@ -784,13 +785,17 @@ class _GymScreenState extends State<GymScreen> {
       '${dt.day.toString().padLeft(2, '0')}.${dt.month.toString().padLeft(2, '0')}.${dt.year}';
 
   String _formatSetValue(Workout workout, WorkoutSet set) {
+    final u = workoutUnitsOf(AppLocalizations.of(context));
     if (isDurationWorkout(workout) && set.hasDuration) {
-      return formatDurationShort(set.durationSeconds ?? 0);
+      return formatDurationShort(set.durationSeconds ?? 0, u);
     }
-    return '${set.weightKg.toStringAsFixed(1)} kg × ${set.reps}';
+    return '${set.weightKg.toStringAsFixed(1)} ${u.kg} × ${set.reps}';
   }
 
-  String _chartYAxisLabel(Workout workout) => isDurationWorkout(workout) ? 's' : 'kg';
+  String _chartYAxisLabel(Workout workout) {
+    final u = workoutUnitsOf(AppLocalizations.of(context));
+    return isDurationWorkout(workout) ? u.secShort : u.kg;
+  }
 
   void _addLog(String workoutId, WorkoutLog result) {
     final now = DateTime.now();
@@ -1111,7 +1116,7 @@ class _GymScreenState extends State<GymScreen> {
     final confirmed = await _showModernConfirmationDialog(
       context: context,
       title: AppLocalizations.of(context).clearAllHistoryTitle,
-      message: 'This will remove the complete history for "${w.name}".\nAssignments in your workout plan remain.',
+      message: AppLocalizations.of(context).clearAllHistoryMessage(w.name),
       confirmButtonText: AppLocalizations.of(context).delete,
       icon: Icons.delete_outline,
       iconColor: AppColors.accent(context),
@@ -1126,13 +1131,13 @@ class _GymScreenState extends State<GymScreen> {
   Future<void> _confirmDeleteExercise(Workout w) async {
     final result = await _showModernConfirmationDialogWithOptions<String>(
       context: context,
-      title: 'Remove "${w.name}"?',
+      title: AppLocalizations.of(context).removeWorkoutTitle(w.name),
       message: AppLocalizations.of(context).removeWorkoutMessage,
       icon: Icons.delete_forever,
       iconColor: AppColors.accent(context),
       isDangerous: true,
       options: {
-        'Cancel': 'cancel',
+        AppLocalizations.of(context).cancel: 'cancel',
         AppLocalizations.of(context).deleteOnly: 'delete_only',
         AppLocalizations.of(context).deletePlusCalendar: 'delete_all',
       },
@@ -2923,12 +2928,13 @@ class _GymScreenState extends State<GymScreen> {
       return null;
     }
 
+    final chartUnits = workoutUnitsOf(AppLocalizations.of(context));
     String valueLabelForSet(double y, WorkoutLog? log, int setIndex) {
-      if (isDuration) return formatDurationShort(y.round());
+      if (isDuration) return formatDurationShort(y.round(), chartUnits);
       final reps = (log != null && setIndex >= 0 && setIndex < log.sets.length)
           ? log.sets[setIndex].reps
           : 0;
-      return '${y.toStringAsFixed(1)} kg x $reps';
+      return '${y.toStringAsFixed(1)} ${chartUnits.kg} x $reps';
     }
 
     Color seriesColor(int index) {
@@ -2987,7 +2993,7 @@ class _GymScreenState extends State<GymScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                'Progress – ${w.name}',
+                AppLocalizations.of(context).progressFor(w.name),
                 style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
             ),
@@ -3124,9 +3130,9 @@ class _GymScreenState extends State<GymScreen> {
                       TextStyle(color: AppColors.ink(context), fontWeight: FontWeight.w700),
                       children: [
                         TextSpan(
-                          text: isBest 
-                            ? 'Set ${setIndex + 1}: $valueStr ✨ BEST'
-                            : 'Set ${setIndex + 1}: $valueStr',
+                          text: isBest
+                            ? AppLocalizations.of(context).setLabelBest(setIndex + 1, valueStr)
+                            : AppLocalizations.of(context).setLabel(setIndex + 1, valueStr),
                           style: TextStyle(
                             color: AppColors.ink(context),
                             fontWeight: FontWeight.w500,
@@ -3630,7 +3636,7 @@ class _GymScreenState extends State<GymScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        latestSummaryText(w, latest),
+                        latestSummaryText(w, latest, workoutUnitsOf(AppLocalizations.of(context))),
                         style: TextStyle(
                           fontSize: 13,
                           color: AppColors.muted(context),

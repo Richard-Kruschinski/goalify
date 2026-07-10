@@ -153,7 +153,9 @@ class _DistractionBlockerScreenState extends State<DistractionBlockerScreen> wit
                 
                 // Status text
                 Text(
-                  isActive ? 'ACTIVE' : 'INACTIVE',
+                  isActive
+                      ? AppLocalizations.of(context).statusActive
+                      : AppLocalizations.of(context).statusInactive,
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 22,
@@ -290,7 +292,7 @@ class _DistractionBlockerScreenState extends State<DistractionBlockerScreen> wit
                               : null,
                         ),
                         child: Text(
-                          'OFF',
+                          AppLocalizations.of(context).toggleOff,
                           style: TextStyle(
                             color: !isActive ? Color(0xFF9B6FD9) : AppColors.faint(context),
                             fontWeight: !isActive ? FontWeight.bold : FontWeight.w500,
@@ -353,7 +355,7 @@ class _DistractionBlockerScreenState extends State<DistractionBlockerScreen> wit
                               : null,
                         ),
                         child: Text(
-                          'ON',
+                          AppLocalizations.of(context).toggleOn,
                           style: TextStyle(
                             color: isActive ? Color(0xFFFF6B6B) : AppColors.faint(context),
                             fontWeight: isActive ? FontWeight.bold : FontWeight.w500,

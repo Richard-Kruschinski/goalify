@@ -532,6 +532,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gymTitle => 'Gym';
 
   @override
+  String get navDaily => 'Daily';
+
+  @override
   String get calendarTitle => 'Calendar';
 
   @override
@@ -1082,6 +1085,73 @@ class AppLocalizationsEn extends AppLocalizations {
   String dropsetOfSet(int d, int set) {
     return 'Dropset $d of set $set';
   }
+
+  @override
+  String get unitKg => 'kg';
+
+  @override
+  String get unitReps => 'reps';
+
+  @override
+  String get unitMin => 'min';
+
+  @override
+  String get unitSec => 's';
+
+  @override
+  String get unitHour => 'h';
+
+  @override
+  String get dropsetLabel => 'Dropset';
+
+  @override
+  String get noProgressYet => 'No progress yet';
+
+  @override
+  String get updateLabel => 'Update';
+
+  @override
+  String get setsWord => 'Sets';
+
+  @override
+  String get noProfileCreated => 'No profile created';
+
+  @override
+  String pauseBefore(String name) {
+    return 'Pause before $name';
+  }
+
+  @override
+  String get profileClassic => 'Classic';
+
+  @override
+  String get profileShort => 'Short';
+
+  @override
+  String get profileLong => 'Long';
+
+  @override
+  String get profileIntense => 'Intense';
+
+  @override
+  String get pomodoroFocus => 'Focus';
+
+  @override
+  String profileDurations(String work, String short, String long) {
+    return '$work work • $short break • $long long break';
+  }
+
+  @override
+  String get statusActive => 'ACTIVE';
+
+  @override
+  String get statusInactive => 'INACTIVE';
+
+  @override
+  String get toggleOn => 'ON';
+
+  @override
+  String get toggleOff => 'OFF';
 
   @override
   String get blockerCurrentSession => 'Current Session';

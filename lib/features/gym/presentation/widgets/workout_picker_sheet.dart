@@ -1,5 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import '../../../../l10n/generated/app_localizations.dart';
+import '../../../../core/i18n/task_labels.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/models/gym_models.dart';
 
@@ -79,7 +80,8 @@ class _WorkoutPickerSheetState extends State<WorkoutPickerSheet> {
 
   Widget _buildWorkoutCard(Workout workout) {
     final WorkoutLog? latest = widget.latestFor(workout.id);
-    final String subtitle = latestUpdateText(workout, latest);
+    final String subtitle =
+        latestUpdateText(workout, latest, workoutUnitsOf(AppLocalizations.of(context)));
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),

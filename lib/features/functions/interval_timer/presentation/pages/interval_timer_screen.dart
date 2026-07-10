@@ -6,6 +6,15 @@ import 'package:provider/provider.dart';
 import '../controllers/interval_timer_controller.dart';
 import '../../data/models/interval_timer_state.dart';
 
+/// Localized version of IntervalTimerController.currentItemLabel.
+/// The controller keeps a context-free English/German fallback for native
+/// notifications; the UI uses this to render the label in the app language.
+String intervalItemLabel(AppLocalizations l10n, IntervalTimerController c) {
+  if (!c.hasTasks) return l10n.noProfileCreated;
+  if (c.isInPause) return l10n.pauseBefore(c.pendingTaskName ?? '');
+  return c.currentTaskName ?? '';
+}
+
 class IntervalTimerScreen extends StatelessWidget {
   const IntervalTimerScreen({super.key});
 
@@ -647,7 +656,9 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               _buildPhaseChip(
-                label: controller.currentPhaseLabel,
+                label: inTask
+                    ? AppLocalizations.of(context).taskLabel
+                    : AppLocalizations.of(context).pause,
                 color: accent,
                 icon: inTask ? Icons.fitness_center : Icons.free_breakfast,
               ),
@@ -661,7 +672,7 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
           ),
           const SizedBox(height: 12),
           Text(
-            controller.currentItemLabel,
+            intervalItemLabel(AppLocalizations.of(context), controller),
             textAlign: TextAlign.center,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,

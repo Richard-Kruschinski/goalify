@@ -1,6 +1,7 @@
 ﻿import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../../../l10n/generated/app_localizations.dart';
+import '../../../../core/i18n/task_labels.dart';
 import '../../../../core/theme/app_colors.dart';
 import 'package:flutter/services.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -36,7 +37,8 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
   bool _showAllSets = true;
 
   bool get _durationBased => widget.isDurationBased;
-  String get _unitLabel => _durationBased ? 's' : 'kg';
+  WorkoutUnits get _units => workoutUnitsOf(AppLocalizations.of(context));
+  String get _unitLabel => _durationBased ? _units.secShort : _units.kg;
 
   double _yValueForLog(WorkoutLog log) =>
       _durationBased ? log.longestDurationSeconds.toDouble() : log.maxWeightKg;
@@ -72,8 +74,9 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
   }
 
   String _tooltipValue(double yValue, WorkoutLog log) {
-    if (_durationBased) return formatDurationShort(log.longestDurationSeconds);
-    return '${yValue.toStringAsFixed(1)} kg x ${_repsForFilter(log)}';
+    final u = _units;
+    if (_durationBased) return formatDurationShort(log.longestDurationSeconds, u);
+    return '${yValue.toStringAsFixed(1)} ${u.kg} x ${_repsForFilter(log)}';
   }
 
   Color _seriesColor(int index) {
@@ -465,8 +468,8 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
                         ? log.sets[setIndex].reps
                         : 0;
                     final valueStr = _durationBased
-                        ? formatDurationShort(t.y.round())
-                        : '${t.y.toStringAsFixed(1)} kg x $reps';
+                        ? formatDurationShort(t.y.round(), _units)
+                        : '${t.y.toStringAsFixed(1)} ${_units.kg} x $reps';
                     return LineTooltipItem(
                       '$dateStr\n',
                       TextStyle(color: AppColors.ink(context), fontWeight: FontWeight.w700),
@@ -700,7 +703,7 @@ class _FilterDialogModernState extends State<_FilterDialogModern> {
                           horizontal: 12,
                           vertical: 10,
                         ),
-                        suffixText: 'kg',
+                        suffixText: AppLocalizations.of(context).unitKg,
                         suffixStyle: const TextStyle(
                           color: Color(0xFF6B7280),
                           fontSize: 12,

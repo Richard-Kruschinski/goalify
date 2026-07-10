@@ -240,11 +240,11 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            _buildQuickAddButton('+5 min', 5, controller),
+                            _buildQuickAddButton('+5 ${AppLocalizations.of(context).unitMin}', 5, controller),
                             const SizedBox(width: 12),
-                            _buildQuickAddButton('+10 min', 10, controller),
+                            _buildQuickAddButton('+10 ${AppLocalizations.of(context).unitMin}', 10, controller),
                             const SizedBox(width: 12),
-                            _buildQuickAddButton('+15 min', 15, controller),
+                            _buildQuickAddButton('+15 ${AppLocalizations.of(context).unitMin}', 15, controller),
                           ],
                         ),
                       ],
@@ -548,7 +548,7 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
                         : null,
                   ),
                   child: Text(
-                    '$minutes min',
+                    '$minutes ${AppLocalizations.of(context).unitMin}',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,

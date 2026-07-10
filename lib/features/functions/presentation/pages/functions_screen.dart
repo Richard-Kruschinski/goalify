@@ -116,7 +116,7 @@ class FunctionsScreen extends StatelessWidget {
                 title: l10n.intervalTimerTitle,
                 subtitle: isRunning
                     ? l10n.intervalCardRunning(
-                        intervalTimer.currentItemLabel, intervalTimer.formattedTime)
+                        intervalItemLabel(l10n, intervalTimer), intervalTimer.formattedTime)
                     : l10n.intervalCardSubtitle,
                 icon: Icons.sports_martial_arts,
                 iconBackgroundColor: (AppColors.isDark(context) ? const Color(0xFF16291F) : const Color(0xFFDDF4E7)),

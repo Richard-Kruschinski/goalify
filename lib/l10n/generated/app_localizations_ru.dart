@@ -541,6 +541,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get gymTitle => 'Спортзал';
 
   @override
+  String get navDaily => 'Ежедневно';
+
+  @override
   String get calendarTitle => 'Календарь';
 
   @override
@@ -1102,6 +1105,73 @@ class AppLocalizationsRu extends AppLocalizations {
   String dropsetOfSet(int d, int set) {
     return 'Дропсет $d подхода $set';
   }
+
+  @override
+  String get unitKg => 'кг';
+
+  @override
+  String get unitReps => 'повт.';
+
+  @override
+  String get unitMin => 'мин';
+
+  @override
+  String get unitSec => 'с';
+
+  @override
+  String get unitHour => 'ч';
+
+  @override
+  String get dropsetLabel => 'Дропсет';
+
+  @override
+  String get noProgressYet => 'Прогресса пока нет';
+
+  @override
+  String get updateLabel => 'Обновление';
+
+  @override
+  String get setsWord => 'подходов';
+
+  @override
+  String get noProfileCreated => 'Профиль не создан';
+
+  @override
+  String pauseBefore(String name) {
+    return 'Перерыв перед $name';
+  }
+
+  @override
+  String get profileClassic => 'Классический';
+
+  @override
+  String get profileShort => 'Короткий';
+
+  @override
+  String get profileLong => 'Длинный';
+
+  @override
+  String get profileIntense => 'Интенсивный';
+
+  @override
+  String get pomodoroFocus => 'Фокус';
+
+  @override
+  String profileDurations(String work, String short, String long) {
+    return '$work работа • $short перерыв • $long длинный перерыв';
+  }
+
+  @override
+  String get statusActive => 'АКТИВНО';
+
+  @override
+  String get statusInactive => 'НЕАКТИВНО';
+
+  @override
+  String get toggleOn => 'ВКЛ';
+
+  @override
+  String get toggleOff => 'ВЫКЛ';
 
   @override
   String get blockerCurrentSession => 'Текущая сессия';

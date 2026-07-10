@@ -1048,6 +1048,12 @@ abstract class AppLocalizations {
   /// **'Gym'**
   String get gymTitle;
 
+  /// No description provided for @navDaily.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily'**
+  String get navDaily;
+
   /// No description provided for @calendarTitle.
   ///
   /// In en, this message translates to:
@@ -1965,6 +1971,132 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Dropset {d} of set {set}'**
   String dropsetOfSet(int d, int set);
+
+  /// No description provided for @unitKg.
+  ///
+  /// In en, this message translates to:
+  /// **'kg'**
+  String get unitKg;
+
+  /// No description provided for @unitReps.
+  ///
+  /// In en, this message translates to:
+  /// **'reps'**
+  String get unitReps;
+
+  /// No description provided for @unitMin.
+  ///
+  /// In en, this message translates to:
+  /// **'min'**
+  String get unitMin;
+
+  /// No description provided for @unitSec.
+  ///
+  /// In en, this message translates to:
+  /// **'s'**
+  String get unitSec;
+
+  /// No description provided for @unitHour.
+  ///
+  /// In en, this message translates to:
+  /// **'h'**
+  String get unitHour;
+
+  /// No description provided for @dropsetLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Dropset'**
+  String get dropsetLabel;
+
+  /// No description provided for @noProgressYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No progress yet'**
+  String get noProgressYet;
+
+  /// No description provided for @updateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Update'**
+  String get updateLabel;
+
+  /// No description provided for @setsWord.
+  ///
+  /// In en, this message translates to:
+  /// **'Sets'**
+  String get setsWord;
+
+  /// No description provided for @noProfileCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'No profile created'**
+  String get noProfileCreated;
+
+  /// No description provided for @pauseBefore.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause before {name}'**
+  String pauseBefore(String name);
+
+  /// No description provided for @profileClassic.
+  ///
+  /// In en, this message translates to:
+  /// **'Classic'**
+  String get profileClassic;
+
+  /// No description provided for @profileShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Short'**
+  String get profileShort;
+
+  /// No description provided for @profileLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Long'**
+  String get profileLong;
+
+  /// No description provided for @profileIntense.
+  ///
+  /// In en, this message translates to:
+  /// **'Intense'**
+  String get profileIntense;
+
+  /// No description provided for @pomodoroFocus.
+  ///
+  /// In en, this message translates to:
+  /// **'Focus'**
+  String get pomodoroFocus;
+
+  /// No description provided for @profileDurations.
+  ///
+  /// In en, this message translates to:
+  /// **'{work} work • {short} break • {long} long break'**
+  String profileDurations(String work, String short, String long);
+
+  /// No description provided for @statusActive.
+  ///
+  /// In en, this message translates to:
+  /// **'ACTIVE'**
+  String get statusActive;
+
+  /// No description provided for @statusInactive.
+  ///
+  /// In en, this message translates to:
+  /// **'INACTIVE'**
+  String get statusInactive;
+
+  /// No description provided for @toggleOn.
+  ///
+  /// In en, this message translates to:
+  /// **'ON'**
+  String get toggleOn;
+
+  /// No description provided for @toggleOff.
+  ///
+  /// In en, this message translates to:
+  /// **'OFF'**
+  String get toggleOff;
 
   /// No description provided for @blockerCurrentSession.
   ///

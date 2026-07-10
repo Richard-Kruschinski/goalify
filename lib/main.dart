@@ -131,6 +131,7 @@ class _MainNavState extends State<MainNav> {
       const FunctionsScreen(),
     ];
 
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       body: screens[currentIndex],
       bottomNavigationBar: BottomNavigationBar(
@@ -138,11 +139,11 @@ class _MainNavState extends State<MainNav> {
         currentIndex: currentIndex,
         onTap: (i) => setState(() => currentIndex = i),
         selectedItemColor: Colors.pink,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.show_chart),     label: 'Progress'),
-          BottomNavigationBarItem(icon: Icon(Icons.check_circle),   label: 'Daily'),
-          BottomNavigationBarItem(icon: Icon(Icons.fitness_center), label: 'Gym'),
-          BottomNavigationBarItem(icon: Icon(Icons.settings),       label: 'Functions'),
+        items: [
+          BottomNavigationBarItem(icon: const Icon(Icons.show_chart),     label: l10n.progressTitle),
+          BottomNavigationBarItem(icon: const Icon(Icons.check_circle),   label: l10n.navDaily),
+          BottomNavigationBarItem(icon: const Icon(Icons.fitness_center), label: l10n.gymTitle),
+          BottomNavigationBarItem(icon: const Icon(Icons.settings),       label: l10n.functionsTitle),
         ],
       ),
     );
