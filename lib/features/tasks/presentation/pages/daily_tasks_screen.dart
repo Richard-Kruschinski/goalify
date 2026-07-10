@@ -1,4 +1,4 @@
-// Daily Tasks screen with "Congrats" overlay when all tasks are done.
+﻿// Daily Tasks screen with "Congrats" overlay when all tasks are done.
 
 import 'dart:async';
 import 'dart:io';
@@ -14,6 +14,10 @@ import '../../data/models/daily_task.dart';
 import '../widgets/create_daily_task_sheet.dart';
 import '../widgets/edit_daily_task_sheet.dart';
 import '../../../../core/widgets/modern_date_picker_dialog.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/i18n/task_labels.dart';
+import '../../../../l10n/generated/app_localizations.dart';
+import 'package:intl/intl.dart';
 
 /// View modes
 enum DailyViewMode { today, byDate }
@@ -73,12 +77,9 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   // Helpers
   void _showFreezeHelp() {
     ScaffoldMessenger.of(context).showSingleSnackBar(
-      const SnackBar(
-        duration: Duration(seconds: 3),
-        content: Text(
-          'Freeze token: protects a keep-task streak for TODAY without checking it off. '
-              'Long-press a keep-task and choose "Freeze for today". Costs 1 token.',
-        ),
+      SnackBar(
+        duration: const Duration(seconds: 3),
+        content: Text(AppLocalizations.of(context).freezeHelp),
       ),
     );
   }
@@ -813,7 +814,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
       PageRouteBuilder(
         opaque: false,
         barrierDismissible: true,
-        barrierColor: Colors.black54,
+        barrierColor: AppColors.muted(context),
         pageBuilder: (_, _, _) => CongratsScreen(
           onSeeProgress: () {
             widget.onNavigateToTab?.call(0);
@@ -832,9 +833,9 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     // Block creating tasks for past dates
     if (_isPastDate(forDateKey, _todayKey())) {
       ScaffoldMessenger.of(context).showSingleSnackBar(
-        const SnackBar(
+        SnackBar(
           duration: Duration(seconds: 2),
-          content: Text('Cannot create tasks for past dates.'),
+          content: Text(AppLocalizations.of(context).cannotCreatePastTasks),
         ),
       );
       return;
@@ -897,9 +898,9 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     // Block changes to past dates (read-only history)
     if (_isPastDate(dateKey, _todayKey())) {
       ScaffoldMessenger.of(context).showSingleSnackBar(
-        const SnackBar(
+        SnackBar(
           duration: Duration(seconds: 2),
-          content: Text('Cannot modify tasks from past dates.'),
+          content: Text(AppLocalizations.of(context).cannotModifyPastTasks),
         ),
       );
       return;
@@ -908,9 +909,9 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     // Block changes to future dates (read-only preview)
     if (_isFutureDate(dateKey, _todayKey())) {
       ScaffoldMessenger.of(context).showSingleSnackBar(
-        const SnackBar(
+        SnackBar(
           duration: Duration(seconds: 2),
-          content: Text('Cannot modify tasks from future dates.'),
+          content: Text(AppLocalizations.of(context).cannotModifyFutureTasks),
         ),
       );
       return;
@@ -918,9 +919,9 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
 
     if (t.keep && dateKey != _todayKey()) {
       ScaffoldMessenger.of(context).showSingleSnackBar(
-        const SnackBar(
+        SnackBar(
           duration: Duration(seconds: 2),
-          content: Text('Recurring tasks can only be checked for today.'),
+          content: Text(AppLocalizations.of(context).recurringOnlyToday),
         ),
       );
       return;
@@ -997,9 +998,9 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     // Block deleting tasks from past dates
     if (_isPastDate(dateKey, _todayKey())) {
       ScaffoldMessenger.of(context).showSingleSnackBar(
-        const SnackBar(
+        SnackBar(
           duration: Duration(seconds: 2),
-          content: Text('Cannot delete tasks from past dates.'),
+          content: Text(AppLocalizations.of(context).cannotDeletePastTasks),
         ),
       );
       return;
@@ -1063,7 +1064,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: AppColors.bg(context),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -1084,19 +1085,19 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                         Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFEDE9FE),
+                            color: (AppColors.isDark(context) ? const Color(0xFF241F33) : const Color(0xFFEDE9FE)),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: const Icon(Icons.checklist, color: Color(0xFF7C3AED)),
                         ),
                         const SizedBox(width: 10),
-                        const Expanded(
+                        Expanded(
                           child: Text(
-                            'Checklist note',
+                            AppLocalizations.of(context).checklistNote,
                             style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.w700,
-                              color: Color(0xFF1A1D1F),
+                              color: AppColors.ink(context),
                             ),
                           ),
                         ),
@@ -1104,11 +1105,11 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                     ),
                     const SizedBox(height: 14),
                     if (draft.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.only(bottom: 8),
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
                         child: Text(
-                          'No checklist items yet. Add one below.',
-                          style: TextStyle(color: Color(0xFF6F7789)),
+                          AppLocalizations.of(context).checklistEmpty,
+                          style: TextStyle(color: AppColors.muted(context)),
                         ),
                       ),
                     ...List.generate(draft.length, (index) {
@@ -1116,14 +1117,14 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                       return Container(
                         margin: const EdgeInsets.only(bottom: 8),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: AppColors.card(context),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Row(
                           children: [
                             Checkbox(
                               value: item.done,
-                              activeColor: const Color(0xFFE53935),
+                              activeColor: AppColors.accent(context),
                               onChanged: (value) {
                                 setSheetState(() => item.done = value ?? false);
                               },
@@ -1134,17 +1135,17 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                                 style: TextStyle(
                                   fontSize: 14,
                                   color: item.done
-                                      ? const Color(0xFF9CA3AF)
-                                      : const Color(0xFF1A1D1F),
+                                      ? AppColors.faint(context)
+                                      : AppColors.ink(context),
                                   decoration:
                                       item.done ? TextDecoration.lineThrough : null,
                                 ),
                               ),
                             ),
                             IconButton(
-                              tooltip: 'Delete item',
+                              tooltip: AppLocalizations.of(context).deleteItem,
                               onPressed: () => setSheetState(() => draft.removeAt(index)),
-                              icon: const Icon(Icons.delete_outline, color: Color(0xFFE53935)),
+                              icon: Icon(Icons.delete_outline, color: AppColors.accent(context)),
                             ),
                           ],
                         ),
@@ -1166,16 +1167,16 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                               });
                             },
                             decoration: InputDecoration(
-                              hintText: 'Add checklist item...',
+                              hintText: AppLocalizations.of(context).addChecklistItemHint,
                               filled: true,
-                              fillColor: Colors.white,
+                              fillColor: AppColors.card(context),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
                                 borderSide: BorderSide.none,
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: Color(0xFFE53935), width: 2),
+                                borderSide: BorderSide(color: AppColors.accent(context), width: 2),
                               ),
                             ),
                           ),
@@ -1191,7 +1192,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                             });
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFE53935),
+                            backgroundColor: AppColors.accent(context),
                             foregroundColor: Colors.white,
                             elevation: 0,
                             shape: RoundedRectangleBorder(
@@ -1210,12 +1211,12 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                           child: OutlinedButton(
                             onPressed: () => Navigator.pop(sheetCtx, false),
                             style: OutlinedButton.styleFrom(
-                              side: const BorderSide(color: Color(0xFFE0E0E0)),
+                              side: BorderSide(color: AppColors.border(context)),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
-                            child: const Text('Cancel'),
+                            child: Text(AppLocalizations.of(context).cancel),
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -1223,14 +1224,14 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                           child: ElevatedButton(
                             onPressed: () => Navigator.pop(sheetCtx, true),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFE53935),
+                              backgroundColor: AppColors.accent(context),
                               foregroundColor: Colors.white,
                               elevation: 0,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
-                            child: const Text('Save checklist'),
+                            child: Text(AppLocalizations.of(context).saveChecklist),
                           ),
                         ),
                       ],
@@ -1291,9 +1292,9 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     // For past dates, show read-only info
     if (_isPastDate(dateKey, _todayKey())) {
       ScaffoldMessenger.of(context).showSingleSnackBar(
-        const SnackBar(
+        SnackBar(
           duration: Duration(seconds: 2),
-          content: Text('Tasks from past dates are read-only.'),
+          content: Text(AppLocalizations.of(context).pastTasksReadOnly),
         ),
       );
       return;
@@ -1304,7 +1305,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     await showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: AppColors.bg(context),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -1313,20 +1314,20 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
           required IconData icon,
           required String title,
           String? subtitle,
-          Color iconColor = const Color(0xFF1A1D1F),
+          Color? iconColor,
           VoidCallback? onTap,
           bool danger = false,
           bool enabled = true,
         }) {
           final foreground = enabled
-              ? (danger ? const Color(0xFFE53935) : iconColor)
+              ? (danger ? AppColors.accent(context) : iconColor ?? AppColors.ink(context))
               : const Color(0xFFBFC5D2);
           final textColor = enabled
-              ? (danger ? const Color(0xFFE53935) : const Color(0xFF1A1D1F))
+              ? (danger ? AppColors.accent(context) : AppColors.ink(context))
               : const Color(0xFFBFC5D2);
           final bgColor = danger
-              ? const Color(0xFFFFEBEE)
-              : iconColor.withOpacity(0.12);
+              ? AppColors.accentSoft(context)
+              : (iconColor ?? AppColors.ink(context)).withOpacity(0.12);
 
           return Opacity(
             opacity: enabled ? 1 : 0.6,
@@ -1336,7 +1337,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
               child: Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppColors.card(context),
                   borderRadius: BorderRadius.circular(14),
                   boxShadow: const [
                     BoxShadow(
@@ -1377,7 +1378,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                               style: TextStyle(
                                 fontSize: 12,
                                 color: enabled
-                                    ? const Color(0xFF6F7789)
+                                    ? AppColors.muted(context)
                                     : const Color(0xFFBFC5D2),
                               ),
                             ),
@@ -1387,7 +1388,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                     ),
                     Icon(
                       danger ? Icons.delete_outline : Icons.chevron_right,
-                      color: danger ? const Color(0xFFE53935) : const Color(0xFFCDD2D8),
+                      color: danger ? AppColors.accent(context) : Color(0xFFCDD2D8),
                     ),
                   ],
                 ),
@@ -1409,18 +1410,18 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFFEBEE),
+                          color: AppColors.accentSoft(context),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Icon(Icons.settings, color: Color(0xFFE53935)),
+                        child: Icon(Icons.settings, color: AppColors.accent(context)),
                       ),
                       const SizedBox(width: 12),
-                      const Text(
-                        'Task actions',
+                      Text(
+                        AppLocalizations.of(context).taskActions,
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFF1A1D1F),
+                          color: AppColors.ink(context),
                         ),
                       ),
                     ],
@@ -1428,15 +1429,15 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                   const SizedBox(height: 12),
                 actionTile(
                   icon: Icons.edit,
-                  title: 'Edit',
-                  subtitle: 'Update title, description or category',
+                  title: AppLocalizations.of(context).edit,
+                  subtitle: AppLocalizations.of(context).editTaskSubtitle,
                   iconColor: const Color(0xFF3F51B5),
                   onTap: () async {
                     final data = await showModalBottomSheet<TaskFormData>(
                       context: context,
                       isScrollControlled: true,
                       useSafeArea: true,
-                      backgroundColor: const Color(0xFFF5F7FA),
+                      backgroundColor: AppColors.bg(context),
                       shape: const RoundedRectangleBorder(
                         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
                       ),
@@ -1501,8 +1502,8 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                 const SizedBox(height: 10),
                 actionTile(
                   icon: Icons.emoji_emotions,
-                  title: 'Change icon',
-                  subtitle: 'Choose a custom or predefined icon',
+                  title: AppLocalizations.of(context).changeIcon,
+                  subtitle: AppLocalizations.of(context).changeIconSubtitle,
                   iconColor: const Color(0xFFFF6F00),
                   onTap: () async {
                     Navigator.pop(ctx);
@@ -1512,7 +1513,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                 const SizedBox(height: 10),
                 actionTile(
                   icon: Icons.checklist,
-                  title: 'Checklist note',
+                  title: AppLocalizations.of(context).checklistNote,
                   subtitle: t.hasChecklist
                       ? '${t.checklistDoneCount}/${t.checklistTotalCount} checked'
                       : 'Add checkbox items to this task',
@@ -1525,8 +1526,8 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                 const SizedBox(height: 10),
                 actionTile(
                   icon: Icons.copy_all,
-                  title: 'Duplicate',
-                  subtitle: 'Copy this task right below',
+                  title: AppLocalizations.of(context).duplicate,
+                  subtitle: AppLocalizations.of(context).duplicateSubtitle,
                   iconColor: const Color(0xFF009688),
                   onTap: () async {
                     String dateKeyForCopy = dateKey;
@@ -1589,12 +1590,12 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                 if (t.keep && !t.isLimited)
                   actionTile(
                     icon: Icons.ac_unit,
-                    title: 'Freeze for today',
+                    title: AppLocalizations.of(context).freezeForToday,
                     subtitle: frozenToday
-                        ? 'Already frozen'
+                        ? AppLocalizations.of(context).alreadyFrozen
                         : (_freezeTokens > 0
-                        ? 'Protect your streak'
-                        : 'No tokens left'),
+                        ? AppLocalizations.of(context).protectYourStreak
+                        : AppLocalizations.of(context).noTokensLeft),
                     iconColor: const Color(0xFF2196F3),
                     enabled: !frozenToday && _freezeTokens > 0,
                     onTap: (!frozenToday && _freezeTokens > 0)
@@ -1608,8 +1609,8 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                 if (t.keep)
                   actionTile(
                     icon: Icons.vertical_align_top,
-                    title: 'Move to top',
-                    subtitle: 'Pin this recurring task to the top',
+                    title: AppLocalizations.of(context).moveToTop,
+                    subtitle: AppLocalizations.of(context).moveToTopSubtitle,
                     iconColor: const Color(0xFF7B1FA2),
                     onTap: () async {
                       _syncCombinedForDate(dateKey);
@@ -1626,8 +1627,8 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                 if (t.keep)
                   actionTile(
                     icon: Icons.emoji_events,
-                    title: 'Show highest streak',
-                    subtitle: 'See your all-time best for this task',
+                    title: AppLocalizations.of(context).showHighestStreak,
+                    subtitle: AppLocalizations.of(context).showHighestStreakSubtitle,
                     iconColor: const Color(0xFF388E3C),
                     onTap: () async {
                       Navigator.pop(ctx);
@@ -1638,8 +1639,8 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                 if (t.keep)
                   actionTile(
                     icon: Icons.local_fire_department_outlined,
-                    title: 'Reset current streak',
-                    subtitle: 'Clear today’s streak progress',
+                    title: AppLocalizations.of(context).resetCurrentStreak,
+                    subtitle: AppLocalizations.of(context).resetCurrentStreakSubtitle,
                     iconColor: const Color(0xFFFF5722),
                     onTap: () async {
                       setState(() => t.streak = 0);
@@ -1651,8 +1652,8 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                 if (t.keep)
                   actionTile(
                     icon: Icons.emoji_events_outlined,
-                    title: 'Reset best streak',
-                    subtitle: 'Remove your all-time best streak',
+                    title: AppLocalizations.of(context).resetBestStreak,
+                    subtitle: AppLocalizations.of(context).resetBestStreakSubtitle,
                     iconColor: const Color(0xFF795548),
                     onTap: () async {
                       setState(() => t.bestStreak = 0);
@@ -1663,8 +1664,8 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                 const SizedBox(height: 10),
                 actionTile(
                   icon: Icons.delete_outline,
-                  title: 'Delete',
-                  subtitle: 'Remove this task permanently',
+                  title: AppLocalizations.of(context).delete,
+                  subtitle: AppLocalizations.of(context).deleteTaskSubtitle,
                   danger: true,
                   onTap: () async {
                     await _deleteAt(indexInOrdered, dateKey: dateKey);
@@ -1705,7 +1706,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.card(context),
             borderRadius: BorderRadius.circular(24),
           ),
           padding: const EdgeInsets.all(24),
@@ -1718,23 +1719,23 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFEBEE),
+                      color: AppColors.accentSoft(context),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.emoji_emotions,
-                      color: Color(0xFFE53935),
+                      color: AppColors.accent(context),
                       size: 24,
                     ),
                   ),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Choose an Icon',
+                      AppLocalizations.of(context).chooseAnIcon,
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF1A1D1F),
+                        color: AppColors.ink(context),
                       ),
                     ),
                   ),
@@ -1743,11 +1744,11 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                     child: InkWell(
                       onTap: () => Navigator.pop(ctx),
                       borderRadius: BorderRadius.circular(8),
-                      child: const Padding(
-                        padding: EdgeInsets.all(8),
+                      child: Padding(
+                        padding: const EdgeInsets.all(8),
                         child: Icon(
                           Icons.close,
-                          color: Color(0xFF6F7789),
+                          color: AppColors.muted(context),
                           size: 24,
                         ),
                       ),
@@ -1774,16 +1775,16 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                           borderRadius: BorderRadius.circular(14),
                           child: Container(
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF5F7FA),
+                              color: AppColors.bg(context),
                               borderRadius: BorderRadius.circular(14),
                               border: Border.all(
-                                color: const Color(0xFFE0E0E0),
+                                color: AppColors.border(context),
                                 width: 2.5,
                               ),
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.add,
-                              color: Color(0xFFE53935),
+                              color: AppColors.accent(context),
                               size: 32,
                             ),
                           ),
@@ -1802,18 +1803,18 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                         child: Container(
                           decoration: BoxDecoration(
                             color: isSelected 
-                                ? const Color(0xFFFFEBEE) 
-                                : const Color(0xFFF5F7FA),
+                                ? AppColors.accentSoft(context) 
+                                : AppColors.bg(context),
                             borderRadius: BorderRadius.circular(14),
                             border: isSelected 
-                                ? Border.all(color: const Color(0xFFE53935), width: 2.5)
-                                : Border.all(color: const Color(0xFFE0E0E0), width: 1),
+                                ? Border.all(color: AppColors.accent(context), width: 2.5)
+                                : Border.all(color: AppColors.border(context), width: 1),
                           ),
                           child: Icon(
                             icon,
                             color: isSelected 
-                                ? const Color(0xFFE53935) 
-                                : const Color(0xFF6F7789),
+                                ? AppColors.accent(context) 
+                                : AppColors.muted(context),
                             size: 28,
                           ),
                         ),
@@ -1866,13 +1867,13 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
         
         if (mounted) {
           ScaffoldMessenger.of(context).showSingleSnackBar(
-            const SnackBar(content: Text('Custom icon saved!')),
+            SnackBar(content: Text(AppLocalizations.of(context).customIconSaved)),
           );
         }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSingleSnackBar(
-            SnackBar(content: Text('Error saving image: $e')),
+            SnackBar(content: Text(AppLocalizations.of(context).errorSavingImage(e.toString()))),
           );
         }
       }
@@ -1881,27 +1882,29 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
 
   Future<void> _showHighestStreak(DailyTask task) async {
     final best = task.bestStreak;
-    final label = best == 1 ? '1 day' : '$best days';
+    final label = AppLocalizations.of(context).streakDayCount(best);
     await showDialog<void>(
       context: context,
       builder: (_) => AlertDialog(
-        backgroundColor: const Color(0xFFF5F7FA),
+        backgroundColor: AppColors.bg(context),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
-          children: const [
-            Icon(Icons.emoji_events, color: Color(0xFFE53935)),
-            SizedBox(width: 8),
-            Text('Highest streak'),
+          children: [
+            Icon(Icons.emoji_events, color: AppColors.accent(context)),
+            const SizedBox(width: 8),
+            Text(AppLocalizations.of(context).highestStreak),
           ],
         ),
         content: Text(
-          best > 0 ? 'Your best streak for this task is $label.' : 'No streak recorded yet.',
+          best > 0
+              ? AppLocalizations.of(context).bestStreakIs(label)
+              : AppLocalizations.of(context).noStreakYet,
           style: const TextStyle(fontSize: 15),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+            child: Text(AppLocalizations.of(context).close),
           ),
         ],
       ),
@@ -1921,7 +1924,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
         _selectedDate.year == now.year;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: AppColors.bg(context),
       body: SafeArea(
         child: Column(
           children: [
@@ -1959,7 +1962,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.card(context),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.03),
@@ -1979,24 +1982,26 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    isToday ? 'Today' : _formatDate(_selectedDate),
-                    style: const TextStyle(
+                    isToday
+                        ? AppLocalizations.of(context).todayTitle
+                        : _formatDate(_selectedDate),
+                    style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF1A1D1F),
+                      color: AppColors.ink(context),
                     ),
                   ),
                   if (isPast) ...[
                     const SizedBox(height: 4),
                     Row(
-                      children: const [
-                        Icon(Icons.history, size: 14, color: Color(0xFF9CA3AF)),
-                        SizedBox(width: 4),
+                      children: [
+                        Icon(Icons.history, size: 14, color: AppColors.faint(context)),
+                        const SizedBox(width: 4),
                         Text(
-                          'History (read-only)',
+                          AppLocalizations.of(context).historyReadOnly,
                           style: TextStyle(
                             fontSize: 12,
-                            color: Color(0xFF9CA3AF),
+                            color: AppColors.faint(context),
                             fontStyle: FontStyle.italic,
                           ),
                         ),
@@ -2005,14 +2010,14 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                   ] else if (!isToday) ...[
                     const SizedBox(height: 4),
                     Row(
-                      children: const [
-                        Icon(Icons.update, size: 14, color: Color(0xFF9CA3AF)),
-                        SizedBox(width: 4),
+                      children: [
+                        Icon(Icons.update, size: 14, color: AppColors.faint(context)),
+                        const SizedBox(width: 4),
                         Text(
-                          'Future (read-only)',
+                          AppLocalizations.of(context).futureReadOnly,
                           style: TextStyle(
                             fontSize: 12,
-                            color: Color(0xFF9CA3AF),
+                            color: AppColors.faint(context),
                             fontStyle: FontStyle.italic,
                           ),
                         ),
@@ -2030,7 +2035,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFE3F2FD),
+                          color: (AppColors.isDark(context) ? const Color(0xFF14273A) : const Color(0xFFE3F2FD)),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Row(
@@ -2056,7 +2061,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFFF3E0),
+                        color: (AppColors.isDark(context) ? const Color(0xFF332612) : const Color(0xFFFFF3E0)),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Row(
@@ -2077,9 +2082,9 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                   const SizedBox(width: 8),
                   // Menu
                   PopupMenuButton<int>(
-                    icon: const Icon(Icons.more_horiz, color: Color(0xFF6F7789)),
-                    color: Colors.white,
-                    surfaceTintColor: Colors.white,
+                    icon: Icon(Icons.more_horiz, color: AppColors.muted(context)),
+                    color: AppColors.card(context),
+                    surfaceTintColor: AppColors.card(context),
                     elevation: 10,
                     shadowColor: const Color(0x29000000),
                     offset: const Offset(0, 44),
@@ -2109,20 +2114,20 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                             ? Icons.calendar_month
                             : Icons.today,
                         label: _mode == DailyViewMode.today
-                            ? 'View by date'
-                            : 'Back to Today',
+                            ? AppLocalizations.of(context).viewByDate
+                            : AppLocalizations.of(context).backToToday,
                       ),
                       if (_mode == DailyViewMode.byDate)
                         _buildHeaderMenuItem(
                           value: 2,
                           icon: Icons.event,
-                          label: 'Pick another date',
+                          label: AppLocalizations.of(context).pickAnotherDate,
                         ),
                       if (_mode == DailyViewMode.today)
                         _buildHeaderMenuItem(
                           value: 3,
                           icon: Icons.restart_alt,
-                          label: 'Reset all',
+                          label: AppLocalizations.of(context).resetAll,
                           destructive: true,
                         ),
                     ],
@@ -2145,7 +2150,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     required String label,
     bool destructive = false,
   }) {
-    final accent = destructive ? const Color(0xFFE53935) : const Color(0xFF374151);
+    final accent = destructive ? AppColors.accent(context) : AppColors.inkSoft(context);
     return PopupMenuItem<int>(
       value: value,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
@@ -2154,7 +2159,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: destructive ? const Color(0xFFFFEBEE) : const Color(0xFFF0F4F8),
+              color: destructive ? AppColors.accentSoft(context) : AppColors.chip(context),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, size: 18, color: accent),
@@ -2165,7 +2170,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: destructive ? const Color(0xFFE53935) : const Color(0xFF1A1D1F),
+              color: destructive ? AppColors.accent(context) : AppColors.ink(context),
             ),
           ),
         ],
@@ -2201,8 +2206,8 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
               padding: const EdgeInsets.symmetric(vertical: 10),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? const Color(0xFFE53935)
-                    : (isToday ? const Color(0xFFFFEBEE) : Colors.transparent),
+                    ? AppColors.accent(context)
+                    : (isToday ? AppColors.accentSoft(context) : Colors.transparent),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
@@ -2214,7 +2219,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                       fontWeight: FontWeight.w500,
                       color: isSelected
                           ? Colors.white
-                          : (isToday ? const Color(0xFFE53935) : const Color(0xFF9CA3AF)),
+                          : (isToday ? AppColors.accent(context) : AppColors.faint(context)),
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -2225,7 +2230,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                       fontWeight: FontWeight.bold,
                       color: isSelected
                           ? Colors.white
-                          : (isToday ? const Color(0xFFE53935) : const Color(0xFF1A1D1F)),
+                          : (isToday ? AppColors.accent(context) : AppColors.ink(context)),
                     ),
                   ),
                 ],
@@ -2238,16 +2243,13 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   }
 
   String _getWeekdayShort(int weekday) {
-    const days = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
-    return days[weekday - 1];
+    return localizedWeekdayShort(
+        weekday, Localizations.localeOf(context).toString());
   }
 
   String _formatDate(DateTime date) {
-    const months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
-    ];
-    return '${months[date.month - 1]} ${date.day}';
+    return DateFormat.MMMMd(Localizations.localeOf(context).toString())
+        .format(date);
   }
 
   Widget _buildEmptyState() {
@@ -2257,31 +2259,31 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
         children: [
           Container(
             padding: const EdgeInsets.all(24),
-            decoration: const BoxDecoration(
-              color: Color(0xFFF0F4F8),
+            decoration: BoxDecoration(
+              color: AppColors.chip(context),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.check_circle_outline,
               size: 64,
-              color: Color(0xFF9CA3AF),
+              color: AppColors.faint(context),
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
-            'No tasks yet',
+          Text(
+            AppLocalizations.of(context).noTasksYet,
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF1A1D1F),
+              color: AppColors.ink(context),
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Add a task to get started',
+          Text(
+            AppLocalizations.of(context).addTaskToStart,
             style: TextStyle(
               fontSize: 14,
-              color: Color(0xFF9CA3AF),
+              color: AppColors.faint(context),
             ),
           ),
         ],
@@ -2299,7 +2301,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
       key: ValueKey(task.id),
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.card(context),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -2323,9 +2325,9 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                 if (!isPastDate)
                   ReorderableDragStartListener(
                     index: index,
-                    child: const Icon(
+                    child: Icon(
                       Icons.drag_indicator,
-                      color: Color(0xFFD1D5DB),
+                      color: AppColors.border(context),
                       size: 20,
                     ),
                   ),
@@ -2364,8 +2366,8 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                           color: isDone
-                              ? const Color(0xFF9CA3AF)
-                              : const Color(0xFF1A1D1F),
+                              ? AppColors.faint(context)
+                              : AppColors.ink(context),
                           decoration: isDone ? TextDecoration.lineThrough : null,
                         ),
                       ),
@@ -2378,7 +2380,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                               fontSize: 13,
                               color: isDone
                                   ? const Color(0xFFBFC5D2)
-                                  : const Color(0xFF6F7789),
+                                  : AppColors.muted(context),
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -2413,10 +2415,10 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
                             color: task.isLimited
-                                ? const Color(0xFFFFEBEE)
+                                ? AppColors.accentSoft(context)
                                 : task.keep
-                                    ? const Color(0xFFE3F2FD)
-                                    : const Color(0xFFFFF3E0),
+                                    ? (AppColors.isDark(context) ? const Color(0xFF14273A) : const Color(0xFFE3F2FD))
+                                    : (AppColors.isDark(context) ? const Color(0xFF332612) : const Color(0xFFFFF3E0)),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Row(
@@ -2428,7 +2430,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                                     : task.keep ? Icons.repeat : Icons.event,
                                 size: 12,
                                 color: task.isLimited
-                                    ? const Color(0xFFE53935)
+                                    ? AppColors.accent(context)
                                     : task.keep
                                         ? const Color(0xFF2196F3)
                                         : const Color(0xFFFF9800),
@@ -2436,16 +2438,25 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                               const SizedBox(width: 4),
                               Text(
                                 task.isLimited
-                                    ? '${task.completedCount + (task.done ? 1 : 0)}/${task.targetCount} days'
-                                        '${task.isLimitedRecurring ? ' · ${task.limitedCycleLabel}' : ''}'
+                                    ? AppLocalizations.of(context).limitedDays(
+                                            '${task.completedCount + (task.done ? 1 : 0)}',
+                                            '${task.targetCount}')
+                                        .toString() +
+                                        (task.isLimitedRecurring
+                                            ? ' · ${localizedCycleLabel(AppLocalizations.of(context), task)}'
+                                            : '')
                                     : task.keep
-                                        ? 'Recurring · ${task.repeatDisplayLabel}'
-                                        : 'Daily',
+                                        ? AppLocalizations.of(context).recurringDot(
+                                            localizedRepeatLabel(
+                                                AppLocalizations.of(context),
+                                                Localizations.localeOf(context).toString(),
+                                                task))
+                                        : AppLocalizations.of(context).dailyLabel,
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
                                   color: task.isLimited
-                                      ? const Color(0xFFE53935)
+                                      ? AppColors.accent(context)
                                       : task.keep
                                           ? const Color(0xFF2196F3)
                                           : const Color(0xFFFF9800),
@@ -2464,7 +2475,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                                   size: 14, color: Color(0xFFFF5722)),
                               const SizedBox(width: 4),
                               Text(
-                                '${task.streak} day${task.streak > 1 ? 's' : ''} streak',
+                                AppLocalizations.of(context).streakCount(task.streak),
                                 style: const TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w500,
@@ -2482,8 +2493,8 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                               const Icon(Icons.ac_unit,
                                   size: 14, color: Color(0xFF2196F3)),
                               const SizedBox(width: 4),
-                              const Text(
-                                'Frozen today',
+                              Text(
+                                AppLocalizations.of(context).frozenTodayLabel,
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w500,
@@ -2503,9 +2514,9 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                   height: 28,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: isDone ? const Color(0xFFE53935) : Colors.transparent,
+                    color: isDone ? AppColors.accent(context) : Colors.transparent,
                     border: Border.all(
-                      color: isDone ? const Color(0xFFE53935) : const Color(0xFFE0E0E0),
+                      color: isDone ? AppColors.accent(context) : AppColors.border(context),
                       width: 2,
                     ),
                   ),
@@ -2555,7 +2566,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
         return const Color(0xFF607D8B);
       case 'creatin':
       case 'creatine':
-        return const Color(0xFFE53935);
+        return AppColors.accent(context);
       default:
         return const Color(0xFF9C27B0);
     }
@@ -2610,15 +2621,15 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
       width: 60,
       height: 60,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFE53935), Color(0xFFEF5350)],
+        gradient: LinearGradient(
+          colors: [AppColors.accent(context), const Color(0xFFEF5350)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(30),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFE53935).withOpacity(0.3),
+            color: AppColors.accent(context).withOpacity(0.3),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),

@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../theme/app_colors.dart';
+import '../i18n/task_labels.dart';
+import '../../l10n/generated/app_localizations.dart';
 
 class ModernDatePickerDialog extends StatefulWidget {
   const ModernDatePickerDialog({
@@ -62,14 +65,14 @@ class _ModernDatePickerDialogState extends State<ModernDatePickerDialog> {
 
               if (month == null || month < 1 || month > 12) {
                 setDialogState(() {
-                  errorText = 'Month must be between 1 and 12';
+                  errorText = AppLocalizations.of(context).invalidMonth;
                 });
                 return;
               }
 
               if (year == null || year < 1) {
                 setDialogState(() {
-                  errorText = 'Year must be greater than 0';
+                  errorText = AppLocalizations.of(context).invalidYear;
                 });
                 return;
               }
@@ -85,7 +88,7 @@ class _ModernDatePickerDialogState extends State<ModernDatePickerDialog> {
                 child: Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.card(context),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Column(
@@ -97,23 +100,23 @@ class _ModernDatePickerDialogState extends State<ModernDatePickerDialog> {
                           Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFFFEBEE),
+                              color: AppColors.accentSoft(context),
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.calendar_month,
-                              color: Color(0xFFE53935),
+                              color: AppColors.accent(context),
                               size: 22,
                             ),
                           ),
                           const SizedBox(width: 12),
-                          const Expanded(
+                          Expanded(
                             child: Text(
-                              'Go to month',
+                              AppLocalizations.of(context).goToMonth,
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFF1A1D1F),
+                                color: AppColors.ink(context),
                               ),
                             ),
                           ),
@@ -125,24 +128,24 @@ class _ModernDatePickerDialogState extends State<ModernDatePickerDialog> {
                         keyboardType: TextInputType.number,
                         textInputAction: TextInputAction.next,
                         decoration: InputDecoration(
-                          labelText: 'Month',
+                          labelText: AppLocalizations.of(context).rangeMonth,
                           hintText: '1 - 12',
                           filled: true,
-                          fillColor: const Color(0xFFF7F8FA),
+                          fillColor: AppColors.chip(context),
                           contentPadding:
                               const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: Color(0xFFE6E8EC)),
+                            borderSide: BorderSide(color: AppColors.border(context)),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: Color(0xFFE6E8EC)),
+                            borderSide: BorderSide(color: AppColors.border(context)),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide:
-                                const BorderSide(color: Color(0xFFE53935), width: 1.2),
+                                BorderSide(color: AppColors.accent(context), width: 1.2),
                           ),
                         ),
                       ),
@@ -153,24 +156,24 @@ class _ModernDatePickerDialogState extends State<ModernDatePickerDialog> {
                         textInputAction: TextInputAction.done,
                         onSubmitted: (_) => submit(),
                         decoration: InputDecoration(
-                          labelText: 'Year',
-                          hintText: 'e.g. 2026',
+                          labelText: AppLocalizations.of(context).rangeYear,
+                          hintText: AppLocalizations.of(context).yearHint,
                           filled: true,
-                          fillColor: const Color(0xFFF7F8FA),
+                          fillColor: AppColors.chip(context),
                           contentPadding:
                               const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: Color(0xFFE6E8EC)),
+                            borderSide: BorderSide(color: AppColors.border(context)),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: Color(0xFFE6E8EC)),
+                            borderSide: BorderSide(color: AppColors.border(context)),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide:
-                                const BorderSide(color: Color(0xFFE53935), width: 1.2),
+                                BorderSide(color: AppColors.accent(context), width: 1.2),
                           ),
                         ),
                       ),
@@ -194,16 +197,16 @@ class _ModernDatePickerDialogState extends State<ModernDatePickerDialog> {
                             style: TextButton.styleFrom(
                               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
                             ),
-                            child: const Text(
-                              'Cancel',
-                              style: TextStyle(color: Color(0xFF6F7789)),
+                            child: Text(
+                              AppLocalizations.of(context).cancel,
+                              style: TextStyle(color: AppColors.muted(context)),
                             ),
                           ),
                           const SizedBox(width: 8),
                           ElevatedButton(
                             onPressed: submit,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFE53935),
+                              backgroundColor: AppColors.accent(context),
                               foregroundColor: Colors.white,
                               elevation: 0,
                               padding:
@@ -212,9 +215,9 @@ class _ModernDatePickerDialogState extends State<ModernDatePickerDialog> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
-                            child: const Text(
-                              'Go',
-                              style: TextStyle(fontWeight: FontWeight.w700),
+                            child: Text(
+                              AppLocalizations.of(context).go,
+                              style: const TextStyle(fontWeight: FontWeight.w700),
                             ),
                           ),
                         ],
@@ -285,7 +288,7 @@ class _ModernDatePickerDialogState extends State<ModernDatePickerDialog> {
         onHorizontalDragEnd: _handleHorizontalDragEnd,
         child: Container(
           decoration: BoxDecoration(
-            color: const Color(0xFFF5F7FA),
+            color: AppColors.bg(context),
             borderRadius: BorderRadius.circular(20),
           ),
           constraints: const BoxConstraints(maxWidth: 560),
@@ -302,7 +305,7 @@ class _ModernDatePickerDialogState extends State<ModernDatePickerDialog> {
                       child: Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: AppColors.card(context),
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: const [
                             BoxShadow(
@@ -312,7 +315,7 @@ class _ModernDatePickerDialogState extends State<ModernDatePickerDialog> {
                             )
                           ],
                         ),
-                        child: const Icon(Icons.arrow_back, color: Color(0xFF374151)),
+                        child: Icon(Icons.arrow_back, color: AppColors.inkSoft(context)),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -325,18 +328,19 @@ class _ModernDatePickerDialogState extends State<ModernDatePickerDialog> {
                             borderRadius: BorderRadius.circular(8),
                             child: Text(
                               titleLabel,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.bold,
                                 letterSpacing: -0.2,
+                                color: AppColors.ink(context),
                               ),
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Select a date or tap month to jump',
+                            AppLocalizations.of(context).selectDateHint,
                             style: TextStyle(
-                              color: Colors.grey.shade600,
+                              color: AppColors.muted(context),
                               fontSize: 12,
                             ),
                           ),
@@ -353,9 +357,10 @@ class _ModernDatePickerDialogState extends State<ModernDatePickerDialog> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Row(
-                  children: const [
-                    _Dow('Mon'), _Dow('Tue'), _Dow('Wed'),
-                    _Dow('Thu'), _Dow('Fri'), _Dow('Sat'), _Dow('Sun'),
+                  children: [
+                    for (int d = 1; d <= 7; d++)
+                      _Dow(localizedWeekdayShort(
+                          d, Localizations.localeOf(context).toString())),
                   ],
                 ),
               ),
@@ -386,12 +391,12 @@ class _ModernDatePickerDialogState extends State<ModernDatePickerDialog> {
                       child: Container(
                         decoration: BoxDecoration(
                           color: isSelected
-                              ? const Color(0xFFEF4444)
+                              ? AppColors.accent(context)
                               : isToday
-                                  ? const Color(0xFFFEE2E2)
-                                  : Colors.white,
+                                  ? AppColors.accentSoft(context)
+                                  : AppColors.card(context),
                           border: isToday && !isSelected
-                              ? Border.all(color: const Color(0xFFEF4444), width: 1.5)
+                              ? Border.all(color: AppColors.accent(context), width: 1.5)
                               : null,
                           borderRadius: BorderRadius.circular(10),
                           boxShadow: isSelected
@@ -419,8 +424,8 @@ class _ModernDatePickerDialogState extends State<ModernDatePickerDialog> {
                             color: isSelected
                                 ? Colors.white
                                 : isToday
-                                    ? const Color(0xFFEF4444)
-                                    : Colors.black,
+                                    ? AppColors.accent(context)
+                                    : AppColors.ink(context),
                           ),
                         ),
                       ),
@@ -458,7 +463,7 @@ class _MonthIconButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: isPrimary ? const Color(0xFFEF4444) : Colors.white,
+          color: isPrimary ? AppColors.accent(context) : AppColors.card(context),
           borderRadius: BorderRadius.circular(12),
           boxShadow: const [
             BoxShadow(
@@ -470,7 +475,7 @@ class _MonthIconButton extends StatelessWidget {
         ),
         child: Icon(
           icon,
-          color: isPrimary ? Colors.white : const Color(0xFF374151),
+          color: isPrimary ? Colors.white : AppColors.inkSoft(context),
           size: 18,
         ),
       ),
@@ -491,10 +496,10 @@ class _Dow extends StatelessWidget {
         child: Text(
           label,
           textAlign: TextAlign.center,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: Color(0xFF6F7789),
+            color: AppColors.muted(context),
             letterSpacing: 0.3,
           ),
         ),

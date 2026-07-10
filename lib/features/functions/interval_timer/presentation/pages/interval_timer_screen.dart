@@ -1,4 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import '../../../../../l10n/generated/app_localizations.dart';
+import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/utils/snackbar_utils.dart';
 import 'package:provider/provider.dart';
 import '../controllers/interval_timer_controller.dart';
@@ -40,7 +42,7 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.card(context),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -50,7 +52,7 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
           children: [
             ListTile(
               leading: const Icon(Icons.edit_outlined, color: Color(0xFFFF6B6B)),
-              title: const Text('Edit Task'),
+              title: Text(AppLocalizations.of(context).editTaskTitle),
               onTap: () {
                 Navigator.pop(sheetContext);
                 _showEditTaskDialog(context, controller, taskIndex);
@@ -58,7 +60,7 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
             ),
             ListTile(
               leading: const Icon(Icons.delete_outline, color: Colors.redAccent),
-              title: const Text('Delete Task'),
+              title: Text(AppLocalizations.of(context).deleteTaskAction),
               onTap: () {
                 controller.removeTask(taskIndex);
                 Navigator.pop(sheetContext);
@@ -102,7 +104,7 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
           constraints: const BoxConstraints(maxWidth: 420),
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.card(context),
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
@@ -132,12 +134,12 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                       ),
                     ),
                     const SizedBox(width: 12),
-                    const Text(
-                      'Edit Task',
+                    Text(
+                      AppLocalizations.of(context).editTaskTitle,
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                        color: AppColors.ink(context),
                       ),
                     ),
                   ],
@@ -146,9 +148,9 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                 TextField(
                   controller: nameController,
                   decoration: InputDecoration(
-                    labelText: 'Task',
+                    labelText: AppLocalizations.of(context).taskLabel,
                     filled: true,
-                    fillColor: const Color(0xFFF5F6FA),
+                    fillColor: AppColors.bg(context),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
@@ -164,9 +166,9 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                   controller: durationController,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   decoration: InputDecoration(
-                    labelText: 'Duration (minutes)',
+                    labelText: AppLocalizations.of(context).durationMinutes,
                     filled: true,
-                    fillColor: const Color(0xFFF5F6FA),
+                    fillColor: AppColors.bg(context),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
@@ -175,7 +177,7 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                       borderRadius: BorderRadius.circular(12),
                       borderSide: const BorderSide(color: Color(0xFFFF6B6B), width: 1.5),
                     ),
-                    helperText: 'Decimals allowed, e.g. 0.5 = 30 seconds.',
+                    helperText: AppLocalizations.of(context).decimalsAllowed,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -184,12 +186,12 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                   enabled: taskIndex != 0,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   decoration: InputDecoration(
-                    labelText: 'Pause before task (minutes)',
+                    labelText: AppLocalizations.of(context).pauseBeforeTask,
                     helperText: taskIndex == 0
-                        ? 'Always 0 for the first task.'
-                        : 'Decimals allowed, e.g. 0.5 = 30 seconds.',
+                        ? AppLocalizations.of(context).alwaysZeroFirst
+                        : AppLocalizations.of(context).decimalsAllowed,
                     filled: true,
-                    fillColor: const Color(0xFFF5F6FA),
+                    fillColor: AppColors.bg(context),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
@@ -206,9 +208,9 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                   children: [
                     TextButton(
                       onPressed: () => Navigator.pop(dialogContext),
-                      child: const Text(
+                      child: Text(
                         'Cancel',
-                        style: TextStyle(color: Colors.black54),
+                        style: TextStyle(color: AppColors.muted(context)),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -232,7 +234,7 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
 
                         if (newName.isEmpty || newDurationSeconds <= 0) {
                           messenger.showSingleSnackBar(
-                            const SnackBar(content: Text('Please enter valid values.')),
+                            SnackBar(content: Text(AppLocalizations.of(context).enterValidValues)),
                           );
                           return;
                         }
@@ -245,7 +247,7 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                         );
                         Navigator.pop(dialogContext);
                       },
-                      child: const Text('Save'),
+                      child: Text(AppLocalizations.of(context).save),
                     ),
                   ],
                 ),
@@ -263,7 +265,7 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.card(context),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -273,7 +275,7 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
           children: [
             ListTile(
               leading: const Icon(Icons.add_circle_outline, color: Color(0xFF4CAF50)),
-              title: const Text('Save Profile'),
+              title: Text(AppLocalizations.of(context).saveProfile),
               onTap: () {
                 Navigator.pop(sheetContext);
                 _showCreateProfileDialog(context);
@@ -281,11 +283,11 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
             ),
             const Divider(height: 1),
             if (controller.customProfiles.isEmpty)
-              const Padding(
+              Padding(
                 padding: EdgeInsets.all(16),
                 child: Text(
-                  'No saved profiles yet.',
-                  style: TextStyle(color: Colors.grey),
+                  AppLocalizations.of(context).noSavedProfiles,
+                  style: TextStyle(color: AppColors.muted(context)),
                 ),
               )
             else
@@ -297,7 +299,7 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                         : Icons.radio_button_unchecked,
                     color: controller.selectedProfileId == profile.id
                         ? const Color(0xFF4CAF50)
-                        : Colors.grey,
+                        : AppColors.muted(context),
                   ),
                   title: Text(profile.name),
                   subtitle: Text('${profile.tasks.length} Tasks'),
@@ -309,7 +311,7 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                         Navigator.pop(sheetContext);
                       }
                       messenger.showSingleSnackBar(
-                        const SnackBar(content: Text('Profile deleted.')),
+                        SnackBar(content: Text(AppLocalizations.of(context).profileDeleted)),
                       );
                     },
                   ),
@@ -319,7 +321,7 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                       Navigator.pop(sheetContext);
                     }
                     messenger.showSingleSnackBar(
-                      SnackBar(content: Text('Profile "${profile.name}" loaded.')),
+                      SnackBar(content: Text(AppLocalizations.of(context).profileLoaded(profile.name))),
                     );
                   },
                 ),
@@ -348,7 +350,7 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
           constraints: const BoxConstraints(maxWidth: 420),
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.card(context),
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
@@ -377,12 +379,12 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                     ),
                   ),
                   const SizedBox(width: 12),
-                  const Text(
-                    'Save Profile',
+                  Text(
+                    AppLocalizations.of(context).saveProfile,
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                      color: AppColors.ink(context),
                     ),
                   ),
                 ],
@@ -392,10 +394,10 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                 controller: nameController,
                 autofocus: true,
                 decoration: InputDecoration(
-                  labelText: 'Profile name',
-                  hintText: 'e.g. Kickboxing 12 Rounds',
+                  labelText: AppLocalizations.of(context).profileName,
+                  hintText: AppLocalizations.of(context).intervalProfileNameHint,
                   filled: true,
-                  fillColor: const Color(0xFFF5F6FA),
+                  fillColor: AppColors.bg(context),
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 14,
                     vertical: 14,
@@ -419,9 +421,9 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                 children: [
                   TextButton(
                     onPressed: () => Navigator.pop(dialogContext),
-                    child: const Text(
+                    child: Text(
                       'Cancel',
-                      style: TextStyle(color: Colors.black54),
+                      style: TextStyle(color: AppColors.muted(context)),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -440,7 +442,7 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                     onPressed: () async {
                       if (!controller.hasTasks) {
                         messenger.showSingleSnackBar(
-                          const SnackBar(content: Text('Create at least one task first.')),
+                          SnackBar(content: Text(AppLocalizations.of(context).createTaskFirst)),
                         );
                         return;
                       }
@@ -448,7 +450,7 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                       final profileName = nameController.text.trim();
                       if (profileName.isEmpty) {
                         messenger.showSingleSnackBar(
-                          const SnackBar(content: Text('Please enter a profile name.')),
+                          SnackBar(content: Text(AppLocalizations.of(context).enterProfileName)),
                         );
                         return;
                       }
@@ -458,10 +460,10 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                         Navigator.pop(dialogContext);
                       }
                       messenger.showSingleSnackBar(
-                        SnackBar(content: Text('Profile "$profileName" saved.')),
+                        SnackBar(content: Text(AppLocalizations.of(context).profileSaved(profileName))),
                       );
                     },
-                    child: const Text('Save'),
+                    child: Text(AppLocalizations.of(context).save),
                   ),
                 ],
               ),
@@ -525,7 +527,7 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
 
     if (name.isEmpty || durationSeconds <= 0) {
       ScaffoldMessenger.of(context).showSingleSnackBar(
-        const SnackBar(content: Text('Please enter a valid task and duration in minutes.')),
+        SnackBar(content: Text(AppLocalizations.of(context).enterValidTaskDuration)),
       );
       return;
     }
@@ -544,7 +546,7 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: AppColors.bg(context),
       body: SafeArea(
         child: Consumer<IntervalTimerController>(
           builder: (context, controller, _) {
@@ -581,7 +583,7 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.card(context),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
@@ -594,22 +596,22 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
         children: [
           IconButton(
             onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back, color: Color(0xFF1A1D1F)),
+            icon: Icon(Icons.arrow_back, color: AppColors.ink(context)),
           ),
           const SizedBox(width: 8),
-          const Expanded(
+          Expanded(
             child: Text(
-              'Interval Timer',
+              AppLocalizations.of(context).intervalTimerTitle,
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                color: AppColors.ink(context),
               ),
             ),
           ),
           IconButton(
             onPressed: () => _showProfileSelector(context),
-            icon: const Icon(Icons.tune, color: Color(0xFF1A1D1F)),
+            icon: Icon(Icons.tune, color: AppColors.ink(context)),
           ),
         ],
       ),
@@ -619,14 +621,14 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
   Widget _buildHeroTimer(IntervalTimerController controller) {
     final inTask = controller.currentPhase == IntervalTimerPhase.task;
     final isRunning = controller.timerState == IntervalTimerState.running;
-    final accent = inTask ? const Color(0xFF2E7D32) : const Color(0xFFE53935);
-    final ringBg = inTask ? const Color(0xFFE8F5E9) : const Color(0xFFFFEBEE);
+    final accent = inTask ? Color(0xFF2E7D32) : AppColors.accent(context);
+    final ringBg = inTask ? (AppColors.isDark(context) ? Color(0xFF15291C) : Color(0xFFE8F5E9)) : AppColors.accentSoft(context);
 
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFFFFFFF), Color(0xFFF9FAFC)],
+        gradient: LinearGradient(
+          colors: [Color(0xFFFFFFFF), (AppColors.isDark(context) ? Color(0xFF1B1F24) : Color(0xFFF9FAFC))],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -651,7 +653,7 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
               ),
               const SizedBox(width: 8),
               _buildPhaseChip(
-                label: 'Task ${controller.currentTaskNumber} / ${controller.totalTasks}',
+                label: AppLocalizations.of(context).taskOf(controller.currentTaskNumber, controller.totalTasks),
                 color: const Color(0xFF546E7A),
                 icon: Icons.format_list_numbered,
               ),
@@ -667,7 +669,7 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
               fontSize: isRunning ? 32 : 17,
               height: 1.1,
               fontWeight: isRunning ? FontWeight.w800 : FontWeight.w600,
-              color: const Color(0xFF1A1D1F),
+              color: AppColors.ink(context),
             ),
           ),
           const SizedBox(height: 18),
@@ -687,7 +689,7 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                   child: CircularProgressIndicator(
                     value: controller.progress,
                     strokeWidth: 10,
-                    backgroundColor: Colors.white,
+                    backgroundColor: AppColors.card(context),
                     valueColor: AlwaysStoppedAnimation<Color>(accent),
                   ),
                 ),
@@ -696,15 +698,15 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                   children: [
                     Text(
                       controller.formattedTime,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 44,
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFF1A1D1F),
+                        color: AppColors.ink(context),
                         letterSpacing: -1,
                       ),
                     ),
                     Text(
-                      inTask ? 'Focus now' : 'Recovery',
+                      inTask ? AppLocalizations.of(context).focusNow : AppLocalizations.of(context).recovery,
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
@@ -757,17 +759,17 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
 
     if (controller.timerState == IntervalTimerState.running) {
       primaryAction = controller.pause;
-      primaryLabel = 'Pause';
+      primaryLabel = AppLocalizations.of(context).pause;
       primaryIcon = Icons.pause;
       primaryColor = const Color(0xFFFF9800);
     } else if (controller.timerState == IntervalTimerState.paused) {
       primaryAction = controller.resume;
-      primaryLabel = 'Resume';
+      primaryLabel = AppLocalizations.of(context).resume;
       primaryIcon = Icons.play_arrow;
       primaryColor = const Color(0xFF2E7D32);
     } else {
       primaryAction = controller.start;
-      primaryLabel = 'Start';
+      primaryLabel = AppLocalizations.of(context).start;
       primaryIcon = Icons.play_arrow;
       primaryColor = const Color(0xFF2E7D32);
     }
@@ -796,9 +798,9 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
           child: OutlinedButton.icon(
             onPressed: controller.reset,
             icon: const Icon(Icons.refresh),
-            label: const Text('Reset'),
+            label: Text(AppLocalizations.of(context).reset),
             style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFF6F7789),
+              foregroundColor: AppColors.muted(context),
               side: const BorderSide(color: Color(0xFFD8DEE8)),
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
@@ -819,54 +821,54 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
         Container(
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.card(context),
             borderRadius: BorderRadius.circular(18),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Create Profile',
+              Text(
+                AppLocalizations.of(context).createProfile,
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF1A1D1F),
+                  color: AppColors.ink(context),
                 ),
               ),
               const SizedBox(height: 6),
-              const Text(
-                'Set task, duration and optional break before each next task.',
+              Text(
+                AppLocalizations.of(context).createProfileSubtitle,
                 style: TextStyle(
                   fontSize: 13,
-                  color: Color(0xFF6F7789),
+                  color: AppColors.muted(context),
                 ),
               ),
               const SizedBox(height: 14),
               _buildInputField(
                 controller: _taskNameController,
-                label: 'Task',
-                hint: 'e.g. Jump rope',
+                label: AppLocalizations.of(context).taskLabel,
+                hint: AppLocalizations.of(context).taskHint,
                 icon: Icons.task_alt,
               ),
               const SizedBox(height: 12),
               _buildInputField(
                 controller: _taskDurationController,
-                label: 'Duration (minutes)',
-                hint: 'e.g. 0.5',
+                label: AppLocalizations.of(context).durationMinutes,
+                hint: AppLocalizations.of(context).durationHint,
                 icon: Icons.timer_outlined,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                helperText: 'Decimals allowed (0.5 = 30 seconds).',
+                helperText: AppLocalizations.of(context).decimalsAllowedShort,
               ),
               const SizedBox(height: 12),
               _buildInputField(
                 controller: _pauseBeforeController,
-                label: 'Pause before this task (minutes)',
-                hint: 'e.g. 0.5',
+                label: AppLocalizations.of(context).pauseBeforeThisTask,
+                hint: AppLocalizations.of(context).durationHint,
                 icon: Icons.free_breakfast_outlined,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 helperText: controller.tasks.isEmpty
-                    ? 'Ignored for the first task.'
-                    : 'Decimals allowed (0.5 = 30 seconds).',
+                    ? AppLocalizations.of(context).ignoredForFirst
+                    : AppLocalizations.of(context).decimalsAllowedShort,
               ),
               const SizedBox(height: 14),
               SizedBox(
@@ -874,9 +876,9 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                 child: ElevatedButton.icon(
                   onPressed: () => _addTask(controller),
                   icon: const Icon(Icons.add),
-                  label: const Text('Add task'),
+                  label: Text(AppLocalizations.of(context).addTask),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFE53935),
+                    backgroundColor: AppColors.accent(context),
                     foregroundColor: Colors.white,
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(vertical: 14),
@@ -894,18 +896,18 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
-              'Tasks in profile',
+            Text(
+              AppLocalizations.of(context).tasksInProfile,
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF1A1D1F),
+                color: AppColors.ink(context),
               ),
             ),
             TextButton.icon(
               onPressed: controller.tasks.isEmpty ? null : controller.clearProfile,
               icon: const Icon(Icons.delete_outline),
-              label: const Text('Clear'),
+              label: Text(AppLocalizations.of(context).clear),
             ),
           ],
         ),
@@ -914,12 +916,12 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.card(context),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Text(
-              'No tasks added yet.',
-              style: TextStyle(color: Color(0xFF6F7789)),
+            child: Text(
+              AppLocalizations.of(context).noTasksAdded,
+              style: TextStyle(color: AppColors.muted(context)),
             ),
           )
         else
@@ -935,14 +937,14 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                 key: ValueKey('${task.name}_${task.durationSeconds}_${task.pauseBeforeSeconds}_$index'),
                 margin: const EdgeInsets.only(bottom: 10),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppColors.card(context),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: ListTile(
                   onLongPress: () => _showTaskActions(context, controller, index),
                   leading: CircleAvatar(
-                    backgroundColor: const Color(0xFFFFEBEE),
-                    foregroundColor: const Color(0xFFE53935),
+                    backgroundColor: AppColors.accentSoft(context),
+                    foregroundColor: AppColors.accent(context),
                     child: Text('${index + 1}'),
                   ),
                   title: Text(
@@ -951,8 +953,8 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                   ),
                   subtitle: Text(
                     index == 0
-                        ? 'Duration: ${_formatSeconds(task.durationSeconds)}'
-                        : 'Pause: ${_formatSeconds(task.pauseBeforeSeconds)} • Duration: ${_formatSeconds(task.durationSeconds)}',
+                        ? AppLocalizations.of(context).durationValue(_formatSeconds(task.durationSeconds))
+                        : AppLocalizations.of(context).pauseDuration(_formatSeconds(task.pauseBeforeSeconds), _formatSeconds(task.durationSeconds)),
                   ),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -963,9 +965,9 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                       ),
                       ReorderableDragStartListener(
                         index: index,
-                        child: const Padding(
+                        child: Padding(
                           padding: EdgeInsets.symmetric(horizontal: 4),
-                          child: Icon(Icons.drag_indicator, color: Color(0xFF9CA3AF)),
+                          child: Icon(Icons.drag_indicator, color: AppColors.faint(context)),
                         ),
                       ),
                     ],
@@ -982,18 +984,18 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.card(context),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Sequence',
+          Text(
+            AppLocalizations.of(context).sequence,
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF1A1D1F),
+              color: AppColors.ink(context),
             ),
           ),
           const SizedBox(height: 10),
@@ -1005,9 +1007,9 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                 index == 0
                     ? '${index + 1}. ${task.name} (${_formatSeconds(task.durationSeconds)})'
                     : '${index + 1}. Pause ${_formatSeconds(task.pauseBeforeSeconds)} -> ${task.name} (${_formatSeconds(task.durationSeconds)})',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
-                  color: Color(0xFF1A1D1F),
+                  color: AppColors.ink(context),
                 ),
               ),
             );
@@ -1032,9 +1034,9 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
         labelText: label,
         hintText: hint,
         helperText: helperText,
-        prefixIcon: Icon(icon, color: const Color(0xFF6F7789)),
+        prefixIcon: Icon(icon, color: AppColors.muted(context)),
         filled: true,
-        fillColor: const Color(0xFFF5F7FA),
+        fillColor: AppColors.bg(context),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
@@ -1045,7 +1047,7 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFE53935), width: 1.5),
+          borderSide: BorderSide(color: AppColors.accent(context), width: 1.5),
         ),
       ),
     );

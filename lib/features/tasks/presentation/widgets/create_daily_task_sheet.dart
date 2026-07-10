@@ -1,4 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import '../../../../l10n/generated/app_localizations.dart';
+import '../../../../core/i18n/task_labels.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/snackbar_utils.dart';
 import '../../data/models/daily_task.dart';
 import '../../../../core/widgets/weekday_picker.dart';
@@ -82,7 +85,7 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
       barrierDismissible: false,
       builder: (context) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.card(context),
         child: Container(
           constraints: const BoxConstraints(maxWidth: 400),
           padding: const EdgeInsets.all(28),
@@ -93,33 +96,33 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFEBEE),
+                  color: AppColors.accentSoft(context),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.schedule,
                   size: 40,
-                  color: Color(0xFFE53935),
+                  color: AppColors.accent(context),
                 ),
               ),
               const SizedBox(height: 20),
               // Title
-              const Text(
-                'Custom Repeat Interval',
+              Text(
+                AppLocalizations.of(context).customRepeatInterval,
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF1A1D1F),
+                  color: AppColors.ink(context),
                 ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
               // Subtitle
-              const Text(
-                'How many days between each repeat?',
+              Text(
+                AppLocalizations.of(context).howManyDaysBetween,
                 style: TextStyle(
                   fontSize: 14,
-                  color: Color(0xFF6F7789),
+                  color: AppColors.muted(context),
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -130,27 +133,27 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
                 keyboardType: TextInputType.number,
                 autofocus: true,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFFE53935),
+                  color: AppColors.accent(context),
                 ),
                 decoration: InputDecoration(
                   filled: true,
-                  fillColor: const Color(0xFFF5F7FA),
+                  fillColor: AppColors.bg(context),
                   hintText: '7',
                   hintStyle: TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
-                    color: const Color(0xFFE53935).withOpacity(0.3),
+                    color: AppColors.accent(context).withOpacity(0.3),
                   ),
-                  suffixIcon: const Padding(
+                  suffixIcon: Padding(
                     padding: EdgeInsets.only(right: 16, top: 12),
                     child: Text(
-                      'days',
+                      AppLocalizations.of(context).daysUnit,
                       style: TextStyle(
                         fontSize: 16,
-                        color: Color(0xFF6F7789),
+                        color: AppColors.muted(context),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -165,7 +168,7 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
-                    borderSide: const BorderSide(color: Color(0xFFE53935), width: 2),
+                    borderSide: BorderSide(color: AppColors.accent(context), width: 2),
                   ),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
                 ),
@@ -178,18 +181,18 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
                     child: OutlinedButton(
                       onPressed: () => Navigator.pop(context),
                       style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Color(0xFFE0E0E0), width: 1.5),
+                        side: BorderSide(color: AppColors.border(context), width: 1.5),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
-                      child: const Text(
-                        'Cancel',
+                      child: Text(
+                        AppLocalizations.of(context).cancel,
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF6F7789),
+                          color: AppColors.muted(context),
                         ),
                       ),
                     ),
@@ -204,16 +207,16 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
                         } else {
                           // Show error feedback
                           ScaffoldMessenger.of(context).showSingleSnackBar(
-                            const SnackBar(
-                              content: Text('Please enter a valid number (1 or greater)'),
-                              backgroundColor: Color(0xFFE53935),
+                            SnackBar(
+                              content: Text(AppLocalizations.of(context).invalidNumber),
+                              backgroundColor: AppColors.accent(context),
                               duration: Duration(seconds: 2),
                             ),
                           );
                         }
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFE53935),
+                        backgroundColor: AppColors.accent(context),
                         foregroundColor: Colors.white,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
@@ -221,8 +224,8 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
                         ),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
-                      child: const Text(
-                        'Confirm',
+                      child: Text(
+                        AppLocalizations.of(context).confirm,
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
@@ -242,11 +245,12 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
   
 
   List<Widget> _buildLimitedCycleChips() {
-    const fixedOptions = <(int?, String)>[
-      (null, 'Never'),
-      (7, 'Weekly'),
-      (14, '2 Weeks'),
-      (30, 'Monthly'),
+    final l10n = AppLocalizations.of(context);
+    final fixedOptions = <(int?, String)>[
+      (null, l10n.never),
+      (7, l10n.repeatWeekly),
+      (14, l10n.repeatBiweekly),
+      (30, l10n.repeatMonthly),
     ];
     final fixedValues = fixedOptions.map((o) => o.$1).toList();
     final isCustom = _limitedCycleIntervalDays != null &&
@@ -263,10 +267,10 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
-              color: selected ? const Color(0xFFE53935) : Colors.white,
+              color: selected ? AppColors.accent(context) : AppColors.card(context),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: selected ? const Color(0xFFE53935) : const Color(0xFFE0E0E0),
+                color: selected ? AppColors.accent(context) : AppColors.border(context),
                 width: 1.5,
               ),
             ),
@@ -275,7 +279,7 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
-                color: selected ? Colors.white : const Color(0xFF6F7789),
+                color: selected ? Colors.white : AppColors.muted(context),
               ),
             ),
           ),
@@ -295,19 +299,19 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
-            color: isCustom ? const Color(0xFFE53935) : Colors.white,
+            color: isCustom ? AppColors.accent(context) : AppColors.card(context),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: isCustom ? const Color(0xFFE53935) : const Color(0xFFE0E0E0),
+              color: isCustom ? AppColors.accent(context) : AppColors.border(context),
               width: 1.5,
             ),
           ),
           child: Text(
-            isCustom ? 'Every ${_limitedCycleIntervalDays}d' : 'Custom days...',
+            isCustom ? 'Every ${_limitedCycleIntervalDays}d' : AppLocalizations.of(context).customDaysOption,
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: isCustom ? Colors.white : const Color(0xFF6F7789),
+              color: isCustom ? Colors.white : AppColors.muted(context),
             ),
           ),
         ),
@@ -321,9 +325,9 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
 
     if (!_keep && !_isLimited && _isPastDate(_scheduledDate)) {
       ScaffoldMessenger.of(context).showSingleSnackBar(
-        const SnackBar(
+        SnackBar(
           duration: Duration(seconds: 2),
-          content: Text('Cannot create tasks for past dates.'),
+          content: Text(AppLocalizations.of(context).cannotCreatePastTasks),
         ),
       );
       return;
@@ -362,8 +366,8 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
     final bottom = MediaQuery.of(context).viewInsets.bottom;
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFFF5F7FA),
+      decoration: BoxDecoration(
+        color: AppColors.bg(context),
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       padding: EdgeInsets.only(bottom: bottom),
@@ -381,24 +385,24 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFEBEE),
+                      color: AppColors.accentSoft(context),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Icons.add_task, color: Color(0xFFE53935), size: 24),
+                    child: Icon(Icons.add_task, color: AppColors.accent(context), size: 24),
                   ),
                   const SizedBox(width: 12),
-                  const Text(
-                    'New Task',
+                  Text(
+                    AppLocalizations.of(context).newTask,
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF1A1D1F),
+                      color: AppColors.ink(context),
                     ),
                   ),
                   const Spacer(),
                   IconButton(
                     onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close, color: Color(0xFF6F7789)),
+                    icon: Icon(Icons.close, color: AppColors.muted(context)),
                   )
                 ],
               ),
@@ -408,10 +412,10 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
                 controller: _titleCtrl,
                 style: const TextStyle(fontSize: 16),
                 decoration: InputDecoration(
-                  labelText: 'Task Name',
-                  hintText: 'e.g. Drink 2L water',
+                  labelText: AppLocalizations.of(context).taskName,
+                  hintText: AppLocalizations.of(context).taskNameHint,
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: AppColors.card(context),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
@@ -422,11 +426,11 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFFE53935), width: 2),
+                    borderSide: BorderSide(color: AppColors.accent(context), width: 2),
                   ),
-                  prefixIcon: const Icon(Icons.check_circle_outline, color: Color(0xFF6F7789)),
+                  prefixIcon: Icon(Icons.check_circle_outline, color: AppColors.muted(context)),
                 ),
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                validator: (v) => (v == null || v.trim().isEmpty) ? AppLocalizations.of(context).required : null,
                 textInputAction: TextInputAction.next,
               ),
               const SizedBox(height: 16),
@@ -435,9 +439,9 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
                 controller: _descCtrl,
                 style: const TextStyle(fontSize: 16),
                 decoration: InputDecoration(
-                  labelText: 'Description (optional)',
+                  labelText: AppLocalizations.of(context).descriptionOptional,
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: AppColors.card(context),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
@@ -448,20 +452,20 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFFE53935), width: 2),
+                    borderSide: BorderSide(color: AppColors.accent(context), width: 2),
                   ),
-                  prefixIcon: const Icon(Icons.notes, color: Color(0xFF6F7789)),
+                  prefixIcon: Icon(Icons.notes, color: AppColors.muted(context)),
                 ),
                 maxLines: 2,
               ),
               const SizedBox(height: 20),
               // Category
-              const Text(
-                'Category',
+              Text(
+                AppLocalizations.of(context).category,
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF6F7789),
+                  color: AppColors.muted(context),
                 ),
               ),
               const SizedBox(height: 8),
@@ -475,19 +479,19 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                       decoration: BoxDecoration(
-                        color: selected ? const Color(0xFFE53935) : Colors.white,
+                        color: selected ? AppColors.accent(context) : AppColors.card(context),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: selected ? const Color(0xFFE53935) : const Color(0xFFE0E0E0),
+                          color: selected ? AppColors.accent(context) : AppColors.border(context),
                           width: 1.5,
                         ),
                       ),
                       child: Text(
-                        c,
+                        localizedCategory(AppLocalizations.of(context), c),
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
-                          color: selected ? Colors.white : const Color(0xFF6F7789),
+                          color: selected ? Colors.white : AppColors.muted(context),
                         ),
                       ),
                     ),
@@ -499,7 +503,7 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
               Container(
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppColors.card(context),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
@@ -510,7 +514,7 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           decoration: BoxDecoration(
-                            color: !_keep && !_isLimited ? const Color(0xFFE53935) : Colors.transparent,
+                            color: !_keep && !_isLimited ? AppColors.accent(context) : Colors.transparent,
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Row(
@@ -519,15 +523,15 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
                               Icon(
                                 Icons.event,
                                 size: 18,
-                                color: !_keep && !_isLimited ? Colors.white : const Color(0xFF6F7789),
+                                color: !_keep && !_isLimited ? Colors.white : AppColors.muted(context),
                               ),
                               const SizedBox(width: 6),
                               Text(
-                                'Daily',
+                                AppLocalizations.of(context).dailyLabel,
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
-                                  color: !_keep && !_isLimited ? Colors.white : const Color(0xFF6F7789),
+                                  color: !_keep && !_isLimited ? Colors.white : AppColors.muted(context),
                                 ),
                               ),
                             ],
@@ -541,7 +545,7 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           decoration: BoxDecoration(
-                            color: _keep && !_isLimited ? const Color(0xFFE53935) : Colors.transparent,
+                            color: _keep && !_isLimited ? AppColors.accent(context) : Colors.transparent,
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Row(
@@ -550,15 +554,15 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
                               Icon(
                                 Icons.repeat,
                                 size: 18,
-                                color: _keep && !_isLimited ? Colors.white : const Color(0xFF6F7789),
+                                color: _keep && !_isLimited ? Colors.white : AppColors.muted(context),
                               ),
                               const SizedBox(width: 6),
                               Text(
-                                'Recurring',
+                                AppLocalizations.of(context).recurringLabel,
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
-                                  color: _keep && !_isLimited ? Colors.white : const Color(0xFF6F7789),
+                                  color: _keep && !_isLimited ? Colors.white : AppColors.muted(context),
                                 ),
                               ),
                             ],
@@ -572,7 +576,7 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           decoration: BoxDecoration(
-                            color: _isLimited ? const Color(0xFFE53935) : Colors.transparent,
+                            color: _isLimited ? AppColors.accent(context) : Colors.transparent,
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Row(
@@ -581,15 +585,15 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
                               Icon(
                                 Icons.flag,
                                 size: 18,
-                                color: _isLimited ? Colors.white : const Color(0xFF6F7789),
+                                color: _isLimited ? Colors.white : AppColors.muted(context),
                               ),
                               const SizedBox(width: 6),
                               Text(
-                                'X-Times',
+                                AppLocalizations.of(context).xTimes,
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
-                                  color: _isLimited ? Colors.white : const Color(0xFF6F7789),
+                                  color: _isLimited ? Colors.white : AppColors.muted(context),
                                 ),
                               ),
                             ],
@@ -606,20 +610,20 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.card(context),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.flag, color: Color(0xFFE53935), size: 20),
+                      Icon(Icons.flag, color: AppColors.accent(context), size: 20),
                       const SizedBox(width: 10),
-                      const Expanded(
+                      Expanded(
                         child: Text(
-                          'How many days?',
+                          AppLocalizations.of(context).howManyDays,
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
-                            color: Color(0xFF1A1D1F),
+                            color: AppColors.ink(context),
                           ),
                         ),
                       ),
@@ -628,20 +632,20 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
                             ? () => setState(() => _targetCount--)
                             : null,
                         icon: const Icon(Icons.remove_circle_outline),
-                        color: const Color(0xFFE53935),
+                        color: AppColors.accent(context),
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFFEBEE),
+                          color: AppColors.accentSoft(context),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           '$_targetCount',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFFE53935),
+                            color: AppColors.accent(context),
                           ),
                         ),
                       ),
@@ -652,7 +656,7 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
                             ? null
                             : () => setState(() => _targetCount++),
                         icon: const Icon(Icons.add_circle_outline),
-                        color: const Color(0xFFE53935),
+                        color: AppColors.accent(context),
                       ),
                     ],
                   ),
@@ -667,7 +671,7 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
-                            'Same as cycle length — equivalent to a daily recurring task.',
+                            AppLocalizations.of(context).sameAsCycleHint,
                             style: const TextStyle(fontSize: 12, color: Color(0xFFFF9800)),
                           ),
                         ),
@@ -676,12 +680,12 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
                   ),
                 const SizedBox(height: 12),
                 // Cycle / reset options
-                const Text(
-                  'Repeats after completion',
+                Text(
+                  AppLocalizations.of(context).repeatsAfterCompletion,
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF6F7789),
+                    color: AppColors.muted(context),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -692,18 +696,18 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
                 ),
                 if (_limitedCycleIntervalDays != null) ...[
                   const SizedBox(height: 14),
-                  const Text(
-                    'Choose weekdays',
+                  Text(
+                    AppLocalizations.of(context).chooseWeekdays,
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF6F7789),
+                      color: AppColors.muted(context),
                     ),
                   ),
                   const SizedBox(height: 4),
-                  const Text(
-                    'Optional – leave empty to show every day',
-                    style: TextStyle(fontSize: 12, color: Color(0xFF9E9E9E)),
+                  Text(
+                    AppLocalizations.of(context).weekdaysOptionalHint,
+                    style: TextStyle(fontSize: 12, color: AppColors.faint(context)),
                   ),
                   const SizedBox(height: 8),
                   WeekdayPicker(
@@ -724,7 +728,7 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.card(context),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Column(
@@ -734,19 +738,19 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
                         children: [
                           const Icon(Icons.star, size: 20, color: Color(0xFFFF9800)),
                           const SizedBox(width: 8),
-                          const Text(
-                            'Points',
+                          Text(
+                            AppLocalizations.of(context).points,
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
-                              color: Color(0xFF1A1D1F),
+                              color: AppColors.ink(context),
                             ),
                           ),
                           const Spacer(),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFFFF3E0),
+                              color: (AppColors.isDark(context) ? const Color(0xFF332612) : const Color(0xFFFFF3E0)),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
@@ -765,8 +769,8 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
                         min: 1,
                         max: 10,
                         divisions: 9,
-                        activeColor: const Color(0xFFE53935),
-                        inactiveColor: const Color(0xFFFFEBEE),
+                        activeColor: AppColors.accent(context),
+                        inactiveColor: AppColors.accentSoft(context),
                         onChanged: (v) => setState(() => _points = v.round()),
                       ),
                     ],
@@ -776,12 +780,12 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
               // Repeat pattern selector (only for recurring tasks)
               if (_keep) ...[
                 const SizedBox(height: 20),
-                const Text(
-                  'Repeat Pattern',
+                Text(
+                  AppLocalizations.of(context).repeatPattern,
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF6F7789),
+                    color: AppColors.muted(context),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -817,21 +821,21 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                         decoration: BoxDecoration(
-                          color: selected ? const Color(0xFFE53935) : Colors.white,
+                          color: selected ? AppColors.accent(context) : AppColors.card(context),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: selected ? const Color(0xFFE53935) : const Color(0xFFE0E0E0),
+                            color: selected ? AppColors.accent(context) : AppColors.border(context),
                             width: 1.5,
                           ),
                         ),
                         child: Text(
                           pattern == TaskRepeatPattern.custom && _repeatPattern == TaskRepeatPattern.custom
                               ? 'Every $_customDays days'
-                              : pattern.label,
+                              : localizedPatternLabel(AppLocalizations.of(context), pattern, _customDays),
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
-                            color: selected ? Colors.white : const Color(0xFF6F7789),
+                            color: selected ? Colors.white : AppColors.muted(context),
                           ),
                         ),
                       ),
@@ -841,12 +845,12 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
                 if (_repeatPattern == TaskRepeatPattern.weekly_days ||
                   _repeatPattern == TaskRepeatPattern.biweekly) ...[
                   const SizedBox(height: 14),
-                  const Text(
-                    'Choose weekdays',
+                  Text(
+                    AppLocalizations.of(context).chooseWeekdays,
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF6F7789),
+                      color: AppColors.muted(context),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -868,9 +872,9 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
                         onDateSelected: (picked) {
                           if (_isPastDate(picked)) {
                             ScaffoldMessenger.of(context).showSingleSnackBar(
-                              const SnackBar(
+                              SnackBar(
                                 duration: Duration(seconds: 2),
-                                content: Text('Cannot create tasks for past dates.'),
+                                content: Text(AppLocalizations.of(context).cannotCreatePastTasks),
                               ),
                             );
                             return;
@@ -884,30 +888,30 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
                   child: Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppColors.card(context),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.calendar_today, color: Color(0xFFE53935)),
+                        Icon(Icons.calendar_today, color: AppColors.accent(context)),
                         const SizedBox(width: 12),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              'Scheduled Date',
+                            Text(
+                              AppLocalizations.of(context).scheduledDate,
                               style: TextStyle(
                                 fontSize: 12,
-                                color: Color(0xFF6F7789),
+                                color: AppColors.muted(context),
                               ),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               '${_scheduledDate.day}/${_scheduledDate.month}/${_scheduledDate.year}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
-                                color: Color(0xFF1A1D1F),
+                                color: AppColors.ink(context),
                               ),
                             ),
                           ],
@@ -925,15 +929,15 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
                 child: ElevatedButton(
                   onPressed: _submit,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFE53935),
+                    backgroundColor: AppColors.accent(context),
                     foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text(
-                    'Create Task',
+                  child: Text(
+                    AppLocalizations.of(context).createTask,
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,

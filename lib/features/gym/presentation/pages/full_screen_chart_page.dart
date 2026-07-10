@@ -1,5 +1,7 @@
-import 'dart:math' as math;
+﻿import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../../../../l10n/generated/app_localizations.dart';
+import '../../../../core/theme/app_colors.dart';
 import 'package:flutter/services.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../data/models/gym_models.dart';
@@ -270,26 +272,26 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
 
     if (allSpots.isEmpty) {
       return Scaffold(
-        backgroundColor: const Color(0xFFF5F7FA),
+        backgroundColor: AppColors.bg(context),
         appBar: AppBar(
-          backgroundColor: Colors.white,
-          foregroundColor: const Color(0xFF1A1D1F),
+          backgroundColor: AppColors.card(context),
+          foregroundColor: AppColors.ink(context),
           elevation: 0.5,
           title: Text(widget.title, style: const TextStyle(fontWeight: FontWeight.bold)),
           actions: [
             IconButton(
-              tooltip: 'Filtern',
+              tooltip: AppLocalizations.of(context).filter,
               icon: const Icon(Icons.filter_list),
               onPressed: _showFilterMenu,
             ),
             IconButton(
-              tooltip: 'Exit full screen',
+              tooltip: AppLocalizations.of(context).exitFullScreen,
               icon: const Icon(Icons.fullscreen_exit),
               onPressed: () => Navigator.pop(context),
             ),
           ],
         ),
-        body: const Center(child: Text('Keine Daten für diesen Filter.')),
+        body: Center(child: Text(AppLocalizations.of(context).noDataForFilter)),
       );
     }
 
@@ -355,20 +357,20 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
     String fmtTooltip(DateTime d) => fmtDate(d);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: AppColors.bg(context),
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF1A1D1F),
+        backgroundColor: AppColors.card(context),
+        foregroundColor: AppColors.ink(context),
         elevation: 0.5,
         title: Text(widget.title, style: const TextStyle(fontWeight: FontWeight.bold)),
         actions: [
           IconButton(
-            tooltip: 'Filtern',
+            tooltip: AppLocalizations.of(context).filter,
             icon: const Icon(Icons.filter_list),
             onPressed: _showFilterMenu,
           ),
           IconButton(
-            tooltip: 'Exit full screen',
+            tooltip: AppLocalizations.of(context).exitFullScreen,
             icon: const Icon(Icons.fullscreen_exit),
             onPressed: () => Navigator.pop(context),
           ),
@@ -449,7 +451,7 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
               touchTooltipData: LineTouchTooltipData(
                 fitInsideHorizontally: true,
                 fitInsideVertically: true,
-                getTooltipColor: (_) => Colors.white,
+                getTooltipColor: (_) => AppColors.card(context),
                 tooltipPadding:
                 const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 getTooltipItems: (touchedSpots) => touchedSpots.map((t) {
@@ -467,12 +469,12 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
                         : '${t.y.toStringAsFixed(1)} kg x $reps';
                     return LineTooltipItem(
                       '$dateStr\n',
-                      const TextStyle(color: Color(0xFF1A1D1F), fontWeight: FontWeight.w700),
+                      TextStyle(color: AppColors.ink(context), fontWeight: FontWeight.w700),
                       children: [
                         TextSpan(
-                          text: 'Set ${setIndex + 1}: $valueStr',
-                          style: const TextStyle(
-                            color: Color(0xFF1A1D1F),
+                          text: AppLocalizations.of(context).setLabel(setIndex + 1, valueStr),
+                          style: TextStyle(
+                            color: AppColors.ink(context),
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -487,12 +489,12 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
 
                   return LineTooltipItem(
                     '$dateStr\n',
-                    const TextStyle(color: Color(0xFF1A1D1F), fontWeight: FontWeight.w700),
+                    TextStyle(color: AppColors.ink(context), fontWeight: FontWeight.w700),
                     children: [
                       TextSpan(
                         text: valueStr,
-                        style: const TextStyle(
-                          color: Color(0xFF1A1D1F),
+                        style: TextStyle(
+                          color: AppColors.ink(context),
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -534,13 +536,13 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
                       spots: spots,
                       isCurved: false,
                       barWidth: 3,
-                      color: const Color(0xFFE53935),
+                      color: AppColors.accent(context),
                       dotData: FlDotData(
                         show: true,
                         getDotPainter: (spot, percent, bar, index) {
                           return FlDotCirclePainter(
                             radius: 3.2,
-                            color: const Color(0xFFE53935),
+                            color: AppColors.accent(context),
                             strokeWidth: 1.5,
                             strokeColor: const Color(0x66E53935),
                           );
@@ -618,7 +620,7 @@ class _FilterDialogModernState extends State<_FilterDialogModern> {
   Widget build(BuildContext context) {
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: AppColors.bg(context),
       child: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -627,8 +629,8 @@ class _FilterDialogModernState extends State<_FilterDialogModern> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Title
-              const Text(
-                'Filtern nach:',
+              Text(
+                AppLocalizations.of(context).filterBy,
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
@@ -640,7 +642,7 @@ class _FilterDialogModernState extends State<_FilterDialogModern> {
               // Filter options - Standard (no filter)
               _buildFilterOption(
                 'Standard',
-                'Zeige stärkste Set',
+                AppLocalizations.of(context).showStrongestSet,
                 _selectedFilter == 'Standard',
                 () => setState(() => _selectedFilter = 'Standard'),
               ),
@@ -648,24 +650,24 @@ class _FilterDialogModernState extends State<_FilterDialogModern> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppColors.card(context),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                  border: Border.all(color: AppColors.border(context)),
                 ),
                 child: SwitchListTile.adaptive(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text(
-                    'Mehrere Graphen (pro Set)',
+                  title: Text(
+                    AppLocalizations.of(context).multipleGraphs,
                     style: TextStyle(fontWeight: FontWeight.w600),
                   ),
-                  subtitle: const Text(
-                    'Schaltet zwischen einem Graphen und mehreren Set-Linien um',
+                  subtitle: Text(
+                    AppLocalizations.of(context).multipleGraphsSubtitle,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                   value: _showAllSetsLocal,
                   onChanged: (v) => setState(() => _showAllSetsLocal = v),
-                  activeColor: const Color(0xFFE53935),
+                  activeColor: AppColors.accent(context),
                 ),
               ),
               const SizedBox(height: 16),
@@ -673,7 +675,7 @@ class _FilterDialogModernState extends State<_FilterDialogModern> {
               // Filter options - Gewicht
               _buildFilterOption(
                 'Gewicht',
-                'Mindestgewicht eingeben',
+                AppLocalizations.of(context).minWeightEnter,
                 _selectedFilter == 'Gewicht',
                 () => setState(() => _selectedFilter = 'Gewicht'),
               ),
@@ -683,16 +685,16 @@ class _FilterDialogModernState extends State<_FilterDialogModern> {
                   padding: const EdgeInsets.only(left: 40),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppColors.card(context),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: const Color(0xFFE5E7EB)),
+                      border: Border.all(color: AppColors.border(context)),
                     ),
                     child: TextField(
                       controller: _weightController,
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       decoration: InputDecoration(
-                        hintText: 'z.B. 80.5 kg',
-                        hintStyle: const TextStyle(color: Color(0xFF9CA3AF)),
+                        hintText: AppLocalizations.of(context).weightHintKg,
+                        hintStyle: TextStyle(color: AppColors.faint(context)),
                         border: InputBorder.none,
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 12,
@@ -715,7 +717,7 @@ class _FilterDialogModernState extends State<_FilterDialogModern> {
                 'Datum',
                 _startDate != null && _endDate != null
                     ? '${_fmtDate(_startDate!)} - ${_fmtDate(_endDate!)}'
-                    : 'Datumsbereich wählen',
+                    : AppLocalizations.of(context).chooseDateRange,
                 _selectedFilter == 'Datum',
                 () async {
                   final range = await showDialog<DateTimeRange>(
@@ -757,7 +759,7 @@ class _FilterDialogModernState extends State<_FilterDialogModern> {
                   const SizedBox(width: 12),
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFE53935),
+                      backgroundColor: AppColors.accent(context),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -790,8 +792,8 @@ class _FilterDialogModernState extends State<_FilterDialogModern> {
                         widget.onFilterChanged(_selectedFilter);
                       }
                     },
-                    child: const Text(
-                      'Anwenden',
+                    child: Text(
+                      AppLocalizations.of(context).apply,
                       style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,
@@ -819,10 +821,10 @@ class _FilterDialogModernState extends State<_FilterDialogModern> {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFFFEBEE) : Colors.white,
+          color: isSelected ? AppColors.accentSoft(context) : AppColors.card(context),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: isSelected ? const Color(0xFFE53935) : const Color(0xFFE5E7EB),
+            color: isSelected ? AppColors.accent(context) : AppColors.border(context),
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -832,7 +834,7 @@ class _FilterDialogModernState extends State<_FilterDialogModern> {
               value: title,
               groupValue: _selectedFilter,
               onChanged: (_) => onTap(),
-              activeColor: const Color(0xFFE53935),
+              activeColor: AppColors.accent(context),
             ),
             const SizedBox(width: 8),
             Expanded(
@@ -877,14 +879,14 @@ class _FilterDialogModernState extends State<_FilterDialogModern> {
         // Füge das Haupt-Set hinzu
         options.add({
           'label': setLabel,
-          'subtitle': 'Gewicht des Sets $setIndex',
+          'subtitle': AppLocalizations.of(context).weightOfSet(setIndex),
         });
 
         // Füge Dropsets hinzu, falls vorhanden
         for (int d = 0; d < set.dropsets.length; d++) {
           options.add({
             'label': '$setLabel • Dropset ${d + 1}',
-            'subtitle': 'Dropset ${d + 1} von Set $setIndex',
+            'subtitle': AppLocalizations.of(context).dropsetOfSet(d + 1, setIndex),
           });
         }
         
@@ -918,4 +920,3 @@ class _FilterDialogModernState extends State<_FilterDialogModern> {
     );
   }
 }
-

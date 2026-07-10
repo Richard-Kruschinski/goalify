@@ -1,4 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import '../../../../l10n/generated/app_localizations.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../data/models/gym_models.dart';
 
 /// ===============================================================
@@ -52,10 +54,10 @@ class _WorkoutPickerSheetState extends State<WorkoutPickerSheet> {
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: TextField(
         decoration: InputDecoration(
-          hintText: 'Search workout... (name or muscle)',
+          hintText: AppLocalizations.of(context).searchWorkoutHint,
           filled: true,
-          fillColor: Colors.white,
-          prefixIcon: const Icon(Icons.search, color: Color(0xFF6F7789)),
+          fillColor: AppColors.card(context),
+          prefixIcon: Icon(Icons.search, color: AppColors.muted(context)),
           contentPadding: const EdgeInsets.symmetric(vertical: 14),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
@@ -67,7 +69,7 @@ class _WorkoutPickerSheetState extends State<WorkoutPickerSheet> {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFFE53935), width: 2),
+            borderSide: BorderSide(color: AppColors.accent(context), width: 2),
           ),
         ),
         onChanged: (String value) => setState(() => _query = value),
@@ -82,7 +84,7 @@ class _WorkoutPickerSheetState extends State<WorkoutPickerSheet> {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.card(context),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -99,7 +101,7 @@ class _WorkoutPickerSheetState extends State<WorkoutPickerSheet> {
           width: 44,
           height: 44,
           decoration: BoxDecoration(
-            color: const Color(0xFFFFEBEE),
+            color: AppColors.accentSoft(context),
             borderRadius: BorderRadius.circular(10),
           ),
           child: workout.iconPath != null
@@ -110,26 +112,26 @@ class _WorkoutPickerSheetState extends State<WorkoutPickerSheet> {
                     fit: BoxFit.contain,
                   ),
                 )
-              : Icon(workout.icon ?? Icons.fitness_center, color: const Color(0xFFE53935)),
+              : Icon(workout.icon ?? Icons.fitness_center, color: AppColors.accent(context)),
         ),
         title: Text(
           workout.name,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: Color(0xFF1A1D1F),
+            color: AppColors.ink(context),
           ),
         ),
         subtitle: Text(
           subtitle,
-          style: const TextStyle(fontSize: 13, color: Color(0xFF6F7789)),
+          style: TextStyle(fontSize: 13, color: AppColors.muted(context)),
         ),
         children: <Widget>[
           Align(
             alignment: Alignment.centerLeft,
             child: Text(
               workout.description,
-              style: const TextStyle(color: Color(0xFF6F7789)),
+              style: TextStyle(color: AppColors.muted(context)),
             ),
           ),
           const SizedBox(height: 12),
@@ -139,7 +141,7 @@ class _WorkoutPickerSheetState extends State<WorkoutPickerSheet> {
                 child: ElevatedButton.icon(
                   onPressed: () => widget.onAddOrUpdate(workout),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFE53935),
+                    backgroundColor: AppColors.accent(context),
                     foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
@@ -147,7 +149,7 @@ class _WorkoutPickerSheetState extends State<WorkoutPickerSheet> {
                     ),
                   ),
                   icon: const Icon(Icons.add),
-                  label: Text(latest == null ? 'Add' : 'Update'),
+                  label: Text(latest == null ? AppLocalizations.of(context).add : AppLocalizations.of(context).update),
                 ),
               ),
               const SizedBox(width: 12),
@@ -155,12 +157,12 @@ class _WorkoutPickerSheetState extends State<WorkoutPickerSheet> {
                 child: OutlinedButton(
                   onPressed: () => Navigator.of(context).maybePop(),
                   style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Color(0xFFE0E0E0)),
+                    side: BorderSide(color: AppColors.border(context)),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text('Close'),
+                  child: Text(AppLocalizations.of(context).close),
                 ),
               ),
             ],
@@ -182,8 +184,8 @@ class _WorkoutPickerSheetState extends State<WorkoutPickerSheet> {
         maxChildSize: 0.95,
         builder: (BuildContext context, ScrollController controller) {
           return Container(
-            decoration: const BoxDecoration(
-              color: Color(0xFFF5F7FA),
+            decoration: BoxDecoration(
+              color: AppColors.bg(context),
               borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
             ),
             child: Column(
@@ -209,4 +211,3 @@ class _WorkoutPickerSheetState extends State<WorkoutPickerSheet> {
     );
   }
 }
-

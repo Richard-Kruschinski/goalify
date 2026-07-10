@@ -1,0 +1,262 @@
+{
+  "muscles": {
+    "Adductors": "Adduktoren",
+    "Chest": "Brust",
+    "Triceps": "Trizeps",
+    "Shoulders": "Schultern",
+    "Biceps": "Bizeps",
+    "Quads": "Quadrizeps",
+    "Glutes": "Gesäß",
+    "Calves": "Waden",
+    "Obliques": "Schräge Bauchmuskeln",
+    "Core": "Core",
+    "Calves (Soleus)": "Waden (Soleus)",
+    "Calves (Gastrocnemius)": "Waden (Gastrocnemius)",
+    "Abs": "Bauch",
+    "Hamstrings": "Beinbeuger",
+    "Back": "Rücken",
+    "Rear Delts": "Hintere Schulter",
+    "Upper Back": "Oberer Rücken",
+    "Forearms": "Unterarme",
+    "Upper Chest": "Obere Brust",
+    "Lats": "Latissimus",
+    "Neck (Lateral Flexors: SCM, Scalenes)": "Hals (seitliche Beuger)",
+    "Shoulders (Lateral)": "Schultern (seitlich)",
+    "Neck Flexors (SCM, Longus Colli)": "Halsbeuger",
+    "Neck Extensors (Upper Traps, Splenius, Erector Cervicis)": "Halsstrecker",
+    "Forearms (Extensors)": "Unterarme (Strecker)",
+    "Cardio": "Cardio",
+    "Traps": "Trapez",
+    "Forearms (Flexors)": "Unterarme (Beuger)"
+  },
+  "workouts": {
+    "adduction_machine": {
+      "name": "Adduktoren-Maschine",
+      "description": "Hüft-Adduktionsmaschine mit Fokus auf die Oberschenkel-Innenseite (Adduktoren)."
+    },
+    "bench_press": {
+      "name": "Bankdrücken",
+      "description": "Klassische Langhantel-Übung für die Brust. Fokus auf Brust, Trizeps und vordere Schultern."
+    },
+    "bench_press_dumbbell": {
+      "name": "Bankdrücken (Kurzhanteln)",
+      "description": "Bankdrücken mit Kurzhanteln. Fördert gleichmäßige Brustaktivierung und Stabilität."
+    },
+    "bench_press_smith_machine": {
+      "name": "Bankdrücken (Multipresse)",
+      "description": "Bankdrücken an der Multipresse mit geführter Hantelbahn für Brust, Trizeps und Schultern."
+    },
+    "biceps_curl_dumbbell": {
+      "name": "Bizeps-Curls (Kurzhanteln)",
+      "description": "Klassischer Kurzhantel-Curl für den Bizepsaufbau."
+    },
+    "box_jumps": {
+      "name": "Box Jumps",
+      "description": "Plyometrische Unterkörper-Übung, bei der du explosiv auf eine erhöhte Plattform springst. Vorteil: verbessert Schnellkraft, Geschwindigkeit und Koordination. Wichtig: weich mit gebeugten Knien landen und die Bewegung kontrollieren, statt unkontrolliert herunterzuspringen, um Aufprall und Verletzungsrisiko zu reduzieren."
+    },
+    "bulgarian_split_squat": {
+      "name": "Bulgarian Split Squats",
+      "description": "Unterkörper-Übung, bei der du eine Kniebeuge mit einem hinter dir erhöhten Bein ausführst. Vorteil: jedes Bein arbeitet unabhängig, was die Balance verbessert und Dysbalancen ausgleicht. Wichtig: das vordere Knie stabil über den Zehen führen und gerade nach unten absenken, um Gesäß und Quadrizeps effektiv zu treffen."
+    },
+    "butterfly_cables": {
+      "name": "Butterfly (Kabelzug)",
+      "description": "Kabel-Flys (stehend oder liegend) zur Brust-Isolation."
+    },
+    "butterfly_machine": {
+      "name": "Butterfly (Maschine)",
+      "description": "Flys an der Butterfly-Maschine zur Brust-Isolation."
+    },
+    "cable_cross": {
+      "name": "Cable Cross",
+      "description": "Kabelzug-Übung für die Brustdefinition. Verstellbare Winkel für Variation."
+    },
+    "cable_rotation": {
+      "name": "Kabel-Rotation",
+      "description": "Stehende Rumpfrotation am Kabelzug. Fokus auf schräge Bauchmuskeln und Rumpfkontrolle."
+    },
+    "calf_raise_seated": {
+      "name": "Wadenheben (sitzend)",
+      "description": "Sitzendes Wadenheben. Fokus auf den Soleus."
+    },
+    "calf_raise_machine": {
+      "name": "Wadenheben (stehend, Maschine)",
+      "description": "Stehendes Wadenheben an der Maschine. Fokus auf den Gastrocnemius."
+    },
+    "close_grip_bench_press": {
+      "name": "Enges Bankdrücken",
+      "description": "Bankdrücken mit engem Griff – verlagert mehr Last auf den Trizeps, trainiert aber weiterhin Brust und vordere Schultern."
+    },
+    "concentration_curls": {
+      "name": "Konzentrations-Curls",
+      "description": "Einarmiger Bizeps-Curl. Fokus auf maximale Kontraktion und Isolation."
+    },
+    "crunches_cable": {
+      "name": "Crunches (Kabelzug)",
+      "description": "Kniende Kabel-Crunches für Bauchtraining mit Zusatzgewicht."
+    },
+    "crunches_machine": {
+      "name": "Crunches (Maschine)",
+      "description": "Bauchmaschine für kontrolliertes Core-Training."
+    },
+    "deadlift": {
+      "name": "Kreuzheben",
+      "description": "Grundübung für Rücken und Beine. Stange nah am Körper führen, Wirbelsäule neutral halten."
+    },
+    "dips": {
+      "name": "Dips",
+      "description": "Dips mit Körpergewicht oder Unterstützung für Brust und Trizeps."
+    },
+    "face_pulls": {
+      "name": "Face Pulls",
+      "description": "Am Kabelzug das Seil zum Gesicht ziehen, die Ellbogen nach außen führen und die Schulterblätter zusammenziehen. Oberkörper stabil halten und kontrolliert arbeiten."
+    },
+    "hammer_curls": {
+      "name": "Hammer-Curls",
+      "description": "Bizeps-Übung im neutralen Griff. Zielt auf den Brachialis."
+    },
+    "hex_squat": {
+      "name": "Hex Squat",
+      "description": "Maschinengeführte Kniebeugen-Variante. Fokus auf Quadrizeps-Aktivierung."
+    },
+    "incline_bench_press": {
+      "name": "Schrägbankdrücken",
+      "description": "Auf der Schrägbank ausgeführt. Betont obere Brust und Schultern."
+    },
+    "incline_bench_press_dumbbell": {
+      "name": "Schrägbankdrücken (Kurzhanteln)",
+      "description": "Variante mit Kurzhanteln für größere Bewegungsamplitude und Stabilisation."
+    },
+    "incline_bench_press_smith_machine": {
+      "name": "Schrägbankdrücken (Multipresse)",
+      "description": "Schrägbankdrücken an der Multipresse, betont obere Brust und Schultern."
+    },
+    "lat_pulldown": {
+      "name": "Latzug",
+      "description": "Zugbewegung nach unten für den Latissimus. Griffvarianten verlagern den Fokus."
+    },
+    "lat_pulldown_reverse_grip": {
+      "name": "Latzug (Untergriff)",
+      "description": "Rücken-Übung, bei der du die Stange im Untergriff nach unten ziehst. Vorteil: stärkere Bizeps-Beteiligung und ein kräftiger, kontrollierter Zug. Wichtig: die Stange nicht hinter den Nacken, sondern zur oberen Brust ziehen und den Oberkörper stabil halten, um den Latissimus optimal zu aktivieren."
+    },
+    "lateral_neck_flexion": {
+      "name": "Seitliche Halsflexion",
+      "description": "Seitliche Halsbewegung. Leichten Widerstand und langsames Tempo verwenden."
+    },
+    "lateral_raise_dumbbell": {
+      "name": "Seitheben (Kurzhanteln)",
+      "description": "Klassische Schulterübung mit Kurzhanteln für die seitliche Schulter."
+    },
+    "lateral_raise_machine": {
+      "name": "Seitheben (Maschine)",
+      "description": "Isolationsübung für die seitliche Schulter an der Maschine."
+    },
+    "lateral_raises_cables": {
+      "name": "Seitheben (Kabelzug)",
+      "description": "Seitheben am Kabelzug für konstante Spannung auf der seitlichen Schulter."
+    },
+    "leg_curl": {
+      "name": "Beinbeuger",
+      "description": "Maschinen-Beincurl. Isoliert die hintere Oberschenkelmuskulatur."
+    },
+    "leg_extension": {
+      "name": "Beinstrecker",
+      "description": "Maschinen-Beinstrecken. Isoliert den Quadrizeps."
+    },
+    "leg_press": {
+      "name": "Beinpresse",
+      "description": "Unterkörper-Übung, bei der du eine gewichtete Plattform mit den Beinen wegdrückst. Vorteil: bietet Stabilität und erlaubt kontrolliertes Beintraining. Wichtig: die Knie nicht nach innen fallen lassen und oben nicht komplett durchstrecken, um Spannung auf der Muskulatur zu halten und die Gelenke zu schonen."
+    },
+    "neck_curls": {
+      "name": "Nacken-Curls",
+      "description": "Halsbeugung gegen Widerstand. Bewegung kontrolliert halten, nicht ruckartig arbeiten."
+    },
+    "neck_extension": {
+      "name": "Nackenstrecken",
+      "description": "Halsstreckung gegen Widerstand zur Kräftigung der hinteren Nackenmuskulatur."
+    },
+    "one_arm_row_dumbbell": {
+      "name": "Einarmiges Rudern (Kurzhantel)",
+      "description": "Rücken-Übung, bei der du eine Kurzhantel einarmig ziehst. Vorteil: jede Seite arbeitet unabhängig. Wichtig: die Hantel nicht zur Brust, sondern gezielt zur Hüfte ziehen, um den Latissimus optimal zu aktivieren."
+    },
+    "overhead_press": {
+      "name": "Schulterdrücken (Langhantel)",
+      "description": "Langhantel über Kopf drücken. Fokus auf Schulterkraft und Rumpfstabilität."
+    },
+    "pause_rep_bench_press": {
+      "name": "Bankdrücken (Pause Rep)",
+      "description": "Bankdrück-Variante, bei der du bei jeder Wiederholung ca. 1 Sekunde knapp über der Brust pausierst. Kleinen Abstand zwischen Stange und Brust halten, die Stange nicht ablegen."
+    },
+    "preacher_curls_machine": {
+      "name": "Preacher Curls (Maschine)",
+      "description": "Maschinengestützter Preacher Curl für kontrollierte Bizeps-Isolation."
+    },
+    "pull_ups": {
+      "name": "Klimmzüge",
+      "description": "Klimmzüge mit Körpergewicht für Latissimus und Bizeps."
+    },
+    "pull_ups_machine": {
+      "name": "Klimmzüge (Maschine)",
+      "description": "Unterstützte Klimmzüge für Rücken und Bizeps."
+    },
+    "reverse_fly": {
+      "name": "Reverse Flys",
+      "description": "Umgekehrte Fly-Bewegung. Fokus auf hintere Schulter und oberen Rücken."
+    },
+    "reverse_wrist_curls_dumbbell": {
+      "name": "Reverse Handgelenk-Curls (Kurzhanteln)",
+      "description": "Sitzende umgekehrte Handgelenk-Curls mit Kurzhanteln für die Unterarm-Strecker."
+    },
+    "rope_skipping": {
+      "name": "Seilspringen",
+      "description": "Seilspring-Cardio für Ausdauer und Koordination; gleichmäßigen Rhythmus und weiche Landungen beibehalten."
+    },
+    "seated_cable_row_close_grip": {
+      "name": "Rudern am Kabelzug (enger Griff)",
+      "description": "Sitzend am Kabelzug den engen Griff zum oberen Bauch ziehen, die Ellbogen nah am Körper halten und die Schulterblätter zusammenziehen. Rücken gerade halten, Bewegung kontrolliert ausführen."
+    },
+    "seated_row_machine_plate_loaded": {
+      "name": "Rudern (Maschine, Plate Loaded)",
+      "description": "Das sitzende Rudern an der Plate-Loaded-Maschine ist eine Oberkörper-Kraftübung, bei der du ein Gewicht sitzend zum Rumpf ziehst. Sie gehört zu den klassischen Zugbewegungen und trainiert primär den Rücken. Der Widerstand wird über Hantelscheiben eingestellt, die du manuell auflegst."
+    },
+    "shoulder_press_dumbbell": {
+      "name": "Schulterdrücken (Kurzhanteln)",
+      "description": "Beim Kurzhantel-Schulterdrücken drückst du zwei Kurzhanteln kontrolliert von Schulterhöhe über den Kopf. Trainiert primär die vordere Schulter."
+    },
+    "shoulder_press_machine": {
+      "name": "Schulterdrücken (Maschine)",
+      "description": "Maschinengeführte Drückbewegung für vordere und seitliche Schulter."
+    },
+    "shrugs_dumbbell": {
+      "name": "Shrugs (Kurzhanteln)",
+      "description": "Kurzhantel-Shrugs für den oberen Trapezmuskel."
+    },
+    "shrugs_machine": {
+      "name": "Shrugs (Maschine)",
+      "description": "Maschinengestützte Shrugs für den oberen Trapez."
+    },
+    "squat": {
+      "name": "Kniebeugen",
+      "description": "Grundübung für Beine und Gesäß. Auf Tiefe und neutrale Wirbelsäule achten."
+    },
+    "tbar_row": {
+      "name": "T-Bar-Rudern",
+      "description": "Rudervariante mit der T-Bar. Zielt auf oberen Rücken und hintere Schulter."
+    },
+    "tricep_extension_machine": {
+      "name": "Trizepsstrecken (Maschine)",
+      "description": "Maschinengeführtes Trizepsstrecken für stabile, isolierte Ellbogenstreckung."
+    },
+    "tricep_pushdown_cabel_isolated": {
+      "name": "Trizepsdrücken (Kabel, isoliert)",
+      "description": "Einarmiges Trizepsdrücken am Kabel mit strikter Form für maximale Isolation."
+    },
+    "triceps_pushdown": {
+      "name": "Trizepsdrücken (Kabel)",
+      "description": "Trizeps-Übung am Kabelzug. Mit Stange oder Seil ausführbar."
+    },
+    "wrist_curls_dumbbell": {
+      "name": "Handgelenk-Curls (Kurzhanteln)",
+      "description": "Sitzende Handgelenk-Curls mit Kurzhanteln für die Unterarm-Beuger."
+    }
+  }
+}

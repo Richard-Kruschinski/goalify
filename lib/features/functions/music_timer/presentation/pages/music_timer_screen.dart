@@ -1,4 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import '../../../../../l10n/generated/app_localizations.dart';
+import '../../../../../core/theme/app_colors.dart';
 import 'package:provider/provider.dart';
 import '../controllers/music_timer_controller.dart';
 
@@ -17,18 +19,18 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.card(context),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.card(context),
         elevation: 1,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black87),
+          icon: Icon(Icons.arrow_back, color: AppColors.ink(context)),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Music Timer',
+        title: Text(
+          AppLocalizations.of(context).musicTimerTitle,
           style: TextStyle(
-            color: Colors.black87,
+            color: AppColors.ink(context),
             fontSize: 24,
             fontWeight: FontWeight.bold,
           ),
@@ -42,8 +44,10 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Colors.white,
-                  Colors.blue.shade50,
+                  AppColors.card(context),
+                  AppColors.isDark(context)
+                      ? const Color(0xFF16202B)
+                      : Colors.blue.shade50,
                 ],
               ),
             ),
@@ -156,7 +160,7 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
                 
                 // Status text
                 Text(
-                  isRunning ? '🎵 TIMER ACTIVE 🎵' : '⏱️ SET TIMER',
+                  isRunning ? AppLocalizations.of(context).timerActiveCaps : AppLocalizations.of(context).setTimerCaps,
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 24,
@@ -168,7 +172,7 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
                 if (isRunning) ...[
                   const SizedBox(height: 12),
                   Text(
-                    'Music will stop automatically',
+                    AppLocalizations.of(context).musicWillStop,
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.95),
                       fontSize: 15,
@@ -212,8 +216,8 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
                     ),
                     child: Column(
                       children: [
-                        const Text(
-                          'Time Remaining',
+                        Text(
+                          AppLocalizations.of(context).timeRemaining,
                           style: TextStyle(
                             fontSize: 15,
                             color: Color(0xFF8B6914),
@@ -264,8 +268,8 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
                         ),
                         shadowColor: const Color(0xFFFF3838).withValues(alpha: 0.4),
                       ),
-                      child: const Text(
-                        'STOP TIMER',
+                      child: Text(
+                        AppLocalizations.of(context).stopTimerCaps,
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -283,7 +287,7 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          const Color(0xFFE3F2FD),
+                          (AppColors.isDark(context) ? const Color(0xFF14273A) : const Color(0xFFE3F2FD)),
                           const Color(0xFFBBDEFB),
                         ],
                       ),
@@ -305,8 +309,8 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        const Text(
-                          'minutes',
+                        Text(
+                          AppLocalizations.of(context).minutesUnit,
                           style: TextStyle(
                             fontSize: 18,
                             color: Color(0xFF5F3DC4),
@@ -321,7 +325,7 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
                           max: 180,
                           divisions: 179,
                           activeColor: const Color(0xFF6C5CE7),
-                          inactiveColor: const Color(0xFFE0E0E0),
+                          inactiveColor: AppColors.border(context),
                           onChanged: (value) {
                             setState(() {
                               _selectedMinutes = value.toInt();
@@ -367,8 +371,8 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
                             borderRadius: BorderRadius.circular(18),
                           ),
                         ),
-                        child: const Text(
-                          'START TIMER',
+                        child: Text(
+                          AppLocalizations.of(context).startTimerCaps,
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -441,8 +445,10 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Colors.white,
-            Colors.cyan.shade50,
+            AppColors.card(context),
+            AppColors.isDark(context)
+                ? const Color(0xFF0E262B)
+                : Colors.cyan.shade50,
           ],
         ),
         borderRadius: BorderRadius.circular(24),
@@ -454,7 +460,9 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
           ),
         ],
         border: Border.all(
-          color: Colors.cyan.shade200,
+          color: AppColors.isDark(context)
+              ? Colors.cyan.shade800
+              : Colors.cyan.shade200,
           width: 1.5,
         ),
       ),
@@ -482,12 +490,12 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
                 ),
               ),
               const SizedBox(width: 12),
-              const Text(
-                'Quick Presets',
+              Text(
+                AppLocalizations.of(context).quickPresets,
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF2D3142),
+                  color: AppColors.ink(context),
                 ),
               ),
             ],
@@ -515,10 +523,18 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
                             ],
                           )
                         : null,
-                    color: isSelected ? null : const Color(0xFFF0F8FF),
+                    color: isSelected
+                        ? null
+                        : AppColors.isDark(context)
+                            ? const Color(0xFF12303A)
+                            : const Color(0xFFF0F8FF),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: isSelected ? Colors.transparent : Colors.cyan.shade300,
+                      color: isSelected
+                          ? Colors.transparent
+                          : AppColors.isDark(context)
+                              ? Colors.cyan.shade700
+                              : Colors.cyan.shade300,
                       width: 1.5,
                     ),
                     boxShadow: isSelected
@@ -536,7 +552,11 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: isSelected ? Colors.white : Colors.cyan.shade700,
+                      color: isSelected
+                          ? Colors.white
+                          : AppColors.isDark(context)
+                              ? Colors.cyan.shade300
+                              : Colors.cyan.shade700,
                     ),
                   ),
                 ),
@@ -555,8 +575,10 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Colors.white,
-            Colors.green.shade50,
+            AppColors.card(context),
+            AppColors.isDark(context)
+                ? const Color(0xFF12271A)
+                : Colors.green.shade50,
           ],
         ),
         borderRadius: BorderRadius.circular(24),
@@ -568,7 +590,9 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
           ),
         ],
         border: Border.all(
-          color: Colors.green.shade200,
+          color: AppColors.isDark(context)
+              ? Colors.green.shade800
+              : Colors.green.shade200,
           width: 1.5,
         ),
       ),
@@ -596,25 +620,23 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
                 ),
               ),
               const SizedBox(width: 12),
-              const Text(
-                'How it works',
+              Text(
+                AppLocalizations.of(context).howItWorks,
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF2D3142),
+                  color: AppColors.ink(context),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 16),
-          const Text(
-            'Set a timer to automatically pause your music after a specific duration. '
-            'Works with any music app including YouTube, Spotify, and more. '
-            'Perfect for falling asleep to music or limiting listening time.',
+          Text(
+            AppLocalizations.of(context).musicTimerHowItWorks,
             style: TextStyle(
               fontSize: 14,
               height: 1.6,
-              color: Color(0xFF5A5A5A),
+              color: AppColors.muted(context),
             ),
           ),
           const SizedBox(height: 16),
@@ -622,14 +644,15 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [
-                  Colors.amber.shade100,
-                  Colors.orange.shade100,
-                ],
+                colors: AppColors.isDark(context)
+                    ? [const Color(0xFF2E2410), const Color(0xFF33260F)]
+                    : [Colors.amber.shade100, Colors.orange.shade100],
               ),
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: Colors.amber.shade300,
+                color: AppColors.isDark(context)
+                    ? Colors.amber.shade800
+                    : Colors.amber.shade300,
                 width: 1.5,
               ),
             ),
@@ -648,12 +671,12 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'Works with all media apps',
+                    AppLocalizations.of(context).worksWithAllMediaApps,
                     style: TextStyle(
                       fontSize: 13,
-                      color: Color(0xFF5A5A5A),
+                      color: AppColors.muted(context),
                       fontWeight: FontWeight.w600,
                     ),
                   ),

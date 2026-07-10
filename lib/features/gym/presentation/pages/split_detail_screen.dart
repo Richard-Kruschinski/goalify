@@ -1,4 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import '../../../../l10n/generated/app_localizations.dart';
+import '../../../../core/theme/app_colors.dart';
 
 class SplitDetailScreen extends StatefulWidget {
   final String splitName;
@@ -43,14 +45,14 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: AppColors.bg(context),
       body: SafeArea(
         child: Column(
           children: [
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.card(context),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.03),
@@ -63,16 +65,16 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
                 children: [
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
-                    child: const Icon(Icons.arrow_back, color: Color(0xFF6F7789)),
+                    child: Icon(Icons.arrow_back, color: AppColors.muted(context)),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       widget.splitName,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF1A1D1F),
+                        color: AppColors.ink(context),
                       ),
                     ),
                   ),
@@ -81,10 +83,10 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
             ),
             Expanded(
               child: _days.isEmpty
-                  ? const Center(
+                  ? Center(
                       child: Text(
-                        'No workout days in this split',
-                        style: TextStyle(color: Color(0xFF6F7789)),
+                        AppLocalizations.of(context).noSplitDays,
+                        style: TextStyle(color: AppColors.muted(context)),
                       ),
                     )
                   : ReorderableListView.builder(
@@ -99,7 +101,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
                           key: ValueKey('split_day_${widget.splitName}_$day'),
                           margin: const EdgeInsets.only(bottom: 12),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: AppColors.card(context),
                             borderRadius: BorderRadius.circular(16),
                             boxShadow: [
                               BoxShadow(
@@ -120,9 +122,9 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
                                   children: [
                                     ReorderableDragStartListener(
                                       index: i,
-                                      child: const Icon(
+                                      child: Icon(
                                         Icons.drag_indicator,
-                                        color: Color(0xFFD1D5DB),
+                                        color: AppColors.border(context),
                                         size: 20,
                                       ),
                                     ),
@@ -131,7 +133,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
                                       width: 48,
                                       height: 48,
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFFFFEBEE),
+                                        color: AppColors.accentSoft(context),
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                       child: widget.dayIconBuilder(day),
@@ -143,26 +145,26 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
                                         children: [
                                           Text(
                                             day,
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontSize: 16,
                                               fontWeight: FontWeight.w600,
-                                              color: Color(0xFF1A1D1F),
+                                              color: AppColors.ink(context),
                                             ),
                                           ),
                                           const SizedBox(height: 4),
                                           Text(
-                                            '$count exercise${count == 1 ? '' : 's'}',
-                                            style: const TextStyle(
+                                            AppLocalizations.of(context).exerciseCount(count),
+                                            style: TextStyle(
                                               fontSize: 13,
-                                              color: Color(0xFF6F7789),
+                                              color: AppColors.muted(context),
                                             ),
                                           ),
                                         ],
                                       ),
                                     ),
-                                    const Icon(
+                                    Icon(
                                       Icons.chevron_right,
-                                      color: Color(0xFF9CA3AF),
+                                      color: AppColors.faint(context),
                                     ),
                                   ],
                                 ),

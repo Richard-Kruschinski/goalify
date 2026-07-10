@@ -1,4 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import '../../../../l10n/generated/app_localizations.dart';
+import '../../../../core/theme/app_colors.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../data/models/activity_point.dart';
 import '../../data/models/weekly_review_data.dart';
@@ -207,7 +209,14 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
     }
   }
 
-  String _rangeLabel(Range r) => r == Range.week ? 'Week' : r == Range.month ? 'Month' : 'Year';
+  String _rangeLabel(Range r) {
+    final l10n = AppLocalizations.of(context);
+    return r == Range.week
+        ? l10n.rangeWeek
+        : r == Range.month
+            ? l10n.rangeMonth
+            : l10n.rangeYear;
+  }
 
   int _sumForRange(List<ActivityPoint> data) {
     return data.fold<int>(0, (s, p) => s + p.value);
@@ -266,10 +275,10 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
 
   Widget _buildProgressChart(List<ActivityPoint> data) {
     if (data.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
-          'No data yet',
-          style: TextStyle(color: Color(0xFF6F7789), fontWeight: FontWeight.w500),
+          AppLocalizations.of(context).noDataYet,
+          style: TextStyle(color: AppColors.muted(context), fontWeight: FontWeight.w500),
         ),
       );
     }
@@ -295,7 +304,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
         borderData: FlBorderData(show: false),
         lineTouchData: LineTouchData(
           touchTooltipData: LineTouchTooltipData(
-            getTooltipColor: (_) => const Color(0xFF1A1D1F),
+            getTooltipColor: (_) => AppColors.ink(context),
             getTooltipItems: (touchedSpots) {
               return touchedSpots.map((spot) {
                 final index = spot.x.toInt();
@@ -318,7 +327,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
                     FlDotData(
                       getDotPainter: (_, _, _, _) => FlDotCirclePainter(
                         radius: 5,
-                        color: const Color(0xFFE53935),
+                        color: AppColors.accent(context),
                         strokeWidth: 2,
                         strokeColor: Colors.white,
                       ),
@@ -345,7 +354,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
                 }
                 return Text(
                   _mode == DisplayMode.ratio ? '${value.toInt()}%' : value.toInt().toString(),
-                  style: const TextStyle(fontSize: 11, color: Color(0xFF6F7789)),
+                  style: TextStyle(fontSize: 11, color: AppColors.muted(context)),
                 );
               },
             ),
@@ -368,7 +377,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
                 }
                 return Text(
                   _dateLabel(data[index].t),
-                  style: const TextStyle(fontSize: 11, color: Color(0xFF6F7789)),
+                  style: TextStyle(fontSize: 11, color: AppColors.muted(context)),
                 );
               },
             ),
@@ -378,14 +387,14 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
           LineChartBarData(
             spots: spots,
             isCurved: true,
-            color: const Color(0xFFE53935),
+            color: AppColors.accent(context),
             barWidth: 3,
             isStrokeCapRound: true,
             dotData: FlDotData(
               show: true,
               getDotPainter: (_, _, _, _) => FlDotCirclePainter(
                 radius: 3.5,
-                color: const Color(0xFFE53935),
+                color: AppColors.accent(context),
                 strokeWidth: 1.8,
                 strokeColor: Colors.white,
               ),
@@ -401,7 +410,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        backgroundColor: const Color(0xFFF5F7FA),
+        backgroundColor: AppColors.bg(context),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         titlePadding: const EdgeInsets.fromLTRB(20, 20, 16, 0),
         contentPadding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
@@ -411,23 +420,23 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: const Color(0xFFFFEBEE),
+                color: AppColors.accentSoft(context),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(Icons.warning_amber_rounded, color: Color(0xFFE53935)),
+              child: Icon(Icons.warning_amber_rounded, color: AppColors.accent(context)),
             ),
             const SizedBox(width: 12),
-            const Expanded(
+            Expanded(
               child: Text(
-                'Reset progress?',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                AppLocalizations.of(context).resetProgressTitle,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ),
           ],
         ),
-        content: const Text(
-          'All stored daily points will be removed. This cannot be undone.',
-          style: TextStyle(fontSize: 14),
+        content: Text(
+          AppLocalizations.of(context).resetProgressMessage,
+          style: const TextStyle(fontSize: 14),
         ),
         actions: [
           SizedBox(
@@ -438,12 +447,12 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
                   child: OutlinedButton(
                     onPressed: () => Navigator.pop(context, false),
                     style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Color(0xFFE0E0E0)),
+                      side: BorderSide(color: AppColors.border(context)),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Text('Cancel'),
+                    child: Text(AppLocalizations.of(context).cancel),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -451,14 +460,14 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
                   child: ElevatedButton(
                     onPressed: () => Navigator.pop(context, true),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFE53935),
+                      backgroundColor: AppColors.accent(context),
                       foregroundColor: Colors.white,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Text('Delete'),
+                    child: Text(AppLocalizations.of(context).delete),
                   ),
                 ),
               ],
@@ -483,7 +492,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
     final avgRatio = _avgRatioLabel(_ratioDataForRange());
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: AppColors.bg(context),
       body: SafeArea(
         child: Column(
           children: [
@@ -503,7 +512,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
                     // Chart card
                     Container(
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: AppColors.card(context),
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: const [
                           BoxShadow(
@@ -527,15 +536,18 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
                     Row(
                       children: [
                         if (_mode == DisplayMode.ratio) ...[
-                          Expanded(child: _metricCard('Current ratio', currentRatio)),
+                          Expanded(child: _metricCard(AppLocalizations.of(context).currentRatio, currentRatio)),
                         ] else ...[
-                          Expanded(child: _metricCard('Current ${_rangeLabel(range)}', '${_sumForRange(_dataForRange())} pts')),
+                          Expanded(child: _metricCard(
+                            AppLocalizations.of(context).currentRange(_rangeLabel(range)),
+                            AppLocalizations.of(context).ptsValue('${_sumForRange(_dataForRange())}'),
+                          )),
                         ],
                         const SizedBox(width: 12),
                         if (_mode == DisplayMode.ratio) ...[
-                          Expanded(child: _metricCard('Avg ratio', avgRatio)),
+                          Expanded(child: _metricCard(AppLocalizations.of(context).avgRatio, avgRatio)),
                         ] else ...[
-                          Expanded(child: _metricCard('Avg per day', _avgLabel(_dataForRange()))),
+                          Expanded(child: _metricCard(AppLocalizations.of(context).avgPerDay, _avgLabel(_dataForRange()))),
                         ],
                       ],
                     ),
@@ -565,7 +577,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.card(context),
         borderRadius: BorderRadius.circular(16),
         boxShadow: const [
           BoxShadow(
@@ -583,31 +595,31 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFEBEE),
+                  color: AppColors.accentSoft(context),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.insights,
-                  color: Color(0xFFE53935),
+                  color: AppColors.accent(context),
                   size: 20,
                 ),
               ),
               const SizedBox(width: 10),
-              const Text(
-                'Weekly Review',
+              Text(
+                AppLocalizations.of(context).weeklyReview,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF1A1D1F),
+                  color: AppColors.ink(context),
                 ),
               ),
               const Spacer(),
               Text(
-                'vs. last week',
+                AppLocalizations.of(context).vsLastWeek,
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
-                  color: Colors.grey.shade600,
+                  color: AppColors.muted(context),
                 ),
               ),
             ],
@@ -615,7 +627,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
           const SizedBox(height: 16),
           _weeklyReviewRow(
             icon: Icons.timer_outlined,
-            label: 'Focus time',
+            label: AppLocalizations.of(context).focusTime,
             value: _formatFocusMinutes(r.focusMinutes),
             delta: r.focusMinutes - r.prevFocusMinutes,
             deltaLabel: _formatFocusMinutes(
@@ -625,7 +637,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
           const SizedBox(height: 12),
           _weeklyReviewRow(
             icon: Icons.app_blocking_outlined,
-            label: 'Blocker time',
+            label: AppLocalizations.of(context).blockerTime,
             value: _formatFocusMinutes(r.blockerMinutes),
             delta: r.blockerMinutes - r.prevBlockerMinutes,
             deltaLabel: _formatFocusMinutes(
@@ -635,7 +647,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
           const SizedBox(height: 12),
           _weeklyReviewRow(
             icon: Icons.check_circle_outline,
-            label: 'Tasks done',
+            label: AppLocalizations.of(context).tasksDone,
             value: '${r.tasksDone}',
             delta: r.tasksDone - r.prevTasksDone,
             deltaLabel: '${(r.tasksDone - r.prevTasksDone).abs()}',
@@ -643,7 +655,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
           const SizedBox(height: 12),
           _weeklyReviewRow(
             icon: Icons.fitness_center,
-            label: 'Workouts',
+            label: AppLocalizations.of(context).workoutsLabel,
             value: '${r.workouts}',
             delta: r.workouts - r.prevWorkouts,
             deltaLabel: '${(r.workouts - r.prevWorkouts).abs()}',
@@ -665,29 +677,29 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
     final IconData deltaIcon;
     if (delta > 0) {
       deltaColor = const Color(0xFF2E7D32);
-      deltaBg = const Color(0xFFE8F5E9);
+      deltaBg = (AppColors.isDark(context) ? const Color(0xFF15291C) : const Color(0xFFE8F5E9));
       deltaIcon = Icons.arrow_upward;
     } else if (delta < 0) {
-      deltaColor = const Color(0xFFE53935);
-      deltaBg = const Color(0xFFFFEBEE);
+      deltaColor = AppColors.accent(context);
+      deltaBg = AppColors.accentSoft(context);
       deltaIcon = Icons.arrow_downward;
     } else {
-      deltaColor = const Color(0xFF6F7789);
-      deltaBg = const Color(0xFFEFF1F5);
+      deltaColor = AppColors.muted(context);
+      deltaBg = AppColors.chip(context);
       deltaIcon = Icons.remove;
     }
 
     return Row(
       children: [
-        Icon(icon, size: 20, color: const Color(0xFF6F7789)),
+        Icon(icon, size: 20, color: AppColors.muted(context)),
         const SizedBox(width: 10),
         Expanded(
           child: Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: Color(0xFF1A1D1F),
+              color: AppColors.ink(context),
             ),
           ),
         ),
@@ -697,10 +709,10 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
           child: Text(
             value,
             textAlign: TextAlign.right,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF1A1D1F),
+              color: AppColors.ink(context),
             ),
           ),
         ),
@@ -741,7 +753,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.card(context),
         borderRadius: BorderRadius.circular(16),
         boxShadow: const [
           BoxShadow(
@@ -758,17 +770,17 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
             title,
             style: TextStyle(
               fontWeight: FontWeight.w600,
-              color: Colors.grey.shade600,
+              color: AppColors.muted(context),
               fontSize: 13,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: Color(0xFFE53935),
+              color: AppColors.accent(context),
             ),
           ),
         ],
@@ -780,7 +792,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.card(context),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.03),
@@ -797,22 +809,22 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFEBEE),
+                  color: AppColors.accentSoft(context),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.show_chart,
-                  color: Color(0xFFE53935),
+                  color: AppColors.accent(context),
                   size: 24,
                 ),
               ),
               const SizedBox(width: 12),
-              const Text(
-                'Progress',
+              Text(
+                AppLocalizations.of(context).progressTitle,
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF1A1D1F),
+                  color: AppColors.ink(context),
                 ),
               ),
             ],
@@ -820,18 +832,18 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
           Row(
             children: [
               IconButton(
-                tooltip: 'Reload',
+                tooltip: AppLocalizations.of(context).reload,
                 onPressed: () async {
                   await _loadHistory();
                   await _loadRatioHistory();
                   await _loadWeeklyReview();
                 },
-                icon: const Icon(Icons.refresh, color: Color(0xFF6F7789)),
+                icon: Icon(Icons.refresh, color: AppColors.muted(context)),
               ),
               IconButton(
-                tooltip: 'More options',
+                tooltip: AppLocalizations.of(context).moreOptions,
                 onPressed: _showActionsSheet,
-                icon: const Icon(Icons.more_vert, color: Color(0xFF6F7789)),
+                icon: Icon(Icons.more_vert, color: AppColors.muted(context)),
               ),
             ],
           ),
@@ -849,7 +861,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
           padding: const EdgeInsets.all(16),
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.card(context),
               borderRadius: BorderRadius.circular(16),
               boxShadow: const [
                 BoxShadow(
@@ -867,20 +879,21 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
                   height: 4,
                   margin: const EdgeInsets.only(top: 12, bottom: 8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE0E4EB),
+                    color: AppColors.border(context),
                     borderRadius: BorderRadius.circular(999),
                   ),
                 ),
                 ListTile(
-                  leading: const Icon(Icons.delete_outline, color: Color(0xFFE53935)),
-                  title: const Text('Clear history', style: TextStyle(fontWeight: FontWeight.w600)),
-                  subtitle: const Text('Remove all stored progress data'),
+                  leading: Icon(Icons.delete_outline, color: AppColors.accent(context)),
+                  title: Text(AppLocalizations.of(context).clearHistory,
+                      style: const TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: Text(AppLocalizations.of(context).clearHistoryDescription),
                   onTap: () => Navigator.pop(context, 'clear'),
                 ),
                 const Divider(height: 1),
                 ListTile(
-                  leading: const Icon(Icons.close, color: Color(0xFF6F7789)),
-                  title: const Text('Close'),
+                  leading: Icon(Icons.close, color: AppColors.muted(context)),
+                  title: Text(AppLocalizations.of(context).close),
                   onTap: () => Navigator.pop(context),
                 ),
               ],
@@ -899,7 +912,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.card(context),
         borderRadius: BorderRadius.circular(12),
         boxShadow: const [
           BoxShadow(
@@ -913,7 +926,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
         children: [
           Expanded(
             child: _toggleButton(
-              label: 'Points',
+              label: AppLocalizations.of(context).points,
               icon: Icons.star_outline,
               isSelected: _mode == DisplayMode.points,
               onTap: () async {
@@ -924,7 +937,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
           ),
           Expanded(
             child: _toggleButton(
-              label: 'Ratio',
+              label: AppLocalizations.of(context).ratio,
               icon: Icons.percent,
               isSelected: _mode == DisplayMode.ratio,
               onTap: () async {
@@ -942,7 +955,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.card(context),
         borderRadius: BorderRadius.circular(12),
         boxShadow: const [
           BoxShadow(
@@ -956,7 +969,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
         children: [
           Expanded(
             child: _toggleButton(
-              label: 'Week',
+              label: AppLocalizations.of(context).rangeWeek,
               icon: Icons.view_week,
               isSelected: range == Range.week,
               onTap: () async {
@@ -967,7 +980,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
           ),
           Expanded(
             child: _toggleButton(
-              label: 'Month',
+              label: AppLocalizations.of(context).rangeMonth,
               icon: Icons.calendar_view_month,
               isSelected: range == Range.month,
               onTap: () async {
@@ -978,7 +991,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
           ),
           Expanded(
             child: _toggleButton(
-              label: 'Year',
+              label: AppLocalizations.of(context).rangeYear,
               icon: Icons.calendar_month,
               isSelected: range == Range.year,
               onTap: () async {
@@ -1003,7 +1016,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFE53935) : Colors.transparent,
+          color: isSelected ? AppColors.accent(context) : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
@@ -1012,7 +1025,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
             Icon(
               icon,
               size: 18,
-              color: isSelected ? Colors.white : const Color(0xFF6F7789),
+              color: isSelected ? Colors.white : AppColors.muted(context),
             ),
             const SizedBox(width: 6),
             Text(
@@ -1020,7 +1033,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
               style: TextStyle(
                 fontWeight: FontWeight.w600,
                 fontSize: 14,
-                color: isSelected ? Colors.white : const Color(0xFF6F7789),
+                color: isSelected ? Colors.white : AppColors.muted(context),
               ),
             ),
           ],

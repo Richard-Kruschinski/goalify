@@ -1,4 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import '../theme/app_colors.dart';
+import '../i18n/task_labels.dart';
 
 class WeekdayPicker extends StatelessWidget {
   const WeekdayPicker({
@@ -12,7 +14,10 @@ class WeekdayPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const labels = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+    final localeName = Localizations.localeOf(context).toString();
+    final labels = [
+      for (int d = 1; d <= 7; d++) localizedWeekdayShort(d, localeName),
+    ];
 
     return Wrap(
       spacing: 8,
@@ -34,10 +39,10 @@ class WeekdayPicker extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
-              color: selected ? const Color(0xFFE53935) : Colors.white,
+              color: selected ? AppColors.accent(context) : Colors.white,
               borderRadius: BorderRadius.circular(18),
               border: Border.all(
-                color: selected ? const Color(0xFFE53935) : const Color(0xFFE0E0E0),
+                color: selected ? AppColors.accent(context) : AppColors.border(context),
                 width: 1.5,
               ),
             ),
@@ -46,7 +51,7 @@ class WeekdayPicker extends StatelessWidget {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: selected ? Colors.white : const Color(0xFF6F7789),
+                color: selected ? Colors.white : AppColors.muted(context),
               ),
             ),
           ),

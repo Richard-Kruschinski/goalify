@@ -39,10 +39,13 @@ flutter_icons:
 
 
 flutter:
+  generate: true
   assets:
     - assets/icons.json
     - assets/images/placeholder.jpg
     - assets/workouts.json
+    - assets/workout_i18n_de.json
+    - assets/workout_i18n_ru.json
     - assets/images/exercises/
   uses-material-design: true
 

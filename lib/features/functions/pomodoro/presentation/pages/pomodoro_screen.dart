@@ -1,4 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import '../../../../../l10n/generated/app_localizations.dart';
+import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/utils/snackbar_utils.dart';
 import 'package:provider/provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -33,8 +35,8 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
 
     if (isDefaultProfile) {
       ScaffoldMessenger.of(context).showSingleSnackBar(
-        const SnackBar(
-          content: Text('Default profiles cannot be edited or deleted.'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context).defaultProfilesNotEditable),
           backgroundColor: Color(0xFFFF6B6B),
         ),
       );
@@ -43,7 +45,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.card(context),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -53,7 +55,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
           children: [
             ListTile(
               leading: const Icon(Icons.edit, color: Color(0xFFFF6B6B)),
-              title: const Text('Edit'),
+              title: Text(AppLocalizations.of(context).edit),
               onTap: () {
                 Navigator.pop(sheetContext);
                 _showEditProfileDialog(context, profile);
@@ -61,7 +63,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
             ),
             ListTile(
               leading: const Icon(Icons.delete_outline, color: Colors.redAccent),
-              title: const Text('Delete'),
+              title: Text(AppLocalizations.of(context).delete),
               onTap: () {
                 Navigator.pop(sheetContext);
                 _showDeleteProfileDialog(context, profile);
@@ -93,7 +95,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
         child: Container(
           constraints: const BoxConstraints(maxWidth: 400),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.card(context),
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
@@ -127,13 +129,13 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                           ),
                         ),
                         const SizedBox(width: 16),
-                        const Expanded(
+                        Expanded(
                         child: Text(
-                          'Edit Profile',
+                          AppLocalizations.of(context).editProfile,
                           style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
-                            color: Colors.black87,
+                            color: AppColors.ink(context),
                           ),
                         ),
                       ),
@@ -144,7 +146,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                   // Profile Name
                   _ModernTextField(
                     controller: nameController,
-                    label: 'Profile Name',
+                    label: AppLocalizations.of(context).profileName,
                     icon: Icons.label_outline,
                     hint: profile.name,
                   ),
@@ -153,9 +155,9 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                   // Work Duration
                   _ModernTextField(
                     controller: workController,
-                    label: 'Work Duration',
+                    label: AppLocalizations.of(context).workDuration,
                     icon: Icons.work_outline,
-                    hint: 'Minutes',
+                    hint: AppLocalizations.of(context).minutesLabel,
                     keyboardType: TextInputType.number,
                   ),
                   const SizedBox(height: 16),
@@ -163,9 +165,9 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                   // Short Break
                   _ModernTextField(
                     controller: shortBreakController,
-                    label: 'Short Break',
+                    label: AppLocalizations.of(context).shortBreak,
                     icon: Icons.free_breakfast_outlined,
-                    hint: 'Minutes',
+                    hint: AppLocalizations.of(context).minutesLabel,
                     keyboardType: TextInputType.number,
                   ),
                   const SizedBox(height: 16),
@@ -173,9 +175,9 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                   // Long Break
                   _ModernTextField(
                     controller: longBreakController,
-                    label: 'Long Break',
+                    label: AppLocalizations.of(context).longBreak,
                     icon: Icons.spa_outlined,
-                    hint: 'Minutes',
+                    hint: AppLocalizations.of(context).minutesLabel,
                     keyboardType: TextInputType.number,
                   ),
                   const SizedBox(height: 16),
@@ -183,9 +185,9 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                   // Cycles
                   _ModernTextField(
                     controller: cyclesController,
-                    label: 'Cycles before Long Break',
+                    label: AppLocalizations.of(context).cyclesBeforeLongBreak,
                     icon: Icons.repeat,
-                    hint: 'Number',
+                    hint: AppLocalizations.of(context).numberLabel,
                     keyboardType: TextInputType.number,
                   ),
                   const SizedBox(height: 20),
@@ -198,8 +200,8 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                         shouldBlockApps = value ?? true;
                       });
                     },
-                    title: const Text('Block Apps'),
-                    subtitle: const Text('Block distracting apps during work sessions'),
+                    title: Text(AppLocalizations.of(context).blockApps),
+                    subtitle: Text(AppLocalizations.of(context).blockAppsSubtitle),
                     dense: true,
                     contentPadding: EdgeInsets.zero,
                     activeColor: const Color(0xFFFF6B6B),
@@ -214,7 +216,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                           onPressed: () => Navigator.pop(dialogContext),
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
-                            side: BorderSide(color: Colors.grey[300]!),
+                            side: BorderSide(color: AppColors.border(context)),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -224,7 +226,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
-                              color: Colors.grey[700],
+                              color: AppColors.muted(context),
                             ),
                           ),
                         ),
@@ -236,8 +238,8 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                             final newName = nameController.text.trim();
                             if (newName.isEmpty) {
                               messenger.showSingleSnackBar(
-                                const SnackBar(
-                                  content: Text('Bitte geben Sie einen Profil-Namen ein'),
+                                SnackBar(
+                                  content: Text(AppLocalizations.of(context).enterProfileName),
                                   backgroundColor: Color(0xFFFF6B6B),
                                 ),
                               );
@@ -258,8 +260,8 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                             if (dialogContext.mounted) {
                               Navigator.pop(dialogContext);
                               messenger.showSingleSnackBar(
-                                const SnackBar(
-                                  content: Text('Profile successfully updated'),
+                                SnackBar(
+                                  content: Text(AppLocalizations.of(context).profileUpdated),
                                   backgroundColor: Color(0xFF51CF66),
                                 ),
                               );
@@ -308,7 +310,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
         child: Container(
           constraints: const BoxConstraints(maxWidth: 400),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.card(context),
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
@@ -340,13 +342,13 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                       ),
                     ),
                     const SizedBox(width: 16),
-                    const Expanded(
+                    Expanded(
                       child: Text(
-                        'Delete Profile',
+                        AppLocalizations.of(context).deleteProfile,
                         style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
-                          color: Colors.black87,
+                          color: AppColors.ink(context),
                         ),
                       ),
                     ),
@@ -356,10 +358,10 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                 
                 // Content
                 Text(
-                  'Are you sure you want to delete the profile "${profile.name}"? This action cannot be undone.',
+                  AppLocalizations.of(context).deleteProfileConfirm(profile.name),
                   style: TextStyle(
                     fontSize: 15,
-                    color: Colors.grey[700],
+                    color: AppColors.muted(context),
                     height: 1.5,
                   ),
                 ),
@@ -373,7 +375,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                         onPressed: () => Navigator.pop(dialogContext),
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
-                          side: BorderSide(color: Colors.grey[300]!),
+                          side: BorderSide(color: AppColors.border(context)),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -383,7 +385,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
-                            color: Colors.grey[700],
+                            color: AppColors.muted(context),
                           ),
                         ),
                       ),
@@ -396,8 +398,8 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                           if (dialogContext.mounted) {
                             Navigator.pop(dialogContext);
                             messenger.showSingleSnackBar(
-                              const SnackBar(
-                                content: Text('Profile deleted'),
+                              SnackBar(
+                                content: Text(AppLocalizations.of(context).profileDeleted),
                                 backgroundColor: Color(0xFF51CF66),
                               ),
                             );
@@ -508,7 +510,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
         child: Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.card(context),
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
@@ -536,22 +538,22 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
               ),
               const SizedBox(height: 20),
               // Title
-              const Text(
-                'Notifications Required',
+              Text(
+                AppLocalizations.of(context).notificationsRequired,
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  color: AppColors.ink(context),
                 ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
               // Content
               Text(
-                'To keep you informed during focus sessions, Goalify needs notification permissions.',
+                AppLocalizations.of(context).notificationsRequiredText,
                 style: TextStyle(
                   fontSize: 14,
-                  color: Colors.grey[600],
+                  color: AppColors.muted(context),
                   height: 1.5,
                 ),
                 textAlign: TextAlign.center,
@@ -574,8 +576,8 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                       borderRadius: BorderRadius.circular(16),
                     ),
                   ),
-                  child: const Text(
-                    'Allow',
+                  child: Text(
+                    AppLocalizations.of(context).allow,
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -590,14 +592,14 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                 child: OutlinedButton(
                   onPressed: () => Navigator.pop(context),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.grey[700],
-                    side: BorderSide(color: Colors.grey[300]!),
+                    foregroundColor: AppColors.muted(context),
+                    side: BorderSide(color: AppColors.border(context)),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
                   ),
-                  child: const Text(
-                    'Later',
+                  child: Text(
+                    AppLocalizations.of(context).later,
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -625,7 +627,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
         child: Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.card(context),
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
@@ -653,22 +655,22 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
               ),
               const SizedBox(height: 20),
               // Title
-              const Text(
-                'Accessibility Required',
+              Text(
+                AppLocalizations.of(context).accessibilityRequired,
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  color: AppColors.ink(context),
                 ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
               // Content
               Text(
-                'To block distracting apps during focus sessions, Goalify needs accessibility permissions.',
+                AppLocalizations.of(context).accessibilityRequiredText,
                 style: TextStyle(
                   fontSize: 14,
-                  color: Colors.grey[600],
+                  color: AppColors.muted(context),
                   height: 1.5,
                 ),
                 textAlign: TextAlign.center,
@@ -692,8 +694,8 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                       borderRadius: BorderRadius.circular(16),
                     ),
                   ),
-                  child: const Text(
-                    'Allow',
+                  child: Text(
+                    AppLocalizations.of(context).allow,
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -708,14 +710,14 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                 child: OutlinedButton(
                   onPressed: () => Navigator.pop(context),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.grey[700],
-                    side: BorderSide(color: Colors.grey[300]!),
+                    foregroundColor: AppColors.muted(context),
+                    side: BorderSide(color: AppColors.border(context)),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
                   ),
-                  child: const Text(
-                    'Later',
+                  child: Text(
+                    AppLocalizations.of(context).later,
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -743,7 +745,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
         child: Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.card(context),
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
@@ -771,22 +773,22 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
               ),
               const SizedBox(height: 20),
               // Title
-              const Text(
-                'App Blocking Not Supported',
+              Text(
+                AppLocalizations.of(context).appBlockingNotSupported,
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  color: AppColors.ink(context),
                 ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
               // Content
               Text(
-                'App blocking is not supported on iOS. You can still use the Pomodoro timer, but other apps won\'t be blocked during work sessions.',
+                AppLocalizations.of(context).appBlockingNotSupportedText,
                 style: TextStyle(
                   fontSize: 14,
-                  color: Colors.grey[600],
+                  color: AppColors.muted(context),
                   height: 1.5,
                 ),
                 textAlign: TextAlign.center,
@@ -833,7 +835,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
         heightFactor: 0.85,
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.card(context),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           ),
           padding: EdgeInsets.only(
@@ -850,7 +852,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: Colors.grey[300],
+                      color: AppColors.border(context),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -861,8 +863,8 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
-                          'Select Timer Profile',
+                        Text(
+                          AppLocalizations.of(context).selectTimerProfile,
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
@@ -931,7 +933,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
         child: Container(
           constraints: const BoxConstraints(maxWidth: 400),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.card(context),
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
@@ -965,13 +967,13 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                           ),
                         ),
                         const SizedBox(width: 16),
-                        const Expanded(
+                        Expanded(
                         child: Text(
-                          'Create Custom Profile',
+                          AppLocalizations.of(context).createCustomProfile,
                           style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
-                            color: Colors.black87,
+                            color: AppColors.ink(context),
                           ),
                         ),
                       ),
@@ -982,18 +984,18 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                   // Profile Name
                   _ModernTextField(
                     controller: nameController,
-                    label: 'Profile Name',
+                    label: AppLocalizations.of(context).profileName,
                     icon: Icons.label_outline,
-                    hint: 'e.g. My Focus',
+                    hint: AppLocalizations.of(context).profileNameHint,
                   ),
                   const SizedBox(height: 16),
                   
                   // Work Duration
                   _ModernTextField(
                     controller: workController,
-                    label: 'Work Duration',
+                    label: AppLocalizations.of(context).workDuration,
                     icon: Icons.work_outline,
-                    hint: 'Minutes',
+                    hint: AppLocalizations.of(context).minutesLabel,
                     keyboardType: TextInputType.number,
                   ),
                   const SizedBox(height: 16),
@@ -1001,9 +1003,9 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                   // Short Break
                   _ModernTextField(
                     controller: shortBreakController,
-                    label: 'Short Break',
+                    label: AppLocalizations.of(context).shortBreak,
                     icon: Icons.free_breakfast_outlined,
-                    hint: 'Minutes',
+                    hint: AppLocalizations.of(context).minutesLabel,
                     keyboardType: TextInputType.number,
                   ),
                   const SizedBox(height: 16),
@@ -1011,9 +1013,9 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                   // Long Break
                   _ModernTextField(
                     controller: longBreakController,
-                    label: 'Long Break',
+                    label: AppLocalizations.of(context).longBreak,
                     icon: Icons.spa_outlined,
-                    hint: 'Minutes',
+                    hint: AppLocalizations.of(context).minutesLabel,
                     keyboardType: TextInputType.number,
                   ),
                   const SizedBox(height: 16),
@@ -1021,9 +1023,9 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                   // Cycles
                   _ModernTextField(
                     controller: cyclesController,
-                    label: 'Cycles before Long Break',
+                    label: AppLocalizations.of(context).cyclesBeforeLongBreak,
                     icon: Icons.repeat,
-                    hint: 'Number',
+                    hint: AppLocalizations.of(context).numberLabel,
                     keyboardType: TextInputType.number,
                   ),
                   const SizedBox(height: 20),
@@ -1036,8 +1038,8 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                         shouldBlockApps = value ?? true;
                       });
                     },
-                    title: const Text('Block Apps'),
-                    subtitle: const Text('Block distracting apps during work sessions'),
+                    title: Text(AppLocalizations.of(context).blockApps),
+                    subtitle: Text(AppLocalizations.of(context).blockAppsSubtitle),
                     dense: true,
                     contentPadding: EdgeInsets.zero,
                     activeColor: const Color(0xFFFF6B6B),
@@ -1052,7 +1054,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                           onPressed: () => Navigator.pop(dialogContext),
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
-                            side: BorderSide(color: Colors.grey[300]!),
+                            side: BorderSide(color: AppColors.border(context)),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -1062,7 +1064,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
-                              color: Colors.grey[700],
+                              color: AppColors.muted(context),
                             ),
                           ),
                         ),
@@ -1073,8 +1075,8 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                           onPressed: () async {
                             if (nameController.text.trim().isEmpty) {
                               messenger.showSingleSnackBar(
-                                const SnackBar(
-                                  content: Text('Please enter a profile name'),
+                                SnackBar(
+                                  content: Text(AppLocalizations.of(context).enterProfileName),
                                   backgroundColor: Color(0xFFFF6B6B),
                                 ),
                               );
@@ -1095,8 +1097,8 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                                 longBreakDuration <= 0 ||
                                 cyclesBeforeLongBreak <= 0) {
                               messenger.showSingleSnackBar(
-                                const SnackBar(
-                                  content: Text('Please enter valid values for all durations and cycles'),
+                                SnackBar(
+                                  content: Text(AppLocalizations.of(context).enterValidDurations),
                                   backgroundColor: Color(0xFFFF6B6B),
                                 ),
                               );
@@ -1119,7 +1121,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                               Navigator.pop(dialogContext);
                               messenger.showSingleSnackBar(
                                 SnackBar(
-                                  content: Text('Profile "${profile.name}" created'),
+                                  content: Text(AppLocalizations.of(context).profileCreated(profile.name)),
                                   backgroundColor: const Color(0xFF51CF66),
                                 ),
                               );
@@ -1158,25 +1160,25 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F6FA),
+      backgroundColor: AppColors.bg(context),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.card(context),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black87),
+          icon: Icon(Icons.arrow_back, color: AppColors.ink(context)),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Pomodoro Timer',
+        title: Text(
+          AppLocalizations.of(context).pomodoroTimer,
           style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
-            color: Colors.black87,
+            color: AppColors.ink(context),
           ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.settings, color: Colors.black87),
+            icon: Icon(Icons.settings, color: AppColors.ink(context)),
             onPressed: () {
               _showProfileSelector(context);
             },
@@ -1231,21 +1233,21 @@ class _CurrentProfileIndicator extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.card(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey[300]!),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.timer_outlined, size: 16, color: Colors.grey[600]),
+          Icon(Icons.timer_outlined, size: 16, color: AppColors.muted(context)),
           const SizedBox(width: 8),
           Text(
             profile.name,
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: Colors.grey[700],
+              color: AppColors.muted(context),
             ),
           ),
           const SizedBox(width: 4),
@@ -1253,7 +1255,7 @@ class _CurrentProfileIndicator extends StatelessWidget {
             '(${profile.workDuration}min)',
             style: TextStyle(
               fontSize: 12,
-              color: Colors.grey[500],
+              color: AppColors.faint(context),
             ),
           ),
         ],
@@ -1282,7 +1284,7 @@ class _PhaseIndicator extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.card(context),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -1308,10 +1310,10 @@ class _PhaseIndicator extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'Cycle ${controller.currentCycle}/4',
+                AppLocalizations.of(context).cycleOf(controller.currentCycle),
                 style: TextStyle(
                   fontSize: 14,
-                  color: Colors.grey[600],
+                  color: AppColors.muted(context),
                 ),
               ),
             ],
@@ -1357,7 +1359,7 @@ class _TimerDisplay extends StatelessWidget {
       width: 280,
       height: 280,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.card(context),
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
@@ -1377,7 +1379,7 @@ class _TimerDisplay extends StatelessWidget {
             child: CircularProgressIndicator(
               value: controller.progress,
               strokeWidth: 12,
-              backgroundColor: Colors.grey[200],
+              backgroundColor: AppColors.border(context),
               valueColor: AlwaysStoppedAnimation<Color>(_getPhaseColor()),
               strokeCap: StrokeCap.round,
             ),
@@ -1388,10 +1390,10 @@ class _TimerDisplay extends StatelessWidget {
             children: [
               Text(
                 controller.formattedTime,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 56,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  color: AppColors.ink(context),
                   letterSpacing: 2,
                 ),
               ),
@@ -1404,10 +1406,10 @@ class _TimerDisplay extends StatelessWidget {
                 ),
                 child: Text(
                   controller.timerState == PomodoroTimerState.running
-                      ? 'Running'
+                      ? AppLocalizations.of(context).running
                       : controller.timerState == PomodoroTimerState.paused
-                          ? 'Paused'
-                          : 'Ready',
+                          ? AppLocalizations.of(context).paused
+                          : AppLocalizations.of(context).ready,
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -1435,8 +1437,8 @@ class _ControlButtons extends StatelessWidget {
       final success = await controller.start();
       if (!success && context.mounted) {
         ScaffoldMessenger.of(context).showSingleSnackBar(
-          const SnackBar(
-            content: Text('Notification permission required. Please allow notifications in settings.'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context).notificationPermissionRequired),
             duration: Duration(seconds: 4),
             backgroundColor: Color(0xFFFF6B6B),
           ),
@@ -1454,7 +1456,7 @@ class _ControlButtons extends StatelessWidget {
         _CircularButton(
           icon: Icons.refresh,
           onPressed: controller.reset,
-          color: Colors.grey[700]!,
+          color: AppColors.muted(context),
           size: 56,
         ),
         const SizedBox(width: 20),
@@ -1477,7 +1479,7 @@ class _ControlButtons extends StatelessWidget {
         _CircularButton(
           icon: Icons.skip_next,
           onPressed: controller.skipToNextPhase,
-          color: Colors.grey[700]!,
+          color: AppColors.muted(context),
           size: 56,
         ),
       ],
@@ -1552,12 +1554,12 @@ class _FocusModeIndicator extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Focus Mode Active',
+                  AppLocalizations.of(context).focusModeActive,
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -1566,10 +1568,10 @@ class _FocusModeIndicator extends StatelessWidget {
                 ),
                 SizedBox(height: 2),
                 Text(
-                  'Other apps are blocked',
+                  AppLocalizations.of(context).otherAppsBlocked,
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.black54,
+                    color: AppColors.muted(context),
                   ),
                 ),
               ],
@@ -1591,12 +1593,12 @@ class _StatisticsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Today\'s Progress',
+        Text(
+          AppLocalizations.of(context).todaysProgress,
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Colors.black87,
+            color: AppColors.ink(context),
           ),
         ),
         const SizedBox(height: 16),
@@ -1611,7 +1613,7 @@ class _StatisticsSection extends StatelessWidget {
             Expanded(
               child: _StatCard(
                 icon: Icons.check_circle_outline,
-                label: 'Sessions',
+                label: AppLocalizations.of(context).sessions,
                 value: '${stats.completedSessionsToday}',
                 color: const Color(0xFF51CF66),
               ),
@@ -1620,7 +1622,7 @@ class _StatisticsSection extends StatelessWidget {
             Expanded(
               child: _StatCard(
                 icon: Icons.access_time,
-                label: 'Focus Time',
+                label: AppLocalizations.of(context).focusTime,
                 value: '${stats.totalFocusTimeToday}m',
                 color: const Color(0xFF4C9AFF),
               ),
@@ -1633,7 +1635,7 @@ class _StatisticsSection extends StatelessWidget {
             Expanded(
               child: _StatCard(
                 icon: Icons.calendar_today,
-                label: 'This Week',
+                label: AppLocalizations.of(context).thisWeek,
                 value: '${stats.totalFocusTimeThisWeek}m',
                 color: const Color(0xFFFF9F43),
               ),
@@ -1642,7 +1644,7 @@ class _StatisticsSection extends StatelessWidget {
             Expanded(
               child: _StatCard(
                 icon: Icons.repeat,
-                label: 'Cycles',
+                label: AppLocalizations.of(context).cycles,
                 value: '${stats.completedCycles}',
                 color: const Color(0xFFE056FD),
               ),
@@ -1664,7 +1666,7 @@ class _DailyFocusScoreCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.card(context),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -1686,7 +1688,7 @@ class _DailyFocusScoreCard extends StatelessWidget {
                 CircularProgressIndicator(
                   value: score / 100,
                   strokeWidth: 8,
-                  backgroundColor: Colors.grey[200],
+                  backgroundColor: AppColors.border(context),
                   valueColor: AlwaysStoppedAnimation<Color>(
                     _getScoreColor(score),
                   ),
@@ -1708,20 +1710,20 @@ class _DailyFocusScoreCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Daily Focus Score',
+                Text(
+                  AppLocalizations.of(context).dailyFocusScore,
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: AppColors.ink(context),
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  _getScoreMessage(score),
+                  _getScoreMessage(context, score),
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.grey[600],
+                    color: AppColors.muted(context),
                   ),
                 ),
               ],
@@ -1739,11 +1741,11 @@ class _DailyFocusScoreCard extends StatelessWidget {
     return const Color(0xFFFF6B6B);
   }
 
-  String _getScoreMessage(int score) {
-    if (score >= 80) return 'Excellent! Keep it up!';
-    if (score >= 50) return 'Great progress today!';
-    if (score >= 20) return 'Good start!';
-    return 'Let\'s get focused!';
+  String _getScoreMessage(BuildContext context, int score) {
+    if (score >= 80) return AppLocalizations.of(context).scoreExcellent;
+    if (score >= 50) return AppLocalizations.of(context).scoreGreat;
+    if (score >= 20) return AppLocalizations.of(context).scoreGood;
+    return AppLocalizations.of(context).scoreGetFocused;
   }
 }
 
@@ -1765,7 +1767,7 @@ class _StatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.card(context),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -1782,10 +1784,10 @@ class _StatCard extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: AppColors.ink(context),
             ),
           ),
           const SizedBox(height: 4),
@@ -1793,7 +1795,7 @@ class _StatCard extends StatelessWidget {
             label,
             style: TextStyle(
               fontSize: 12,
-              color: Colors.grey[600],
+              color: AppColors.muted(context),
             ),
           ),
         ],
@@ -1824,10 +1826,10 @@ class _ProfileTile extends StatelessWidget {
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFFF6B6B).withValues(alpha: 0.1) : Colors.grey[50],
+          color: isSelected ? Color(0xFFFF6B6B).withValues(alpha: 0.1) : AppColors.chip(context),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? const Color(0xFFFF6B6B) : Colors.grey[200]!,
+            color: isSelected ? Color(0xFFFF6B6B) : AppColors.border(context),
             width: 2,
           ),
         ),
@@ -1841,7 +1843,7 @@ class _ProfileTile extends StatelessWidget {
                 shape: BoxShape.circle,
                 color: isSelected ? const Color(0xFFFF6B6B) : Colors.transparent,
                 border: Border.all(
-                  color: isSelected ? const Color(0xFFFF6B6B) : Colors.grey[400]!,
+                  color: isSelected ? Color(0xFFFF6B6B) : AppColors.faint(context),
                   width: 2,
                 ),
               ),
@@ -1861,7 +1863,7 @@ class _ProfileTile extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: isSelected ? const Color(0xFFFF6B6B) : Colors.black87,
+                      color: isSelected ? Color(0xFFFF6B6B) : AppColors.ink(context),
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -1869,14 +1871,14 @@ class _ProfileTile extends StatelessWidget {
                     '${profile.workDuration}min Work • ${profile.shortBreakDuration}min Break • ${profile.longBreakDuration}min Long Break',
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.grey[600],
+                      color: AppColors.muted(context),
                     ),
                   ),
                   Text(
                     '${profile.cyclesBeforeLongBreak} cycles before long break',
                     style: TextStyle(
                       fontSize: 11,
-                      color: Colors.grey[500],
+                      color: AppColors.faint(context),
                     ),
                   ),
                 ],
@@ -1914,15 +1916,15 @@ class _ModernTextField extends StatelessWidget {
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: Colors.grey[700],
+            color: AppColors.muted(context),
           ),
         ),
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            color: Colors.grey[50],
+            color: AppColors.chip(context),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey[200]!),
+            border: Border.all(color: AppColors.border(context)),
           ),
           child: TextField(
             controller: controller,
@@ -1934,7 +1936,7 @@ class _ModernTextField extends StatelessWidget {
             decoration: InputDecoration(
               hintText: hint,
               hintStyle: TextStyle(
-                color: Colors.grey[400],
+                color: AppColors.faint(context),
                 fontWeight: FontWeight.normal,
               ),
               prefixIcon: Icon(

@@ -10,22 +10,30 @@ import 'features/functions/distraction_blocker/presentation/controllers/distract
 import 'features/functions/music_timer/presentation/controllers/music_timer_controller.dart';
 import 'features/functions/interval_timer/presentation/controllers/interval_timer_controller.dart';
 import 'core/services/timer_live_presentation_service.dart';
+import 'core/settings/settings_controller.dart';
+import 'l10n/generated/app_localizations.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // Initialise the MethodChannel handler for native → Flutter timer actions
   // and notification-tap navigation.
   TimerLivePresentationService.instance.init();
-  runApp(const GoalifyApp());
+  final settings = SettingsController();
+  await settings.load();
+  runApp(GoalifyApp(settings: settings));
 }
 
 class GoalifyApp extends StatelessWidget {
-  const GoalifyApp({super.key});
+  const GoalifyApp({super.key, required this.settings});
+
+  final SettingsController settings;
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        // Global app settings (theme mode, language)
+        ChangeNotifierProvider.value(value: settings),
         // Global PomodoroController - persists across navigation
         ChangeNotifierProvider(
           create: (_) => PomodoroController(),
@@ -43,21 +51,35 @@ class GoalifyApp extends StatelessWidget {
           create: (_) => IntervalTimerController(),
         ),
       ],
-      child: MaterialApp(
-        title: 'Goalify',
-        theme: ThemeData(
-          useMaterial3: true,
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.pink),
+      child: Consumer<SettingsController>(
+        builder: (context, settings, _) => MaterialApp(
+          onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
+          theme: ThemeData(
+            useMaterial3: true,
+            colorScheme: ColorScheme.fromSeed(seedColor: Colors.pink),
+          ),
+          darkTheme: ThemeData(
+            useMaterial3: true,
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: Colors.pink,
+              brightness: Brightness.dark,
+            ),
+            scaffoldBackgroundColor: const Color(0xFF141619),
+          ),
+          themeMode: settings.themeMode,
+          // Country codes are chosen so weeks start on Monday (de_DE, en_GB)
+          locale: settings.locale,
+          supportedLocales: SettingsController.supportedLanguages
+              .map((l) => l.materialLocale)
+              .toList(),
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: const MainNav(), //LoginScreen() Wenn login screen
         ),
-        // German localization to start weeks on Monday and format dates accordingly
-        locale: const Locale('de', 'DE'),
-        supportedLocales: const [Locale('de', 'DE')],
-        localizationsDelegates: const [
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        home: const MainNav(), //LoginScreen() Wenn login screen
       ),
     );
   }

@@ -1,4 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import '../../../../l10n/generated/app_localizations.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../data/models/gym_models.dart';
 
 // ===============================================================
@@ -116,20 +118,20 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
       padding: const EdgeInsets.fromLTRB(0, 8, 0, 8),
       child: Row(
         children: [
-          Expanded(child: Container(height: 1, color: const Color(0xFFE5E7EB))),
-          const Padding(
+          Expanded(child: Container(height: 1, color: AppColors.border(context))),
+          Padding(
             padding: EdgeInsets.symmetric(horizontal: 12),
             child: Text(
-              'Alternativen',
+              AppLocalizations.of(context).alternatives,
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF9CA3AF),
+                color: AppColors.faint(context),
                 letterSpacing: 0.5,
               ),
             ),
           ),
-          Expanded(child: Container(height: 1, color: const Color(0xFFE5E7EB))),
+          Expanded(child: Container(height: 1, color: AppColors.border(context))),
         ],
       ),
     );
@@ -141,7 +143,7 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
     final altExercises = _list.where((w) => _alternativeIds.contains(w.id)).toList();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: AppColors.bg(context),
       body: SafeArea(
         child: Column(
           children: [
@@ -166,12 +168,12 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
                         if (altExercises.isNotEmpty) ...[
                           SliverToBoxAdapter(
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 20),
+                              padding: EdgeInsets.symmetric(horizontal: 20),
                               child: _buildAlternativesDivider(),
                             ),
                           ),
                           SliverPadding(
-                            padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
+                            padding: EdgeInsets.fromLTRB(20, 0, 20, 100),
                             sliver: SliverReorderableList(
                               itemCount: altExercises.length,
                               onReorder: _onReorderAlternatives,
@@ -196,18 +198,18 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        children: const [
+        children: [
           SizedBox(height: 8),
-          Icon(Icons.fitness_center, size: 64, color: Color(0xFF9CA3AF)),
+          Icon(Icons.fitness_center, size: 64, color: AppColors.faint(context)),
           SizedBox(height: 16),
           Text(
-            'No exercises today',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Color(0xFF1A1D1F)),
+            AppLocalizations.of(context).noExercisesToday,
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: AppColors.ink(context)),
           ),
           SizedBox(height: 8),
           Text(
-            'Add or assign exercises to this day',
-            style: TextStyle(fontSize: 14, color: Color(0xFF9CA3AF)),
+            AppLocalizations.of(context).addOrAssignExercises,
+            style: TextStyle(fontSize: 14, color: AppColors.faint(context)),
           ),
         ],
       ),
@@ -218,7 +220,7 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.card(context),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.03),
@@ -231,22 +233,22 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
         children: [
           GestureDetector(
             onTap: () => Navigator.pop(context),
-            child: const Icon(Icons.arrow_back, color: Color(0xFF6F7789)),
+            child: Icon(Icons.arrow_back, color: AppColors.muted(context)),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               widget.day,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF1A1D1F),
+                color: AppColors.ink(context),
               ),
             ),
           ),
           // Color picker button
           IconButton(
-            tooltip: 'Pick color for this day',
+            tooltip: AppLocalizations.of(context).pickColorForDay,
             icon: CircleAvatar(
               radius: 14,
               backgroundColor: _currentColor,
@@ -268,7 +270,7 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: _checkedToday ? const Color(0xFFE8F5E9) : const Color(0xFFF0F4F8),
+                color: _checkedToday ? (AppColors.isDark(context) ? Color(0xFF15291C) : Color(0xFFE8F5E9)) : AppColors.chip(context),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Row(
@@ -276,15 +278,15 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
                   Icon(
                     _checkedToday ? Icons.check_circle : Icons.radio_button_unchecked,
                     size: 16,
-                    color: _checkedToday ? const Color(0xFF4CAF50) : const Color(0xFF6F7789),
+                    color: _checkedToday ? Color(0xFF4CAF50) : AppColors.muted(context),
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    'Done today',
+                    AppLocalizations.of(context).doneToday,
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: _checkedToday ? const Color(0xFF4CAF50) : const Color(0xFF6F7789),
+                      color: _checkedToday ? Color(0xFF4CAF50) : AppColors.muted(context),
                     ),
                   ),
                 ],
@@ -301,7 +303,7 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
       key: ValueKey(isAlternative ? 'day_alt_${w.id}' : 'day_${w.id}'),
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.card(context),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -329,9 +331,9 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
               children: [
                 ReorderableDragStartListener(
                   index: index,
-                  child: const Icon(
+                  child: Icon(
                     Icons.drag_indicator,
-                    color: Color(0xFFD1D5DB),
+                    color: AppColors.border(context),
                     size: 20,
                   ),
                 ),
@@ -340,7 +342,7 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFFEBEE),
+                    color: AppColors.accentSoft(context),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: w.iconPath != null
@@ -351,7 +353,7 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
                             fit: BoxFit.contain,
                           ),
                         )
-                      : Icon(w.icon ?? Icons.fitness_center, color: const Color(0xFFE53935), size: 24),
+                      : Icon(w.icon ?? Icons.fitness_center, color: AppColors.accent(context), size: 24),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -360,28 +362,28 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
                     children: [
                       Text(
                         w.name,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF1A1D1F),
+                          color: AppColors.ink(context),
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         latestSummaryText(w, latest),
-                        style: const TextStyle(fontSize: 13, color: Color(0xFF6F7789)),
+                        style: TextStyle(fontSize: 13, color: AppColors.muted(context)),
                       ),
                     ],
                   ),
                 ),
                 IconButton(
-                  tooltip: 'History',
+                  tooltip: AppLocalizations.of(context).history,
                   onPressed: () => widget.onShowHistory(w),
-                  icon: const Icon(Icons.history, color: Color(0xFF6F7789)),
+                  icon: Icon(Icons.history, color: AppColors.muted(context)),
                 ),
                 IconButton(
-                  tooltip: 'More options',
-                  icon: const Icon(Icons.more_vert, color: Color(0xFF6F7789)),
+                  tooltip: AppLocalizations.of(context).moreOptions,
+                  icon: Icon(Icons.more_vert, color: AppColors.muted(context)),
                   onPressed: () {
                     _showExerciseOptionsMenuForDay(w);
                   },
@@ -404,8 +406,8 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
       builder: (ctx) => SafeArea(
         child: SingleChildScrollView(
           child: Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
+            decoration: BoxDecoration(
+              color: AppColors.card(context),
               borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             ),
             padding: const EdgeInsets.only(top: 16, bottom: 24, left: 20, right: 20),
@@ -416,14 +418,14 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
               width: 48,
               height: 4,
               decoration: BoxDecoration(
-                color: const Color(0xFFE0E0E0),
+                color: AppColors.border(context),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
             const SizedBox(height: 28),
             Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.card(context),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Column(
@@ -443,12 +445,12 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
                             Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFFFEBEE),
+                                color: AppColors.accentSoft(context),
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.delete_outline,
-                                color: Color(0xFFE53935),
+                                color: AppColors.accent(context),
                                 size: 24,
                               ),
                             ),
@@ -457,28 +459,28 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text(
-                                    'Delete today\'s logs only',
+                                  Text(
+                                    AppLocalizations.of(context).deleteTodayLogsOnly,
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
-                                      color: Color(0xFF1A1D1F),
+                                      color: AppColors.ink(context),
                                     ),
                                   ),
                                   const SizedBox(height: 4),
-                                  const Text(
-                                    'Remove logs from this date',
+                                  Text(
+                                    AppLocalizations.of(context).removeLogsFromDate,
                                     style: TextStyle(
                                       fontSize: 13,
-                                      color: Color(0xFF6F7789),
+                                      color: AppColors.muted(context),
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-                            const Icon(
+                            Icon(
                               Icons.chevron_right,
-                              color: Color(0xFFD1D5DB),
+                              color: AppColors.border(context),
                             ),
                           ],
                         ),
@@ -487,7 +489,7 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
                   ),
                   Container(
                     height: 1,
-                    color: const Color(0xFFF0F4F8),
+                    color: AppColors.chip(context),
                   ),
                   Material(
                     color: Colors.transparent,
@@ -503,7 +505,7 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
                             Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFEDE9FE),
+                                color: (AppColors.isDark(context) ? const Color(0xFF241F33) : const Color(0xFFEDE9FE)),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: const Icon(
@@ -513,24 +515,24 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
                               ),
                             ),
                             const SizedBox(width: 16),
-                            const Expanded(
+                            Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Add note',
+                                    AppLocalizations.of(context).addNote,
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
-                                      color: Color(0xFF1A1D1F),
+                                      color: AppColors.ink(context),
                                     ),
                                   ),
                                   SizedBox(height: 4),
                                   Text(
-                                    'Save a note for this exercise',
+                                    AppLocalizations.of(context).saveNoteSubtitle,
                                     style: TextStyle(
                                       fontSize: 13,
-                                      color: Color(0xFF6F7789),
+                                      color: AppColors.muted(context),
                                     ),
                                   ),
                                 ],
@@ -538,7 +540,7 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
                             ),
                             Icon(
                               Icons.chevron_right,
-                              color: Color(0xFFD1D5DB),
+                              color: AppColors.border(context),
                             ),
                           ],
                         ),
@@ -547,7 +549,7 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
                   ),
                   Container(
                     height: 1,
-                    color: const Color(0xFFF0F4F8),
+                    color: AppColors.chip(context),
                   ),
                   Material(
                     color: Colors.transparent,
@@ -571,7 +573,7 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
                             Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFFFF3E0),
+                                color: (AppColors.isDark(context) ? const Color(0xFF332612) : const Color(0xFFFFF3E0)),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Icon(
@@ -589,30 +591,30 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
                                 children: [
                                   Text(
                                     _alternativeIds.contains(w.id)
-                                        ? 'Als Hauptübung setzen'
-                                        : 'Als Alternative markieren',
-                                    style: const TextStyle(
+                                        ? AppLocalizations.of(context).setAsMain
+                                        : AppLocalizations.of(context).markAsAlternative,
+                                    style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
-                                      color: Color(0xFF1A1D1F),
+                                      color: AppColors.ink(context),
                                     ),
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
                                     _alternativeIds.contains(w.id)
-                                        ? 'Zurück in die Hauptliste verschieben'
-                                        : 'In separaten Bereich verschieben',
-                                    style: const TextStyle(
+                                        ? AppLocalizations.of(context).moveBackToMainList
+                                        : AppLocalizations.of(context).moveToSeparateSection,
+                                    style: TextStyle(
                                       fontSize: 13,
-                                      color: Color(0xFF6F7789),
+                                      color: AppColors.muted(context),
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-                            const Icon(
+                            Icon(
                               Icons.chevron_right,
-                              color: Color(0xFFD1D5DB),
+                              color: AppColors.border(context),
                             ),
                           ],
                         ),
@@ -621,7 +623,7 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
                   ),
                   Container(
                     height: 1,
-                    color: const Color(0xFFF0F4F8),
+                    color: AppColors.chip(context),
                   ),
                   Material(
                     color: Colors.transparent,
@@ -640,7 +642,7 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
                             Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFE3F2FD),
+                                color: (AppColors.isDark(context) ? const Color(0xFF14273A) : const Color(0xFFE3F2FD)),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: const Icon(
@@ -654,28 +656,28 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text(
-                                    'Remove from this plan',
+                                  Text(
+                                    AppLocalizations.of(context).removeFromPlan,
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
-                                      color: Color(0xFF1A1D1F),
+                                      color: AppColors.ink(context),
                                     ),
                                   ),
                                   const SizedBox(height: 4),
-                                  const Text(
-                                    'Keep progress history',
+                                  Text(
+                                    AppLocalizations.of(context).keepProgressHistory,
                                     style: TextStyle(
                                       fontSize: 13,
-                                      color: Color(0xFF6F7789),
+                                      color: AppColors.muted(context),
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-                            const Icon(
+                            Icon(
                               Icons.chevron_right,
-                              color: Color(0xFFD1D5DB),
+                              color: AppColors.border(context),
                             ),
                           ],
                         ),
@@ -684,7 +686,7 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
                   ),
                   Container(
                     height: 1,
-                    color: const Color(0xFFF0F4F8),
+                    color: AppColors.chip(context),
                   ),
                   Material(
                     color: Colors.transparent,
@@ -701,12 +703,12 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
                             Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFFFEBEE),
+                                color: AppColors.accentSoft(context),
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.delete_forever,
-                                color: Color(0xFFE53935),
+                                color: AppColors.accent(context),
                                 size: 24,
                               ),
                             ),
@@ -715,20 +717,20 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text(
-                                    'Delete all logs',
+                                  Text(
+                                    AppLocalizations.of(context).deleteAllLogs,
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
-                                      color: Color(0xFF1A1D1F),
+                                      color: AppColors.ink(context),
                                     ),
                                   ),
                                   const SizedBox(height: 4),
-                                  const Text(
-                                    'Remove all progress for this exercise',
+                                  Text(
+                                    AppLocalizations.of(context).removeAllProgress,
                                     style: TextStyle(
                                       fontSize: 13,
-                                      color: Color(0xFF6F7789),
+                                      color: AppColors.muted(context),
                                     ),
                                   ),
                                 ],
@@ -750,4 +752,3 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
     );
   }
 }
-

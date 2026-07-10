@@ -1,4 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import '../../../../l10n/generated/app_localizations.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/snackbar_utils.dart';
 import '../../data/models/gym_models.dart';
 
@@ -161,7 +163,7 @@ class _LogInputDialogState extends State<LogInputDialog> {
     final day = _resolveChosenDay();
 
     if (day.isEmpty && !_dayLocked) {
-      _showSnackBar('Please select or enter a workout day.');
+      _showSnackBar(AppLocalizations.of(context).selectWorkoutDayError);
       return false;
     }
 
@@ -171,9 +173,9 @@ class _LogInputDialogState extends State<LogInputDialog> {
         final duration = int.tryParse(field.durationController.text);
         if (duration == null || duration <= 0) {
           if (dropsetNum > 0) {
-            _showSnackBar('Set $setNum Dropset $dropsetNum: Enter a valid time in seconds (> 0).');
+            _showSnackBar(AppLocalizations.of(context).setDropsetTimeError(setNum, dropsetNum));
           } else {
-            _showSnackBar('Set $setNum: Enter a valid time in seconds (> 0).');
+            _showSnackBar(AppLocalizations.of(context).setTimeError(setNum));
           }
           return false;
         }
@@ -184,17 +186,17 @@ class _LogInputDialogState extends State<LogInputDialog> {
         if (kg == null || (_allowsZeroWeight ? kg < 0 : kg <= 0)) {
           final weightRule = _allowsZeroWeight ? '>= 0' : '> 0';
           if (dropsetNum > 0) {
-            _showSnackBar('Set $setNum Dropset $dropsetNum: Enter a valid weight ($weightRule).');
+            _showSnackBar(AppLocalizations.of(context).setDropsetWeightError(setNum, dropsetNum, weightRule));
           } else {
-            _showSnackBar('Set $setNum: Enter a valid weight ($weightRule).');
+            _showSnackBar(AppLocalizations.of(context).setWeightError(setNum, weightRule));
           }
           return false;
         }
         if (reps == null || reps <= 0) {
           if (dropsetNum > 0) {
-            _showSnackBar('Set $setNum Dropset $dropsetNum: Enter valid reps (> 0).');
+            _showSnackBar(AppLocalizations.of(context).setDropsetRepsError(setNum, dropsetNum));
           } else {
-            _showSnackBar('Set $setNum: Enter valid reps (> 0).');
+            _showSnackBar(AppLocalizations.of(context).setRepsError(setNum));
           }
           return false;
         }
@@ -270,7 +272,7 @@ class _LogInputDialogState extends State<LogInputDialog> {
     if (widget.creationMode && !_anyNumberFilled()) {
       final day = _resolveChosenDay();
       if (day.isEmpty && !_dayLocked) {
-        _showSnackBar('Choose a workout day to assign this exercise to a group.');
+        _showSnackBar(AppLocalizations.of(context).chooseDayForGroup);
         return;
       }
       Navigator.pop<LogOutcome>(context, LogOutcome(assignDay: day));
@@ -307,9 +309,9 @@ class _LogInputDialogState extends State<LogInputDialog> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         if (hasKnownDays) ...[
-          const Text(
-            'Workout day',
-            style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF6F7789)),
+          Text(
+            AppLocalizations.of(context).workoutDay,
+            style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.muted(context)),
           ),
           const SizedBox(height: 6),
           Wrap(
@@ -330,13 +332,13 @@ class _LogInputDialogState extends State<LogInputDialog> {
           controller: _dayController,
           decoration: InputDecoration(
             labelText: hasKnownDays
-              ? 'Custom (manual entry)'
+              ? AppLocalizations.of(context).customManualEntry
               : (widget.creationMode
-              ? 'Workout day (optional)'
-              : 'Workout day (required)'),
-            hintText: hasKnownDays ? 'e.g. Push3' : 'e.g. Push / Pull / Leg …',
+              ? AppLocalizations.of(context).workoutDayOptional
+              : AppLocalizations.of(context).workoutDayRequired),
+            hintText: hasKnownDays ? AppLocalizations.of(context).dayHintCustom : AppLocalizations.of(context).dayHint,
             filled: true,
-            fillColor: Colors.white,
+            fillColor: AppColors.card(context),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
@@ -347,7 +349,7 @@ class _LogInputDialogState extends State<LogInputDialog> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFE53935), width: 2),
+              borderSide: BorderSide(color: AppColors.accent(context), width: 2),
             ),
           ),
         ),
@@ -376,9 +378,9 @@ class _LogInputDialogState extends State<LogInputDialog> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Sets',
-          style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF6F7789)),
+        Text(
+          AppLocalizations.of(context).sets,
+          style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.muted(context)),
         ),
         const SizedBox(height: 8),
         ..._setFields.asMap().entries.map((entry) {
@@ -390,13 +392,13 @@ class _LogInputDialogState extends State<LogInputDialog> {
         ElevatedButton.icon(
           onPressed: _addSet,
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFE53935),
+            backgroundColor: AppColors.accent(context),
             foregroundColor: Colors.white,
             elevation: 0,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           ),
           icon: const Icon(Icons.add),
-          label: const Text('Add set'),
+          label: Text(AppLocalizations.of(context).addSet),
         ),
       ],
     );
@@ -417,10 +419,10 @@ class _LogInputDialogState extends State<LogInputDialog> {
                     controller: field.durationController,
                     keyboardType: TextInputType.number,
                     decoration: InputDecoration(
-                      labelText: 'Time (seconds)',
-                      hintText: 'e.g. 60',
+                      labelText: AppLocalizations.of(context).timeSeconds,
+                      hintText: AppLocalizations.of(context).egHint('60'),
                       filled: true,
-                      fillColor: Colors.white,
+                      fillColor: AppColors.card(context),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide.none,
@@ -431,7 +433,7 @@ class _LogInputDialogState extends State<LogInputDialog> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: Color(0xFFE53935), width: 2),
+                        borderSide: BorderSide(color: AppColors.accent(context), width: 2),
                       ),
                     ),
                   ),
@@ -439,9 +441,9 @@ class _LogInputDialogState extends State<LogInputDialog> {
                 const SizedBox(width: 8),
                 if (_setFields.length > 1)
                   IconButton(
-                    icon: const Icon(Icons.close, color: Color(0xFFE53935)),
+                    icon: Icon(Icons.close, color: AppColors.accent(context)),
                     onPressed: () => _removeSet(index),
-                    tooltip: 'Remove set',
+                    tooltip: AppLocalizations.of(context).removeSet,
                   )
                 else
                   const SizedBox(width: 48),
@@ -460,17 +462,17 @@ class _LogInputDialogState extends State<LogInputDialog> {
                       padding: const EdgeInsets.only(bottom: 8),
                       child: Row(
                         children: [
-                          const Icon(Icons.arrow_downward, size: 20, color: Color(0xFFE53935)),
+                          Icon(Icons.arrow_downward, size: 20, color: AppColors.accent(context)),
                           const SizedBox(width: 8),
                           Expanded(
                             child: TextField(
                               controller: dropset.durationController,
                               keyboardType: TextInputType.number,
                               decoration: InputDecoration(
-                                labelText: 'Dropset ${dropsetIndex + 1} Time (seconds)',
-                                hintText: 'e.g. 60',
+                                labelText: AppLocalizations.of(context).dropsetTimeSeconds(dropsetIndex + 1),
+                                hintText: AppLocalizations.of(context).egHint('60'),
                                 filled: true,
-                                fillColor: Colors.white,
+                                fillColor: AppColors.card(context),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(8),
                                   borderSide: BorderSide.none,
@@ -481,21 +483,21 @@ class _LogInputDialogState extends State<LogInputDialog> {
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(8),
-                                  borderSide: const BorderSide(color: Color(0xFFE53935), width: 2),
+                                  borderSide: BorderSide(color: AppColors.accent(context), width: 2),
                                 ),
                               ),
                             ),
                           ),
                           const SizedBox(width: 8),
                           IconButton(
-                            icon: const Icon(Icons.close, color: Color(0xFFE53935)),
+                            icon: Icon(Icons.close, color: AppColors.accent(context)),
                             onPressed: () {
                               setState(() {
                                 dropset.dispose();
                                 field.dropsets.removeAt(dropsetIndex);
                               });
                             },
-                            tooltip: 'Remove dropset',
+                            tooltip: AppLocalizations.of(context).removeDropset,
                           ),
                         ],
                       ),
@@ -517,9 +519,9 @@ class _LogInputDialogState extends State<LogInputDialog> {
                       });
                     },
                     icon: const Icon(Icons.add, size: 18),
-                    label: const Text('Add dropset'),
+                    label: Text(AppLocalizations.of(context).addDropset),
                     style: TextButton.styleFrom(
-                      foregroundColor: const Color(0xFFE53935),
+                      foregroundColor: AppColors.accent(context),
                     ),
                   ),
                 ],
@@ -541,10 +543,10 @@ class _LogInputDialogState extends State<LogInputDialog> {
                   controller: field.weightController,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   decoration: InputDecoration(
-                    labelText: 'Weight (kg)',
-                    hintText: 'e.g. 80',
+                    labelText: AppLocalizations.of(context).weightKg,
+                    hintText: AppLocalizations.of(context).egHint('80'),
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: AppColors.card(context),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                       borderSide: BorderSide.none,
@@ -555,7 +557,7 @@ class _LogInputDialogState extends State<LogInputDialog> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Color(0xFFE53935), width: 2),
+                      borderSide: BorderSide(color: AppColors.accent(context), width: 2),
                     ),
                   ),
                 ),
@@ -566,10 +568,10 @@ class _LogInputDialogState extends State<LogInputDialog> {
                   controller: field.repsController,
                   keyboardType: TextInputType.number,
                   decoration: InputDecoration(
-                    labelText: 'Reps',
-                    hintText: 'e.g. 8',
+                    labelText: AppLocalizations.of(context).reps,
+                    hintText: AppLocalizations.of(context).egHint('8'),
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: AppColors.card(context),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                       borderSide: BorderSide.none,
@@ -580,7 +582,7 @@ class _LogInputDialogState extends State<LogInputDialog> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Color(0xFFE53935), width: 2),
+                      borderSide: BorderSide(color: AppColors.accent(context), width: 2),
                     ),
                   ),
                 ),
@@ -588,9 +590,9 @@ class _LogInputDialogState extends State<LogInputDialog> {
               const SizedBox(width: 8),
               if (_setFields.length > 1)
                 IconButton(
-                  icon: const Icon(Icons.close, color: Color(0xFFE53935)),
+                  icon: Icon(Icons.close, color: AppColors.accent(context)),
                   onPressed: () => _removeSet(index),
-                  tooltip: 'Remove set',
+                  tooltip: AppLocalizations.of(context).removeSet,
                 )
               else
                 const SizedBox(width: 48),
@@ -609,17 +611,17 @@ class _LogInputDialogState extends State<LogInputDialog> {
                     padding: const EdgeInsets.only(bottom: 8),
                     child: Row(
                       children: [
-                        const Icon(Icons.arrow_downward, size: 20, color: Color(0xFFE53935)),
+                        Icon(Icons.arrow_downward, size: 20, color: AppColors.accent(context)),
                         const SizedBox(width: 8),
                         Expanded(
                           child: TextField(
                             controller: dropset.weightController,
                             keyboardType: const TextInputType.numberWithOptions(decimal: true),
                             decoration: InputDecoration(
-                              labelText: 'Dropset ${dropsetIndex + 1} Weight (kg)',
-                              hintText: 'e.g. 70',
+                              labelText: AppLocalizations.of(context).dropsetWeightKg(dropsetIndex + 1),
+                              hintText: AppLocalizations.of(context).egHint('70'),
                               filled: true,
-                              fillColor: Colors.white,
+                              fillColor: AppColors.card(context),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
                                 borderSide: BorderSide.none,
@@ -630,7 +632,7 @@ class _LogInputDialogState extends State<LogInputDialog> {
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(color: Color(0xFFE53935), width: 2),
+                                borderSide: BorderSide(color: AppColors.accent(context), width: 2),
                               ),
                             ),
                           ),
@@ -641,10 +643,10 @@ class _LogInputDialogState extends State<LogInputDialog> {
                             controller: dropset.repsController,
                             keyboardType: TextInputType.number,
                             decoration: InputDecoration(
-                              labelText: 'Reps',
-                              hintText: 'e.g. 10',
+                              labelText: AppLocalizations.of(context).reps,
+                              hintText: AppLocalizations.of(context).egHint('10'),
                               filled: true,
-                              fillColor: Colors.white,
+                              fillColor: AppColors.card(context),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
                                 borderSide: BorderSide.none,
@@ -655,21 +657,21 @@ class _LogInputDialogState extends State<LogInputDialog> {
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(color: Color(0xFFE53935), width: 2),
+                                borderSide: BorderSide(color: AppColors.accent(context), width: 2),
                               ),
                             ),
                           ),
                         ),
                         const SizedBox(width: 8),
                         IconButton(
-                          icon: const Icon(Icons.close, color: Color(0xFFE53935)),
+                          icon: Icon(Icons.close, color: AppColors.accent(context)),
                           onPressed: () {
                             setState(() {
                               dropset.dispose();
                               field.dropsets.removeAt(dropsetIndex);
                             });
                           },
-                          tooltip: 'Remove dropset',
+                          tooltip: AppLocalizations.of(context).removeDropset,
                         ),
                       ],
                     ),
@@ -691,9 +693,9 @@ class _LogInputDialogState extends State<LogInputDialog> {
                     });
                   },
                   icon: const Icon(Icons.add, size: 18),
-                  label: const Text('Add dropset'),
+                  label: Text(AppLocalizations.of(context).addDropset),
                   style: TextButton.styleFrom(
-                    foregroundColor: const Color(0xFFE53935),
+                    foregroundColor: AppColors.accent(context),
                   ),
                 ),
               ],
@@ -707,7 +709,7 @@ class _LogInputDialogState extends State<LogInputDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: AppColors.bg(context),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       titlePadding: const EdgeInsets.fromLTRB(20, 20, 16, 0),
       contentPadding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
@@ -717,10 +719,10 @@ class _LogInputDialogState extends State<LogInputDialog> {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: const Color(0xFFFFEBEE),
+              color: AppColors.accentSoft(context),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(Icons.fitness_center, color: Color(0xFFE53935)),
+            child: Icon(Icons.fitness_center, color: AppColors.accent(context)),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -750,12 +752,12 @@ class _LogInputDialogState extends State<LogInputDialog> {
                 child: OutlinedButton(
                   onPressed: () => Navigator.pop(context),
                   style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Color(0xFFE0E0E0)),
+                    side: BorderSide(color: AppColors.border(context)),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text('Cancel'),
+                  child: Text(AppLocalizations.of(context).cancel),
                 ),
               ),
               const SizedBox(width: 12),
@@ -763,14 +765,14 @@ class _LogInputDialogState extends State<LogInputDialog> {
                 child: ElevatedButton(
                   onPressed: _submit,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFE53935),
+                    backgroundColor: AppColors.accent(context),
                     foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: Text(widget.creationMode ? 'Save' : 'Update'),
+                  child: Text(widget.creationMode ? 'Save' : AppLocalizations.of(context).update),
                 ),
               ),
             ],
@@ -780,4 +782,3 @@ class _LogInputDialogState extends State<LogInputDialog> {
     );
   }
 }
-

@@ -1,19 +1,21 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:confetti/confetti.dart';
 import 'progress_screen.dart';
+import '../../../../l10n/generated/app_localizations.dart';
 
 class CongratsScreen extends StatefulWidget {
   const CongratsScreen({
     super.key,
-    this.title = 'CONGRATS!',
-    this.subtitle = 'You finished all tasks for today',
-    this.detail = 'Well done — keep up the streaks!',
+    this.title,
+    this.subtitle,
+    this.detail,
     this.onSeeProgress,
   });
 
-  final String title;
-  final String subtitle;
-  final String detail;
+  /// Fall back to the localized defaults when null.
+  final String? title;
+  final String? subtitle;
+  final String? detail;
   final VoidCallback? onSeeProgress;
 
   @override
@@ -124,7 +126,7 @@ class _CongratsScreenState extends State<CongratsScreen>
                           borderRadius: BorderRadius.circular(18),
                         ),
                         child: Text(
-                          widget.title,
+                          widget.title ?? AppLocalizations.of(context).congratsTitle,
                           style: TextStyle(
                             color: cs.primary,
                             fontWeight: FontWeight.w800,
@@ -134,7 +136,7 @@ class _CongratsScreenState extends State<CongratsScreen>
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        widget.subtitle,
+                        widget.subtitle ?? AppLocalizations.of(context).congratsSubtitle,
                         textAlign: TextAlign.center,
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w600,
@@ -142,7 +144,7 @@ class _CongratsScreenState extends State<CongratsScreen>
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        widget.detail,
+                        widget.detail ?? AppLocalizations.of(context).congratsMessage,
                         textAlign: TextAlign.center,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: cs.onSurfaceVariant,
@@ -160,7 +162,7 @@ class _CongratsScreenState extends State<CongratsScreen>
                                   borderRadius: BorderRadius.circular(14),
                                 ),
                               ),
-                              child: const Text('Close'),
+                              child: Text(AppLocalizations.of(context).close),
                             ),
                           ),
                           const SizedBox(width: 10),
@@ -182,7 +184,7 @@ class _CongratsScreenState extends State<CongratsScreen>
                                   borderRadius: BorderRadius.circular(14),
                                 ),
                               ),
-                              child: const Text('Show progress'),
+                              child: Text(AppLocalizations.of(context).showProgress),
                             ),
                           ),
                         ],

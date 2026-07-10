@@ -1,4 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import '../../../../l10n/generated/app_localizations.dart';
+import '../../../../core/i18n/task_labels.dart';
+import '../../../../core/theme/app_colors.dart';
 import 'package:flutter/services.dart';
 
 /// ===============================================================
@@ -71,14 +74,14 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
 
               if (month == null || month < 1 || month > 12) {
                 setDialogState(() {
-                  errorText = 'Month must be between 1 and 12';
+                  errorText = AppLocalizations.of(context).invalidMonth;
                 });
                 return;
               }
 
               if (year == null || year < 1) {
                 setDialogState(() {
-                  errorText = 'Year must be greater than 0';
+                  errorText = AppLocalizations.of(context).invalidYear;
                 });
                 return;
               }
@@ -94,7 +97,7 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
                 child: Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.card(context),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Column(
@@ -106,23 +109,23 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
                         Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFFFEBEE),
+                            color: AppColors.accentSoft(context),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.calendar_month,
-                            color: Color(0xFFE53935),
+                            color: AppColors.accent(context),
                             size: 22,
                           ),
                         ),
                         const SizedBox(width: 12),
-                        const Expanded(
+                        Expanded(
                           child: Text(
-                            'Go to month',
+                            AppLocalizations.of(context).goToMonth,
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF1A1D1F),
+                              color: AppColors.ink(context),
                             ),
                           ),
                         ),
@@ -138,23 +141,23 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
                         LengthLimitingTextInputFormatter(2),
                       ],
                       decoration: InputDecoration(
-                        labelText: 'Month',
+                        labelText: AppLocalizations.of(context).rangeMonth,
                         hintText: '1 - 12',
                         filled: true,
-                        fillColor: const Color(0xFFF7F8FA),
+                        fillColor: AppColors.chip(context),
                         contentPadding:
                             const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFFE6E8EC)),
+                          borderSide: BorderSide(color: AppColors.border(context)),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFFE6E8EC)),
+                          borderSide: BorderSide(color: AppColors.border(context)),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFFE53935), width: 1.2),
+                          borderSide: BorderSide(color: AppColors.accent(context), width: 1.2),
                         ),
                       ),
                     ),
@@ -169,23 +172,23 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
                       ],
                       onSubmitted: (_) => submit(),
                       decoration: InputDecoration(
-                        labelText: 'Year',
-                        hintText: 'e.g. 2026',
+                        labelText: AppLocalizations.of(context).rangeYear,
+                        hintText: AppLocalizations.of(context).yearHint,
                         filled: true,
-                        fillColor: const Color(0xFFF7F8FA),
+                        fillColor: AppColors.chip(context),
                         contentPadding:
                             const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFFE6E8EC)),
+                          borderSide: BorderSide(color: AppColors.border(context)),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFFE6E8EC)),
+                          borderSide: BorderSide(color: AppColors.border(context)),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFFE53935), width: 1.2),
+                          borderSide: BorderSide(color: AppColors.accent(context), width: 1.2),
                         ),
                       ),
                     ),
@@ -210,16 +213,16 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
                             padding:
                                 const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
                           ),
-                          child: const Text(
-                            'Cancel',
-                            style: TextStyle(color: Color(0xFF6F7789)),
+                          child: Text(
+                            AppLocalizations.of(context).cancel,
+                            style: TextStyle(color: AppColors.muted(context)),
                           ),
                         ),
                         const SizedBox(width: 8),
                         ElevatedButton(
                           onPressed: submit,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFE53935),
+                            backgroundColor: AppColors.accent(context),
                             foregroundColor: Colors.white,
                             elevation: 0,
                             padding:
@@ -228,9 +231,9 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          child: const Text(
-                            'Go',
-                            style: TextStyle(fontWeight: FontWeight.w700),
+                          child: Text(
+                            AppLocalizations.of(context).go,
+                            style: const TextStyle(fontWeight: FontWeight.w700),
                           ),
                         ),
                       ],
@@ -331,12 +334,12 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
         chips.add(Container(
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
           decoration: BoxDecoration(
-            color: Colors.grey.shade300,
+            color: AppColors.border(context),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text('+$overflow',
               style: TextStyle(
-                color: Colors.grey.shade700,
+                color: AppColors.muted(context),
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
               )),
@@ -360,7 +363,7 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: const Color(0xFFE53935),
+          color: AppColors.accent(context),
           borderRadius: BorderRadius.circular(999),
         ),
         child: Text(
@@ -378,7 +381,7 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
   void _showFullList(BuildContext context, DateTime date, List<String> names) {
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: AppColors.bg(context),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -400,10 +403,10 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFFFEBEE),
+                            color: AppColors.accentSoft(context),
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: const Icon(Icons.calendar_today, color: Color(0xFFE53935), size: 20),
+                          child: Icon(Icons.calendar_today, color: AppColors.accent(context), size: 20),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -411,7 +414,7 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Workouts',
+                                AppLocalizations.of(context).workoutsLabel,
                                 style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
@@ -421,7 +424,7 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
                                 dateLabel,
                                 style: TextStyle(
                                   fontSize: 13,
-                                  color: Colors.grey.shade600,
+                                  color: AppColors.muted(context),
                                 ),
                               ),
                             ],
@@ -432,9 +435,9 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
                     const SizedBox(height: 12),
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
-                      title: const Text('Creatine taken'),
-                      subtitle: const Text('Show red dot in calendar'),
-                      activeThumbColor: const Color(0xFFE53935),
+                      title: Text(AppLocalizations.of(context).creatineTaken),
+                      subtitle: Text(AppLocalizations.of(context).showRedDot),
+                      activeThumbColor: AppColors.accent(context),
                       value: tookCreatine,
                       onChanged: (v) async {
                         setSheetState(() => tookCreatine = v);
@@ -447,9 +450,9 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
                       Padding(
                         padding: const EdgeInsets.only(bottom: 8),
                         child: Text(
-                          'No workouts marked',
+                          AppLocalizations.of(context).noWorkoutsMarked,
                           style: TextStyle(
-                            color: Colors.grey.shade600,
+                            color: AppColors.muted(context),
                             fontSize: 13,
                           ),
                         ),
@@ -459,7 +462,7 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
                           .map((n) => Container(
                                 margin: const EdgeInsets.only(bottom: 8),
                                 decoration: BoxDecoration(
-                                  color: Colors.white,
+                                  color: AppColors.card(context),
                                   borderRadius: BorderRadius.circular(12),
                                   boxShadow: const [
                                     BoxShadow(
@@ -521,7 +524,7 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
     final titleLabel = localizations.formatMonthYear(_currentMonth);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: AppColors.bg(context),
       body: SafeArea(
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
@@ -546,7 +549,7 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
                         child: Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: AppColors.card(context),
                             borderRadius: BorderRadius.circular(12),
                             boxShadow: const [
                               BoxShadow(
@@ -556,7 +559,7 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
                               )
                             ],
                           ),
-                          child: const Icon(Icons.arrow_back, color: Color(0xFF374151)),
+                          child: Icon(Icons.arrow_back, color: AppColors.inkSoft(context)),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -578,9 +581,9 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'Swipe, use arrows, or tap month to jump',
+                              AppLocalizations.of(context).swipeHint,
                               style: TextStyle(
-                                color: Colors.grey.shade600,
+                                color: AppColors.muted(context),
                                 fontSize: 12,
                               ),
                             ),
@@ -604,8 +607,9 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    _Dow('Mon'), _Dow('Tue'), _Dow('Wed'),
-                    _Dow('Thu'), _Dow('Fri'), _Dow('Sat'), _Dow('Sun'),
+                    for (int d = 1; d <= 7; d++)
+                      _Dow(localizedWeekdayShort(
+                          d, Localizations.localeOf(context).toString())),
                   ],
                 ),
                 const Divider(height: 0),
@@ -638,11 +642,11 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
                           children: [
                             Container(
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: AppColors.card(context),
                                 borderRadius: BorderRadius.circular(12),
                                 border: isToday
-                                    ? Border.all(color: const Color(0xFFE53935), width: 1.5)
-                                    : Border.all(color: const Color(0xFFE6E8EC)),
+                                    ? Border.all(color: AppColors.accent(context), width: 1.5)
+                                    : Border.all(color: AppColors.border(context)),
                                 boxShadow: const [
                                   BoxShadow(
                                     color: Color(0x0F000000),
@@ -683,8 +687,8 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
                                 child: Container(
                                   width: 12,
                                   height: 12,
-                                  decoration: const BoxDecoration(
-                                    color: Color(0xFFE53935),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.accent(context),
                                     shape: BoxShape.circle,
                                     boxShadow: [
                                       BoxShadow(
@@ -724,7 +728,7 @@ class _Dow extends StatelessWidget {
           label,
           style: TextStyle(
             fontWeight: FontWeight.w700,
-            color: Colors.grey.shade700,
+            color: AppColors.muted(context),
           ),
         )),
       ),
@@ -746,7 +750,7 @@ class _MonthIconButton extends StatelessWidget {
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: isPrimary ? const Color(0xFFE53935) : Colors.white,
+          color: isPrimary ? AppColors.accent(context) : AppColors.card(context),
           borderRadius: BorderRadius.circular(12),
           boxShadow: const [
             BoxShadow(
@@ -756,7 +760,7 @@ class _MonthIconButton extends StatelessWidget {
             )
           ],
         ),
-        child: Icon(icon, color: isPrimary ? Colors.white : const Color(0xFF374151)),
+        child: Icon(icon, color: isPrimary ? Colors.white : AppColors.inkSoft(context)),
       ),
     );
   }
@@ -775,7 +779,7 @@ class _ToggleButton extends StatelessWidget {
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.card(context),
           borderRadius: BorderRadius.circular(12),
           boxShadow: const [
             BoxShadow(
@@ -785,7 +789,7 @@ class _ToggleButton extends StatelessWidget {
             )
           ],
         ),
-        child: Icon(icon, color: const Color(0xFF374151), size: 20),
+        child: Icon(icon, color: AppColors.inkSoft(context), size: 20),
       ),
     );
   }

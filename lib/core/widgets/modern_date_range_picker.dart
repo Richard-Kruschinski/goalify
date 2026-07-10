@@ -1,4 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import '../theme/app_colors.dart';
+import '../i18n/task_labels.dart';
 
 class ModernDateRangePicker extends StatefulWidget {
   final DateTime? initialStart;
@@ -134,23 +136,23 @@ class _ModernDateRangePickerState extends State<ModernDateRangePicker> {
                           Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFFFEBEE),
+                              color: AppColors.accentSoft(context),
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.calendar_month,
-                              color: Color(0xFFE53935),
+                              color: AppColors.accent(context),
                               size: 22,
                             ),
                           ),
                           const SizedBox(width: 12),
-                          const Expanded(
+                          Expanded(
                             child: Text(
                               'Go to month',
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFF1A1D1F),
+                                color: AppColors.ink(context),
                               ),
                             ),
                           ),
@@ -165,21 +167,21 @@ class _ModernDateRangePickerState extends State<ModernDateRangePicker> {
                           labelText: 'Month',
                           hintText: '1 - 12',
                           filled: true,
-                          fillColor: const Color(0xFFF7F8FA),
+                          fillColor: AppColors.chip(context),
                           contentPadding:
                               const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: Color(0xFFE6E8EC)),
+                            borderSide: BorderSide(color: AppColors.border(context)),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: Color(0xFFE6E8EC)),
+                            borderSide: BorderSide(color: AppColors.border(context)),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide:
-                                const BorderSide(color: Color(0xFFE53935), width: 1.2),
+                                BorderSide(color: AppColors.accent(context), width: 1.2),
                           ),
                         ),
                       ),
@@ -193,21 +195,21 @@ class _ModernDateRangePickerState extends State<ModernDateRangePicker> {
                           labelText: 'Year',
                           hintText: 'e.g. 2026',
                           filled: true,
-                          fillColor: const Color(0xFFF7F8FA),
+                          fillColor: AppColors.chip(context),
                           contentPadding:
                               const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: Color(0xFFE6E8EC)),
+                            borderSide: BorderSide(color: AppColors.border(context)),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: Color(0xFFE6E8EC)),
+                            borderSide: BorderSide(color: AppColors.border(context)),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide:
-                                const BorderSide(color: Color(0xFFE53935), width: 1.2),
+                                BorderSide(color: AppColors.accent(context), width: 1.2),
                           ),
                         ),
                       ),
@@ -231,16 +233,16 @@ class _ModernDateRangePickerState extends State<ModernDateRangePicker> {
                             style: TextButton.styleFrom(
                               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
                             ),
-                            child: const Text(
+                            child: Text(
                               'Cancel',
-                              style: TextStyle(color: Color(0xFF6F7789)),
+                              style: TextStyle(color: AppColors.muted(context)),
                             ),
                           ),
                           const SizedBox(width: 8),
                           ElevatedButton(
                             onPressed: submit,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFE53935),
+                              backgroundColor: AppColors.accent(context),
                               foregroundColor: Colors.white,
                               elevation: 0,
                               padding:
@@ -295,7 +297,7 @@ class _ModernDateRangePickerState extends State<ModernDateRangePicker> {
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: AppColors.bg(context),
       insetPadding: const EdgeInsets.all(16),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -325,7 +327,7 @@ class _ModernDateRangePickerState extends State<ModernDateRangePicker> {
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: const Color(0xFFE5E7EB)),
+                          border: Border.all(color: AppColors.border(context)),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -348,7 +350,7 @@ class _ModernDateRangePickerState extends State<ModernDateRangePicker> {
                                 fontWeight: FontWeight.w600,
                                 color: _selectedStart != null
                                     ? const Color(0xFF111827)
-                                    : const Color(0xFF9CA3AF),
+                                    : AppColors.faint(context),
                               ),
                             ),
                           ],
@@ -362,7 +364,7 @@ class _ModernDateRangePickerState extends State<ModernDateRangePicker> {
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: const Color(0xFFE5E7EB)),
+                          border: Border.all(color: AppColors.border(context)),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -383,7 +385,7 @@ class _ModernDateRangePickerState extends State<ModernDateRangePicker> {
                                 fontWeight: FontWeight.w600,
                                 color: _selectedEnd != null
                                     ? const Color(0xFF111827)
-                                    : const Color(0xFF9CA3AF),
+                                    : AppColors.faint(context),
                               ),
                             ),
                           ],
@@ -481,7 +483,7 @@ class _ModernDateRangePickerState extends State<ModernDateRangePicker> {
                     const SizedBox(width: 12),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFE53935),
+                        backgroundColor: AppColors.accent(context),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -523,7 +525,10 @@ class _ModernDateRangePickerState extends State<ModernDateRangePicker> {
     final daysInMonth = lastDay.day;
     final firstWeekday = firstDay.weekday;
 
-    const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+    final localeName = Localizations.localeOf(context).toString();
+    final weekDays = [
+      for (int d = 1; d <= 7; d++) localizedWeekdayShort(d, localeName),
+    ];
 
     final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
 
@@ -601,9 +606,9 @@ class _ModernDateRangePickerState extends State<ModernDateRangePicker> {
                     child: Container(
                       decoration: BoxDecoration(
                         color: isStart || isEnd
-                            ? const Color(0xFFE53935)
+                            ? AppColors.accent(context)
                             : inRange
-                                ? const Color(0xFFFFEBEE)
+                                ? AppColors.accentSoft(context)
                                 : Colors.transparent,
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -653,4 +658,3 @@ class _ModernDateRangePickerState extends State<ModernDateRangePicker> {
     return '${months[date.month]} ${date.year}';
   }
 }
-

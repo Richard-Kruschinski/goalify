@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../../core/utils/snackbar_utils.dart';
 import 'package:provider/provider.dart';
 import '../../pomodoro/presentation/pages/pomodoro_screen.dart';
@@ -11,28 +11,32 @@ import '../../music_timer/presentation/controllers/music_timer_controller.dart';
 import '../../interval_timer/presentation/pages/interval_timer_screen.dart';
 import '../../interval_timer/presentation/controllers/interval_timer_controller.dart';
 import '../../interval_timer/data/models/interval_timer_state.dart';
+import '../../settings/presentation/pages/settings_screen.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../l10n/generated/app_localizations.dart';
 
 class FunctionsScreen extends StatelessWidget {
   const FunctionsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.card(context),
         elevation: 0,
         toolbarHeight: 80,
-        title: const Text(
-          'Functions',
+        title: Text(
+          l10n.functionsTitle,
           style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.bold,
-            color: Colors.black87,
+            color: AppColors.ink(context),
           ),
         ),
         centerTitle: false,
       ),
-      backgroundColor: const Color(0xFFF5F6FA),
+      backgroundColor: AppColors.bg(context),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
         children: [
@@ -40,12 +44,12 @@ class FunctionsScreen extends StatelessWidget {
             builder: (context, pomodoroController, _) {
               final isTimerRunning = pomodoroController.timerState == PomodoroTimerState.running;
               return FunctionCard(
-                title: 'Pomodoro Timer',
-                subtitle: isTimerRunning 
-                    ? 'Timer running: ${pomodoroController.formattedTime}'
-                    : 'Work in focused intervals with breaks',
+                title: l10n.pomodoroTimer,
+                subtitle: isTimerRunning
+                    ? l10n.pomodoroCardRunning(pomodoroController.formattedTime)
+                    : l10n.pomodoroCardSubtitle,
                 icon: Icons.timer,
-                iconBackgroundColor: const Color(0xFFFFE8E8),
+                iconBackgroundColor: (AppColors.isDark(context) ? const Color(0xFF331D1D) : const Color(0xFFFFE8E8)),
                 isActive: isTimerRunning,
                 onTap: () {
                   Navigator.push(
@@ -63,12 +67,12 @@ class FunctionsScreen extends StatelessWidget {
             builder: (context, distractionBlocker, _) {
               final isActive = distractionBlocker.isActive;
               return FunctionCard(
-                title: 'Distraction Blocker',
+                title: l10n.distractionBlockerTitle,
                 subtitle: isActive
-                    ? 'Active: ${distractionBlocker.currentSessionDuration}'
-                    : 'Block distracting apps and stay focused',
+                    ? l10n.blockerCardActive(distractionBlocker.currentSessionDuration)
+                    : l10n.blockerCardSubtitle,
                 icon: Icons.block,
-                iconBackgroundColor: const Color(0xFFE8D6F7),
+                iconBackgroundColor: (AppColors.isDark(context) ? const Color(0xFF2B2038) : const Color(0xFFE8D6F7)),
                 isActive: isActive,
                 onTap: () {
                   Navigator.push(
@@ -86,12 +90,12 @@ class FunctionsScreen extends StatelessWidget {
             builder: (context, musicTimer, _) {
               final isRunning = musicTimer.isRunning;
               return FunctionCard(
-                title: 'Music Timer',
+                title: l10n.musicTimerTitle,
                 subtitle: isRunning
-                    ? 'Timer: ${musicTimer.formattedTimeWithHours}'
-                    : 'Play music with a countdown timer',
+                    ? l10n.musicTimerCardRunning(musicTimer.formattedTimeWithHours)
+                    : l10n.musicTimerCardSubtitle,
                 icon: Icons.music_note,
-                iconBackgroundColor: const Color(0xFFFEE8D1),
+                iconBackgroundColor: (AppColors.isDark(context) ? const Color(0xFF322414) : const Color(0xFFFEE8D1)),
                 isActive: isRunning,
                 onTap: () {
                   Navigator.push(
@@ -109,12 +113,13 @@ class FunctionsScreen extends StatelessWidget {
             builder: (context, intervalTimer, _) {
               final isRunning = intervalTimer.timerState == IntervalTimerState.running;
               return FunctionCard(
-                title: 'Interval Timer',
+                title: l10n.intervalTimerTitle,
                 subtitle: isRunning
-                    ? 'Running: ${intervalTimer.currentItemLabel} • ${intervalTimer.formattedTime}'
-                    : 'Create a task profile with breaks between tasks',
+                    ? l10n.intervalCardRunning(
+                        intervalTimer.currentItemLabel, intervalTimer.formattedTime)
+                    : l10n.intervalCardSubtitle,
                 icon: Icons.sports_martial_arts,
-                iconBackgroundColor: const Color(0xFFDDF4E7),
+                iconBackgroundColor: (AppColors.isDark(context) ? const Color(0xFF16291F) : const Color(0xFFDDF4E7)),
                 isActive: isRunning,
                 onTap: () {
                   Navigator.push(
@@ -128,12 +133,19 @@ class FunctionsScreen extends StatelessWidget {
             },
           ),
           const SizedBox(height: 16),
-          const FunctionCard(
-            title: 'Options',
-            subtitle: 'Coming soon',
+          FunctionCard(
+            title: AppLocalizations.of(context).settingsTitle,
+            subtitle: AppLocalizations.of(context).settingsSubtitle,
             icon: Icons.tune,
-            iconBackgroundColor: Color(0xFFE9EDF5),
-            isInteractive: false,
+            iconBackgroundColor: (AppColors.isDark(context) ? const Color(0xFF232833) : const Color(0xFFE9EDF5)),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const SettingsScreen(),
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -164,7 +176,7 @@ class FunctionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white,
+      color: AppColors.card(context),
       borderRadius: BorderRadius.circular(20),
       elevation: isActive ? 4 : 2,
       shadowColor: isActive 
@@ -174,7 +186,7 @@ class FunctionCard extends StatelessWidget {
         onTap: isInteractive
             ? (onTap ?? () {
                 ScaffoldMessenger.of(context).showSingleSnackBar(
-                  const SnackBar(content: Text('Coming Soon')),
+                  SnackBar(content: Text(AppLocalizations.of(context).comingSoon)),
                 );
               })
             : null,
@@ -196,7 +208,7 @@ class FunctionCard extends StatelessWidget {
                     padding: const EdgeInsets.all(12),
                     child: Icon(
                       icon,
-                      color: Colors.grey[800],
+                      color: AppColors.inkSoft(context),
                       size: 28,
                     ),
                   ),
@@ -210,13 +222,16 @@ class FunctionCard extends StatelessWidget {
                           title,
                           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.bold,
+                                color: AppColors.ink(context),
                               ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           subtitle,
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: isActive ? const Color(0xFFFF6B6B) : Colors.grey[600],
+                                color: isActive
+                                    ? const Color(0xFFFF6B6B)
+                                    : AppColors.muted(context),
                                 fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
                               ),
                           maxLines: 2,
@@ -232,7 +247,9 @@ class FunctionCard extends StatelessWidget {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: isActive ? const Color(0xFFFF6B6B) : Colors.grey[300]!,
+                          color: isActive
+                              ? const Color(0xFFFF6B6B)
+                              : AppColors.border(context),
                           width: 1.5,
                         ),
                       ),
@@ -240,7 +257,9 @@ class FunctionCard extends StatelessWidget {
                       child: Icon(
                         Icons.arrow_forward,
                         size: 20,
-                        color: isActive ? const Color(0xFFFF6B6B) : Colors.grey[600],
+                        color: isActive
+                            ? const Color(0xFFFF6B6B)
+                            : AppColors.muted(context),
                       ),
                     ),
                 ],
