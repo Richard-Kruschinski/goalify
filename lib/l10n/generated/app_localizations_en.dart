@@ -1228,6 +1228,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get musicWillStop => 'Music will stop automatically';
 
   @override
+  String get musicTimerIdleHint => 'Pick a duration below to start';
+
+  @override
   String get timeRemaining => 'Time Remaining';
 
   @override

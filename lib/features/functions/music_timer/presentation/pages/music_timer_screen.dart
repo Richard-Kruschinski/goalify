@@ -114,6 +114,7 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
         children: [
           // Header with gradient background
           Container(
+            width: double.infinity,
             padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
               gradient: isRunning
@@ -169,17 +170,17 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
                   ),
                 ),
                 
-                if (isRunning) ...[
-                  const SizedBox(height: 12),
-                  Text(
-                    AppLocalizations.of(context).musicWillStop,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.95),
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                    ),
+                const SizedBox(height: 12),
+                Text(
+                  isRunning
+                      ? AppLocalizations.of(context).musicWillStop
+                      : AppLocalizations.of(context).musicTimerIdleHint,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.95),
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
                   ),
-                ],
+                ),
               ],
             ),
           ),
@@ -192,6 +193,8 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
                 // Timer display
                 if (isRunning) ...[
                   Container(
+                    width: double.infinity,
+                    height: 240,
                     padding: const EdgeInsets.all(28),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -215,6 +218,7 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
                       ],
                     ),
                     child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
                           AppLocalizations.of(context).timeRemaining,
@@ -281,6 +285,8 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
                 ] else ...[
                   // Timer selection
                   Container(
+                    width: double.infinity,
+                    height: 240,
                     padding: const EdgeInsets.all(28),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -298,6 +304,7 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
                       ),
                     ),
                     child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
                           '$_selectedMinutes',

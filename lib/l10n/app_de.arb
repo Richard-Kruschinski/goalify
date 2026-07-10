@@ -370,6 +370,7 @@
   "timerActiveCaps": "🎵 TIMER AKTIV 🎵",
   "setTimerCaps": "⏱️ TIMER STELLEN",
   "musicWillStop": "Die Musik stoppt automatisch",
+  "musicTimerIdleHint": "Wähle unten die Dauer aus",
   "timeRemaining": "Verbleibende Zeit",
   "stopTimerCaps": "TIMER STOPPEN",
   "startTimerCaps": "TIMER STARTEN",

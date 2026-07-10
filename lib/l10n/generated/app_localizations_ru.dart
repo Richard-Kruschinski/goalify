@@ -1248,6 +1248,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get musicWillStop => 'Музыка остановится автоматически';
 
   @override
+  String get musicTimerIdleHint => 'Выберите длительность ниже';
+
+  @override
   String get timeRemaining => 'Осталось времени';
 
   @override

@@ -370,6 +370,7 @@
   "timerActiveCaps": "🎵 ТАЙМЕР АКТИВЕН 🎵",
   "setTimerCaps": "⏱️ УСТАНОВИТЕ ТАЙМЕР",
   "musicWillStop": "Музыка остановится автоматически",
+  "musicTimerIdleHint": "Выберите длительность ниже",
   "timeRemaining": "Осталось времени",
   "stopTimerCaps": "ОСТАНОВИТЬ ТАЙМЕР",
   "startTimerCaps": "ЗАПУСТИТЬ ТАЙМЕР",

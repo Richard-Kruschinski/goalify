@@ -2236,6 +2236,12 @@ abstract class AppLocalizations {
   /// **'Music will stop automatically'**
   String get musicWillStop;
 
+  /// No description provided for @musicTimerIdleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a duration below to start'**
+  String get musicTimerIdleHint;
+
   /// No description provided for @timeRemaining.
   ///
   /// In en, this message translates to:

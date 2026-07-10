@@ -487,6 +487,7 @@
   "timerActiveCaps": "🎵 TIMER ACTIVE 🎵",
   "setTimerCaps": "⏱️ SET TIMER",
   "musicWillStop": "Music will stop automatically",
+  "musicTimerIdleHint": "Pick a duration below to start",
   "timeRemaining": "Time Remaining",
   "stopTimerCaps": "STOP TIMER",
   "startTimerCaps": "START TIMER",
