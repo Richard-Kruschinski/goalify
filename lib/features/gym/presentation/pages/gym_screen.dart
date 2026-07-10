@@ -1267,24 +1267,72 @@ class _GymScreenState extends State<GymScreen> {
   Future<void> _openWorkoutLongPressMenu(Workout w) async {
     final action = await showModalBottomSheet<String>(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.show_chart),
-              title: Text(AppLocalizations.of(context).showProgressChart),
-              onTap: () => Navigator.pop(ctx, 'chart'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete_outline),
-              title: Text(AppLocalizations.of(context).deleteExerciseEllipsis),
-              onTap: () => Navigator.pop(ctx, 'delete'),
-            ),
-          ],
+        child: Container(
+          decoration: BoxDecoration(
+            color: AppColors.card(context),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: const EdgeInsets.only(top: 16, bottom: 24, left: 20, right: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 48,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.border(context),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                w.name,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.ink(context),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Container(
+                decoration: BoxDecoration(
+                  color: AppColors.card(context),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  children: [
+                    _longPressMenuRow(
+                      ctx,
+                      icon: Icons.show_chart,
+                      iconColor: const Color(0xFF2196F3),
+                      iconBg: AppColors.isDark(context)
+                          ? const Color(0xFF14273A)
+                          : const Color(0xFFE3F2FD),
+                      title: AppLocalizations.of(context).showProgressChart,
+                      value: 'chart',
+                      topRounded: true,
+                    ),
+                    Container(height: 1, color: AppColors.chip(context)),
+                    _longPressMenuRow(
+                      ctx,
+                      icon: Icons.delete_forever,
+                      iconColor: AppColors.accent(context),
+                      iconBg: AppColors.accentSoft(context),
+                      title: AppLocalizations.of(context).deleteExerciseEllipsis,
+                      value: 'delete',
+                      bottomRounded: true,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1294,6 +1342,55 @@ class _GymScreenState extends State<GymScreen> {
     } else if (action == 'delete') {
       _confirmDeleteExercise(w);
     }
+  }
+
+  Widget _longPressMenuRow(
+    BuildContext ctx, {
+    required IconData icon,
+    required Color iconColor,
+    required Color iconBg,
+    required String title,
+    required String value,
+    bool topRounded = false,
+    bool bottomRounded = false,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => Navigator.pop(ctx, value),
+        borderRadius: BorderRadius.vertical(
+          top: topRounded ? const Radius.circular(16) : Radius.zero,
+          bottom: bottomRounded ? const Radius.circular(16) : Radius.zero,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: iconBg,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: iconColor, size: 24),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.ink(context),
+                  ),
+                ),
+              ),
+              Icon(Icons.chevron_right, color: AppColors.border(context)),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _showExerciseOptionsMenu(Workout w) async {
