@@ -197,6 +197,8 @@ class _DistractionBlockerScreenState extends State<DistractionBlockerScreen> wit
                 // Session duration
                 if (isActive) ...[
                   Container(
+                    width: double.infinity,
+                    height: 120,
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
                       color: (AppColors.isDark(context) ? const Color(0xFF2E1A1A) : const Color(0xFFFFF5F5)),
@@ -204,6 +206,7 @@ class _DistractionBlockerScreenState extends State<DistractionBlockerScreen> wit
                       border: Border.all(color: (AppColors.isDark(context) ? const Color(0xFF3A2222) : const Color(0xFFFFE0E0))),
                     ),
                     child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
                           AppLocalizations.of(context).blockerCurrentSession,
@@ -230,6 +233,8 @@ class _DistractionBlockerScreenState extends State<DistractionBlockerScreen> wit
                   const SizedBox(height: 24),
                 ] else ...[
                   Container(
+                    width: double.infinity,
+                    height: 120,
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
                       color: (AppColors.isDark(context) ? const Color(0xFF241F33) : const Color(0xFFF8F5FF)),
