@@ -349,6 +349,8 @@
 
   "blockerCurrentSession": "Текущая сессия",
   "appsCurrentlyBlocked": "Приложения сейчас заблокированы",
+  "appsNotBlocked": "Приложения не заблокированы",
+  "distractionAttemptsPrevented": "Предотвращено отвлечений: {count}",
   "toggleToStartBlocking": "Включите переключатель ниже, чтобы блокировать отвлекающие приложения",
   "todaysStatistics": "Статистика за сегодня",
   "totalBlockingTime": "Общее время блокировки",

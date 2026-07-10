@@ -39,7 +39,7 @@ class WeekdayPicker extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
-              color: selected ? AppColors.accent(context) : Colors.white,
+              color: selected ? AppColors.accent(context) : AppColors.card(context),
               borderRadius: BorderRadius.circular(18),
               border: Border.all(
                 color: selected ? AppColors.accent(context) : AppColors.border(context),

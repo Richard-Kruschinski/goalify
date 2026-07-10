@@ -1177,6 +1177,14 @@ class AppLocalizationsDe extends AppLocalizations {
   String get appsCurrentlyBlocked => 'Apps sind derzeit blockiert';
 
   @override
+  String get appsNotBlocked => 'Apps sind nicht blockiert';
+
+  @override
+  String distractionAttemptsPrevented(int count) {
+    return '$count Ablenkungen verhindert';
+  }
+
+  @override
   String get toggleToStartBlocking =>
       'Aktiviere den Schalter unten, um ablenkende Apps zu blockieren';
 

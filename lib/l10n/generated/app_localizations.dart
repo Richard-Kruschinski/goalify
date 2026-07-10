@@ -2110,6 +2110,18 @@ abstract class AppLocalizations {
   /// **'Apps are currently blocked'**
   String get appsCurrentlyBlocked;
 
+  /// No description provided for @appsNotBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Apps are not blocked'**
+  String get appsNotBlocked;
+
+  /// No description provided for @distractionAttemptsPrevented.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} distraction attempts prevented'**
+  String distractionAttemptsPrevented(int count);
+
   /// No description provided for @toggleToStartBlocking.
   ///
   /// In en, this message translates to:

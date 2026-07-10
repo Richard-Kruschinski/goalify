@@ -127,6 +127,7 @@ class _DistractionBlockerScreenState extends State<DistractionBlockerScreen> wit
         children: [
           // Header with icon and status
           Container(
+            width: double.infinity,
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               color: isActive ? Color(0xFFFF6B6B) : (AppColors.isDark(context) ? const Color(0xFF2B2038) : const Color(0xFFE8D6F7)),
@@ -164,25 +165,26 @@ class _DistractionBlockerScreenState extends State<DistractionBlockerScreen> wit
                   ),
                 ),
                 
-                if (isActive) ...[
-                  const SizedBox(height: 12),
-                  Text(
-                    AppLocalizations.of(context).appsCurrentlyBlocked,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.9),
-                      fontSize: 14,
-                    ),
+                const SizedBox(height: 12),
+                Text(
+                  isActive
+                      ? AppLocalizations.of(context).appsCurrentlyBlocked
+                      : AppLocalizations.of(context).appsNotBlocked,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.9),
+                    fontSize: 14,
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    '${controller.blockedAttempts} distraction attempts prevented',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.9),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                    ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  AppLocalizations.of(context)
+                      .distractionAttemptsPrevented(controller.blockedAttempts),
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.9),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
                   ),
-                ],
+                ),
               ],
             ),
           ),

@@ -349,6 +349,8 @@
 
   "blockerCurrentSession": "Aktuelle Sitzung",
   "appsCurrentlyBlocked": "Apps sind derzeit blockiert",
+  "appsNotBlocked": "Apps sind nicht blockiert",
+  "distractionAttemptsPrevented": "{count} Ablenkungen verhindert",
   "toggleToStartBlocking": "Aktiviere den Schalter unten, um ablenkende Apps zu blockieren",
   "todaysStatistics": "Heutige Statistik",
   "totalBlockingTime": "Gesamte Blockier-Zeit",

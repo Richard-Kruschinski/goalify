@@ -4583,7 +4583,7 @@ class _GymScreenState extends State<GymScreen> {
                                         _formatSetValue(w, s),
                                         style: tt.bodySmall?.copyWith(
                                           fontWeight: FontWeight.w600,
-                                          color: const Color(0xFF3F495A),
+                                          color: AppColors.ink(context),
                                         ),
                                       ),
                                     ))

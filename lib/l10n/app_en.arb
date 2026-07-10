@@ -461,6 +461,13 @@
 
   "blockerCurrentSession": "Current Session",
   "appsCurrentlyBlocked": "Apps are currently blocked",
+  "appsNotBlocked": "Apps are not blocked",
+  "distractionAttemptsPrevented": "{count} distraction attempts prevented",
+  "@distractionAttemptsPrevented": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
   "toggleToStartBlocking": "Toggle the switch below to start blocking distracting apps",
   "todaysStatistics": "Today's Statistics",
   "totalBlockingTime": "Total Blocking Time",

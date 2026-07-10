@@ -1160,6 +1160,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appsCurrentlyBlocked => 'Apps are currently blocked';
 
   @override
+  String get appsNotBlocked => 'Apps are not blocked';
+
+  @override
+  String distractionAttemptsPrevented(int count) {
+    return '$count distraction attempts prevented';
+  }
+
+  @override
   String get toggleToStartBlocking =>
       'Toggle the switch below to start blocking distracting apps';
 

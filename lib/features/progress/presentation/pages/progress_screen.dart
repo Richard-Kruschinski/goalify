@@ -304,7 +304,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
         borderData: FlBorderData(show: false),
         lineTouchData: LineTouchData(
           touchTooltipData: LineTouchTooltipData(
-            getTooltipColor: (_) => AppColors.ink(context),
+            getTooltipColor: (_) => const Color(0xF01E1E1E),
             getTooltipItems: (touchedSpots) {
               return touchedSpots.map((spot) {
                 final index = spot.x.toInt();

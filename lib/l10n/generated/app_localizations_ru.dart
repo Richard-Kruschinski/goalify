@@ -1180,6 +1180,14 @@ class AppLocalizationsRu extends AppLocalizations {
   String get appsCurrentlyBlocked => 'Приложения сейчас заблокированы';
 
   @override
+  String get appsNotBlocked => 'Приложения не заблокированы';
+
+  @override
+  String distractionAttemptsPrevented(int count) {
+    return 'Предотвращено отвлечений: $count';
+  }
+
+  @override
   String get toggleToStartBlocking =>
       'Включите переключатель ниже, чтобы блокировать отвлекающие приложения';
 
