@@ -22,6 +22,19 @@ import 'package:intl/intl.dart';
 /// View modes
 enum DailyViewMode { today, byDate }
 
+/// Sort modes for the daily task list.
+/// Completed tasks always stay at the bottom regardless of mode.
+enum TaskSortMode { manual, alphabetical, streak, points, type }
+
+extension TaskSortModeStorage on TaskSortMode {
+  String toStorageString() => name;
+
+  static TaskSortMode fromString(String? raw) => TaskSortMode.values.firstWhere(
+        (m) => m.name == raw,
+        orElse: () => TaskSortMode.manual,
+      );
+}
+
 /// ===============================================================
 /// Screen
 /// ===============================================================
@@ -73,6 +86,9 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   // View selection
   DailyViewMode _mode = DailyViewMode.today;
   DateTime _selectedDate = DateTime.now();
+
+  // Sort mode (persisted)
+  TaskSortMode _sortMode = TaskSortMode.manual;
 
   // Helpers
   void _showFreezeHelp() {
@@ -154,6 +170,9 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
       list.addAll(off.map((t) => t..done = t.done));
       await _repo.saveKeepTasks(_keepTasks);
     }
+
+    // Sort mode
+    _sortMode = TaskSortModeStorage.fromString(await _repo.loadSortMode());
 
     // Legacy orders
     _orderKeep = await _repo.loadOrderKeep();
@@ -364,13 +383,13 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   /// For past dates: loads from history
   List<DailyTask> _orderedTasksFor(String dateKey) {
     final today = _todayKey();
-    
+
     // For past dates: load from history
     if (_isPastDate(dateKey, today)) {
       final historyTasks = _tasksHistory[dateKey] ?? const <DailyTask>[];
-      return List<DailyTask>.from(historyTasks);
+      return _applySortMode(List<DailyTask>.from(historyTasks), dateKey);
     }
-    
+
     // For today or future: normal logic
     _syncCombinedForDate(dateKey);
 
@@ -397,7 +416,51 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     // 2) append any leftovers (shouldn't happen, but safe)
     result.addAll(map.values);
 
-    return result;
+    return _applySortMode(result, dateKey);
+  }
+
+  /// Apply the active sort mode to [list] (display-only, does not touch the
+  /// stored manual order). Completed tasks always end up at the bottom.
+  List<DailyTask> _applySortMode(List<DailyTask> list, String dateKey) {
+    if (_sortMode == TaskSortMode.manual) return list;
+
+    int typeRank(DailyTask t) {
+      if (!t.keep) return 3; // one-off
+      if (t.isLimited) return 2; // X-mal
+      if (t.repeatPattern == TaskRepeatPattern.daily) return 0; // daily
+      return 1; // recurring (weekly, biweekly, custom, ...)
+    }
+
+    int byTitle(DailyTask a, DailyTask b) =>
+        a.title.toLowerCase().compareTo(b.title.toLowerCase());
+
+    int compare(DailyTask a, DailyTask b) {
+      switch (_sortMode) {
+        case TaskSortMode.alphabetical:
+          return byTitle(a, b);
+        case TaskSortMode.streak:
+          final c = b.streak.compareTo(a.streak); // descending
+          return c != 0 ? c : byTitle(a, b);
+        case TaskSortMode.points:
+          final c = b.points.compareTo(a.points); // descending
+          return c != 0 ? c : byTitle(a, b);
+        case TaskSortMode.type:
+          final c = typeRank(a).compareTo(typeRank(b));
+          return c != 0 ? c : byTitle(a, b);
+        case TaskSortMode.manual:
+          return 0;
+      }
+    }
+
+    final sorted = List<DailyTask>.from(list)..sort(compare);
+
+    // Completed tasks always at the bottom (stable partition).
+    final active = <DailyTask>[];
+    final completed = <DailyTask>[];
+    for (final t in sorted) {
+      (_isDoneForDate(t, dateKey) ? completed : active).add(t);
+    }
+    return active + completed;
   }
 
   /// Check if a recurring task should be active on a given date based on its repeat pattern
@@ -1262,6 +1325,8 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   // NEW: single combined reorder across keep + one-off
   void _onReorder(int oldIndex, int newIndex, {required String dateKey}) {
     if (_isPastDate(dateKey, _todayKey())) return;
+    // Manual reordering only makes sense in manual sort mode.
+    if (_sortMode != TaskSortMode.manual) return;
     if (newIndex > oldIndex) newIndex -= 1;
 
     // Use visual IDs to avoid index mismatch with non-visible tasks in _orderCombined
@@ -2080,6 +2145,53 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                       ),
                     ),
                   const SizedBox(width: 8),
+                  // Sort menu
+                  PopupMenuButton<TaskSortMode>(
+                    icon: Icon(
+                      Icons.swap_vert,
+                      color: _sortMode == TaskSortMode.manual
+                          ? AppColors.muted(context)
+                          : AppColors.accent(context),
+                    ),
+                    tooltip: AppLocalizations.of(context).sortTasks,
+                    color: AppColors.card(context),
+                    surfaceTintColor: AppColors.card(context),
+                    elevation: 10,
+                    shadowColor: const Color(0x29000000),
+                    offset: const Offset(0, 44),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    onSelected: _setSortMode,
+                    itemBuilder: (_) => [
+                      _buildSortMenuItem(
+                        mode: TaskSortMode.manual,
+                        icon: Icons.drag_indicator,
+                        label: AppLocalizations.of(context).sortManual,
+                      ),
+                      _buildSortMenuItem(
+                        mode: TaskSortMode.alphabetical,
+                        icon: Icons.sort_by_alpha,
+                        label: AppLocalizations.of(context).sortAlphabetical,
+                      ),
+                      _buildSortMenuItem(
+                        mode: TaskSortMode.streak,
+                        icon: Icons.local_fire_department,
+                        label: AppLocalizations.of(context).sortByStreak,
+                      ),
+                      _buildSortMenuItem(
+                        mode: TaskSortMode.points,
+                        icon: Icons.star_outline,
+                        label: AppLocalizations.of(context).sortByPoints,
+                      ),
+                      _buildSortMenuItem(
+                        mode: TaskSortMode.type,
+                        icon: Icons.category_outlined,
+                        label: AppLocalizations.of(context).sortByType,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: 8),
                   // Menu
                   PopupMenuButton<int>(
                     icon: Icon(Icons.more_horiz, color: AppColors.muted(context)),
@@ -2139,6 +2251,50 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
           const SizedBox(height: 16),
           // Mini Calendar Week View
           _buildWeekCalendar(),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _setSortMode(TaskSortMode mode) async {
+    if (mode == _sortMode) return;
+    setState(() => _sortMode = mode);
+    await _repo.saveSortMode(mode.toStorageString());
+  }
+
+  PopupMenuItem<TaskSortMode> _buildSortMenuItem({
+    required TaskSortMode mode,
+    required IconData icon,
+    required String label,
+  }) {
+    final selected = _sortMode == mode;
+    final color = selected ? AppColors.accent(context) : AppColors.inkSoft(context);
+    return PopupMenuItem<TaskSortMode>(
+      value: mode,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: selected ? AppColors.accentSoft(context) : AppColors.chip(context),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, size: 18, color: color),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: selected ? AppColors.accent(context) : AppColors.ink(context),
+              ),
+            ),
+          ),
+          if (selected)
+            Icon(Icons.check, size: 18, color: AppColors.accent(context)),
         ],
       ),
     );
@@ -2321,8 +2477,8 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                // Drag Handle (only for today/future dates)
-                if (!isPastDate)
+                // Drag Handle (only for today/future dates and manual sort)
+                if (!isPastDate && _sortMode == TaskSortMode.manual) ...[
                   ReorderableDragStartListener(
                     index: index,
                     child: Icon(
@@ -2331,7 +2487,8 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                       size: 20,
                     ),
                   ),
-                if (!isPastDate) const SizedBox(width: 12),
+                  const SizedBox(width: 12),
+                ],
                 // Icon
                 Container(
                   width: 48,

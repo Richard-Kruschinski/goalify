@@ -15,6 +15,7 @@ class TasksLocalDataSource {
   static const _kDailyOrderKey = 'daily_tasks_order_v1';
   static const _kOrderByDateKey = 'daily_tasks_order_by_date_v1';
   static const _kOrderCombinedKey = 'daily_order_combined_v1';
+  static const _kSortModeKey = 'daily_sort_mode_v1';
   static const _kFreezeTokensKey = 'daily_freeze_tokens_v1';
   static const _kFreezeDaysCounterKey = 'daily_freeze_days_counter_v1';
   static const _kFreezeUsageKey = 'daily_freeze_usage_v1';
@@ -114,6 +115,12 @@ class TasksLocalDataSource {
 
   Future<void> saveOrderCombined(Map<String, List<String>> order) =>
       LocalStorage.saveJson(_kOrderCombinedKey, order);
+
+  Future<String?> loadSortMode() async =>
+      (await LocalStorage.loadJson(_kSortModeKey, fallback: null)) as String?;
+
+  Future<void> saveSortMode(String mode) =>
+      LocalStorage.saveJson(_kSortModeKey, mode);
 
   // --- Freeze ---
   Future<int?> loadFreezeTokens() async =>

@@ -231,6 +231,24 @@ class AppLocalizationsRu extends AppLocalizations {
   String get resetAll => 'Сбросить всё';
 
   @override
+  String get sortTasks => 'Сортировка задач';
+
+  @override
+  String get sortManual => 'Свой порядок';
+
+  @override
+  String get sortAlphabetical => 'По алфавиту';
+
+  @override
+  String get sortByStreak => 'По серии';
+
+  @override
+  String get sortByPoints => 'По очкам';
+
+  @override
+  String get sortByType => 'По типу';
+
+  @override
   String get noTasksYet => 'Пока нет задач';
 
   @override

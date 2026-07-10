@@ -230,6 +230,24 @@ class AppLocalizationsDe extends AppLocalizations {
   String get resetAll => 'Alle zurücksetzen';
 
   @override
+  String get sortTasks => 'Aufgaben sortieren';
+
+  @override
+  String get sortManual => 'Eigene Reihenfolge';
+
+  @override
+  String get sortAlphabetical => 'Alphabetisch';
+
+  @override
+  String get sortByStreak => 'Nach Streak';
+
+  @override
+  String get sortByPoints => 'Nach Punkten';
+
+  @override
+  String get sortByType => 'Nach Typ gruppieren';
+
+  @override
   String get noTasksYet => 'Noch keine Aufgaben';
 
   @override

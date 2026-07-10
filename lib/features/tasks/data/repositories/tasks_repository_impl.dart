@@ -60,6 +60,12 @@ class TasksRepositoryImpl implements TasksRepository {
       _local.saveOrderCombined(order);
 
   @override
+  Future<String?> loadSortMode() => _local.loadSortMode();
+
+  @override
+  Future<void> saveSortMode(String mode) => _local.saveSortMode(mode);
+
+  @override
   Future<int?> loadFreezeTokens() => _local.loadFreezeTokens();
 
   @override

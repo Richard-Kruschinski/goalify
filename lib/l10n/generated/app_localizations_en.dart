@@ -227,6 +227,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get resetAll => 'Reset all';
 
   @override
+  String get sortTasks => 'Sort tasks';
+
+  @override
+  String get sortManual => 'Custom order';
+
+  @override
+  String get sortAlphabetical => 'Alphabetical';
+
+  @override
+  String get sortByStreak => 'By streak';
+
+  @override
+  String get sortByPoints => 'By points';
+
+  @override
+  String get sortByType => 'Group by type';
+
+  @override
   String get noTasksYet => 'No tasks yet';
 
   @override

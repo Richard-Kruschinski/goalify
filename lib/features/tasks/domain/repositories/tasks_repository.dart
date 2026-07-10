@@ -28,6 +28,10 @@ abstract class TasksRepository {
   Future<Map<String, List<String>>> loadOrderCombined();
   Future<void> saveOrderCombined(Map<String, List<String>> order);
 
+  // Sort mode for the daily list (stored as string id).
+  Future<String?> loadSortMode();
+  Future<void> saveSortMode(String mode);
+
   // Freeze tokens / usage.
   Future<int?> loadFreezeTokens();
   Future<int?> loadFreezeDaysCounter();

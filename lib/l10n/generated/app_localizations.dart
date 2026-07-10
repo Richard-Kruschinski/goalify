@@ -508,6 +508,42 @@ abstract class AppLocalizations {
   /// **'Reset all'**
   String get resetAll;
 
+  /// No description provided for @sortTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort tasks'**
+  String get sortTasks;
+
+  /// No description provided for @sortManual.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom order'**
+  String get sortManual;
+
+  /// No description provided for @sortAlphabetical.
+  ///
+  /// In en, this message translates to:
+  /// **'Alphabetical'**
+  String get sortAlphabetical;
+
+  /// No description provided for @sortByStreak.
+  ///
+  /// In en, this message translates to:
+  /// **'By streak'**
+  String get sortByStreak;
+
+  /// No description provided for @sortByPoints.
+  ///
+  /// In en, this message translates to:
+  /// **'By points'**
+  String get sortByPoints;
+
+  /// No description provided for @sortByType.
+  ///
+  /// In en, this message translates to:
+  /// **'Group by type'**
+  String get sortByType;
+
   /// No description provided for @noTasksYet.
   ///
   /// In en, this message translates to:
