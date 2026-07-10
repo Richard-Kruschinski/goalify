@@ -195,8 +195,12 @@ Future<T?> _showModernConfirmationDialogWithOptions<T>({
               ),
             ),
             const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
+            // Wrap so the buttons flow onto a second line on narrow screens
+            // instead of overflowing horizontally.
+            Wrap(
+              alignment: WrapAlignment.end,
+              spacing: 8,
+              runSpacing: 8,
               children: [
                 ...List.generate(
                   options.entries.length,
@@ -204,7 +208,7 @@ Future<T?> _showModernConfirmationDialogWithOptions<T>({
                     final entry = options.entries.elementAt(index);
                     final isFirst = index == 0;
                     final isLast = index == options.entries.length - 1;
-                    
+
                     if (isFirst) {
                       return TextButton(
                         onPressed: () => Navigator.pop(ctx),
@@ -217,24 +221,21 @@ Future<T?> _showModernConfirmationDialogWithOptions<T>({
                         ),
                       );
                     }
-                    
-                    return Padding(
-                      padding: const EdgeInsets.only(left: 8),
-                      child: ElevatedButton(
-                        onPressed: () => Navigator.pop(ctx, entry.value),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: isLast ? iconColor : AppColors.chip(context),
-                          foregroundColor: isLast ? Colors.white : AppColors.muted(context),
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          elevation: 0,
+
+                    return ElevatedButton(
+                      onPressed: () => Navigator.pop(ctx, entry.value),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isLast ? iconColor : AppColors.chip(context),
+                        foregroundColor: isLast ? Colors.white : AppColors.muted(context),
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Text(
-                          entry.key,
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
+                        elevation: 0,
+                      ),
+                      child: Text(
+                        entry.key,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
                     );
                   },
