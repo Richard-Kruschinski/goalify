@@ -472,13 +472,18 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
     WidgetsBinding.instance.addObserver(this);
     
     // Show permission request dialogs if needed
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final controller = context.read<PomodoroController>();
-      if (controller.isAppBlockingSupported) {
+      if (controller.platformService.isAndroid) {
         _checkPermissions();
       } else {
-        // Show iOS dialog
-        _showIOSDialog(context);
+        // iOS: blocking works via Screen Time (iOS 16+); only inform the user
+        // when the device cannot block apps at all
+        final available =
+            await controller.platformService.isAppBlockingAvailable();
+        if (!available && mounted) {
+          _showIOSDialog(context);
+        }
       }
     });
   }

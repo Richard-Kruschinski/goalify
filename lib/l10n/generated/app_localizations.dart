@@ -2218,6 +2218,54 @@ abstract class AppLocalizations {
   /// **'Social Media, Games, Shopping, and Entertainment apps'**
   String get blockedAppsCategories;
 
+  /// No description provided for @requiresScreenTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Requires the iOS Screen Time permission (iOS 16 or newer)'**
+  String get requiresScreenTime;
+
+  /// No description provided for @blockedAppsSelectionIos.
+  ///
+  /// In en, this message translates to:
+  /// **'You choose which apps and categories get blocked via the iOS system picker'**
+  String get blockedAppsSelectionIos;
+
+  /// No description provided for @chooseAppsToBlock.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose apps'**
+  String get chooseAppsToBlock;
+
+  /// No description provided for @screenTimePermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Screen Time access was declined. Please allow it in Settings > Screen Time.'**
+  String get screenTimePermissionDenied;
+
+  /// No description provided for @noAppsSelectedForBlocking.
+  ///
+  /// In en, this message translates to:
+  /// **'No apps selected. Please choose the apps you want to block first.'**
+  String get noAppsSelectedForBlocking;
+
+  /// No description provided for @blockerStartFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The blocker could not be started. Please check the permissions.'**
+  String get blockerStartFailed;
+
+  /// No description provided for @blockerIosVersionUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'App blocking requires iOS 16 or newer.'**
+  String get blockerIosVersionUnsupported;
+
+  /// No description provided for @done.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get done;
+
   /// No description provided for @timerActiveCaps.
   ///
   /// In en, this message translates to:

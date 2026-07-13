@@ -1236,6 +1236,36 @@ class AppLocalizationsDe extends AppLocalizations {
       'Social Media, Spiele, Shopping und Unterhaltungs-Apps';
 
   @override
+  String get requiresScreenTime =>
+      'Benötigt die Bildschirmzeit-Berechtigung von iOS (ab iOS 16)';
+
+  @override
+  String get blockedAppsSelectionIos =>
+      'Du wählst über den iOS-Systemdialog selbst aus, welche Apps und Kategorien blockiert werden';
+
+  @override
+  String get chooseAppsToBlock => 'Apps auswählen';
+
+  @override
+  String get screenTimePermissionDenied =>
+      'Bildschirmzeit-Zugriff wurde abgelehnt. Bitte erlaube ihn unter Einstellungen > Bildschirmzeit.';
+
+  @override
+  String get noAppsSelectedForBlocking =>
+      'Keine Apps ausgewählt. Wähle zuerst die Apps aus, die blockiert werden sollen.';
+
+  @override
+  String get blockerStartFailed =>
+      'Der Blocker konnte nicht gestartet werden. Bitte prüfe die Berechtigungen.';
+
+  @override
+  String get blockerIosVersionUnsupported =>
+      'App-Blocking benötigt iOS 16 oder neuer.';
+
+  @override
+  String get done => 'Fertig';
+
+  @override
   String get timerActiveCaps => '🎵 TIMER AKTIV 🎵';
 
   @override

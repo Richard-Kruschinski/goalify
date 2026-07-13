@@ -16,6 +16,85 @@ class DistractionBlockerScreen extends StatefulWidget {
 class _DistractionBlockerScreenState extends State<DistractionBlockerScreen> with WidgetsBindingObserver {
   Timer? _updateTimer;
 
+  void _showSnack(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  /// Opens Apple's Screen Time app picker (iOS only) and refreshes the count
+  Future<void> _selectAppsToBlock(DistractionBlockerController controller) async {
+    final l10n = AppLocalizations.of(context);
+    final service = controller.platformService;
+
+    final available = await service.isAppBlockingAvailable();
+    if (!available) {
+      _showSnack(l10n.blockerIosVersionUnsupported);
+      return;
+    }
+
+    final granted = await service.requestScreenTimeAuthorization();
+    if (!granted) {
+      _showSnack(l10n.screenTimePermissionDenied);
+      return;
+    }
+
+    await service.selectAppsToBlock(
+      doneLabel: l10n.done,
+      cancelLabel: l10n.cancel,
+    );
+    await controller.refreshBlockedSelectionCount();
+  }
+
+  Future<void> _handleToggle(DistractionBlockerController controller) async {
+    final l10n = AppLocalizations.of(context);
+
+    if (controller.isActive) {
+      await controller.stopBlocking();
+      return;
+    }
+
+    final service = controller.platformService;
+    if (service.isIOS) {
+      // iOS needs Screen Time authorization and an app selection first
+      final available = await service.isAppBlockingAvailable();
+      if (!available) {
+        _showSnack(l10n.blockerIosVersionUnsupported);
+        return;
+      }
+
+      final granted = await service.requestScreenTimeAuthorization();
+      if (!granted) {
+        _showSnack(l10n.screenTimePermissionDenied);
+        return;
+      }
+
+      var count = await service.getBlockedSelectionCount();
+      if (count == 0 && mounted) {
+        await service.selectAppsToBlock(
+          doneLabel: l10n.done,
+          cancelLabel: l10n.cancel,
+        );
+        count = await service.getBlockedSelectionCount();
+      }
+      await controller.refreshBlockedSelectionCount();
+      if (count == 0) {
+        _showSnack(l10n.noAppsSelectedForBlocking);
+        return;
+      }
+    }
+
+    try {
+      await controller.startBlocking();
+    } catch (_) {
+      _showSnack(l10n.blockerStartFailed);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -94,12 +173,12 @@ class _DistractionBlockerScreenState extends State<DistractionBlockerScreen> wit
                 const SizedBox(height: 20),
                 
                 // Info card
-                _buildInfoCard(),
-                
+                _buildInfoCard(controller),
+
                 const SizedBox(height: 20),
-                
+
                 // Blocked apps list
-                _buildBlockedAppsCard(),
+                _buildBlockedAppsCard(controller),
               ],
             ),
           );
@@ -175,16 +254,20 @@ class _DistractionBlockerScreenState extends State<DistractionBlockerScreen> wit
                     fontSize: 14,
                   ),
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  AppLocalizations.of(context)
-                      .distractionAttemptsPrevented(controller.blockedAttempts),
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.9),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
+                // Blocked-attempt counting needs the Android accessibility
+                // service; iOS shields apps system-side without reporting hits
+                if (!controller.platformService.isIOS) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    AppLocalizations.of(context)
+                        .distractionAttemptsPrevented(controller.blockedAttempts),
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.9),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
           ),
@@ -311,9 +394,7 @@ class _DistractionBlockerScreenState extends State<DistractionBlockerScreen> wit
                       const SizedBox(width: 4),
                       
                       GestureDetector(
-                        onTap: () async {
-                          await controller.toggle();
-                        },
+                        onTap: () => _handleToggle(controller),
                         child: Container(
                           width: 56,
                           height: 32,
@@ -439,18 +520,21 @@ class _DistractionBlockerScreenState extends State<DistractionBlockerScreen> wit
           _buildStatRow(
             icon: Icons.block,
             label: AppLocalizations.of(context).appsBeingBlocked,
-            value: '${AppBlockingConfig.blockedAppsCount}',
+            value: controller.platformService.isIOS
+                ? '${controller.blockedSelectionCount}'
+                : '${AppBlockingConfig.blockedAppsCount}',
             color: const Color(0xFFFF9066),
           ),
 
-          const SizedBox(height: 16),
-
-          _buildStatRow(
-            icon: Icons.shield,
-            label: AppLocalizations.of(context).attemptsPrevented,
-            value: '${controller.blockedAttempts}',
-            color: const Color(0xFF66BB6A),
-          ),
+          if (!controller.platformService.isIOS) ...[
+            const SizedBox(height: 16),
+            _buildStatRow(
+              icon: Icons.shield,
+              label: AppLocalizations.of(context).attemptsPrevented,
+              value: '${controller.blockedAttempts}',
+              color: const Color(0xFF66BB6A),
+            ),
+          ],
         ],
       ),
     );
@@ -502,7 +586,7 @@ class _DistractionBlockerScreenState extends State<DistractionBlockerScreen> wit
     );
   }
 
-  Widget _buildInfoCard() {
+  Widget _buildInfoCard(DistractionBlockerController controller) {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.card(context),
@@ -567,7 +651,9 @@ class _DistractionBlockerScreenState extends State<DistractionBlockerScreen> wit
                 SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    AppLocalizations.of(context).requiresAccessibility,
+                    controller.platformService.isIOS
+                        ? AppLocalizations.of(context).requiresScreenTime
+                        : AppLocalizations.of(context).requiresAccessibility,
                     style: TextStyle(
                       fontSize: 13,
                       color: Color(0xFF5A5A5A),
@@ -583,7 +669,9 @@ class _DistractionBlockerScreenState extends State<DistractionBlockerScreen> wit
     );
   }
 
-  Widget _buildBlockedAppsCard() {
+  Widget _buildBlockedAppsCard(DistractionBlockerController controller) {
+    final isIOS = controller.platformService.isIOS;
+
     return Container(
       decoration: BoxDecoration(
         color: AppColors.card(context),
@@ -631,7 +719,9 @@ class _DistractionBlockerScreenState extends State<DistractionBlockerScreen> wit
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  '${AppBlockingConfig.blockedAppsCount}',
+                  isIOS
+                      ? '${controller.blockedSelectionCount}'
+                      : '${AppBlockingConfig.blockedAppsCount}',
                   style: const TextStyle(
                     color: Color(0xFFFF6B6B),
                     fontWeight: FontWeight.bold,
@@ -658,7 +748,9 @@ class _DistractionBlockerScreenState extends State<DistractionBlockerScreen> wit
                 SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    AppLocalizations.of(context).blockedAppsCategories,
+                    isIOS
+                        ? AppLocalizations.of(context).blockedAppsSelectionIos
+                        : AppLocalizations.of(context).blockedAppsCategories,
                     style: TextStyle(
                       fontSize: 14,
                       color: Color(0xFF5A5A5A),
@@ -669,6 +761,26 @@ class _DistractionBlockerScreenState extends State<DistractionBlockerScreen> wit
               ],
             ),
           ),
+          if (isIOS) ...[
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () => _selectAppsToBlock(controller),
+                icon: const Icon(Icons.apps, size: 20),
+                label: Text(AppLocalizations.of(context).chooseAppsToBlock),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFF6B6B),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  elevation: 0,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

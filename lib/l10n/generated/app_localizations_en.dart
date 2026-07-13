@@ -1219,6 +1219,36 @@ class AppLocalizationsEn extends AppLocalizations {
       'Social Media, Games, Shopping, and Entertainment apps';
 
   @override
+  String get requiresScreenTime =>
+      'Requires the iOS Screen Time permission (iOS 16 or newer)';
+
+  @override
+  String get blockedAppsSelectionIos =>
+      'You choose which apps and categories get blocked via the iOS system picker';
+
+  @override
+  String get chooseAppsToBlock => 'Choose apps';
+
+  @override
+  String get screenTimePermissionDenied =>
+      'Screen Time access was declined. Please allow it in Settings > Screen Time.';
+
+  @override
+  String get noAppsSelectedForBlocking =>
+      'No apps selected. Please choose the apps you want to block first.';
+
+  @override
+  String get blockerStartFailed =>
+      'The blocker could not be started. Please check the permissions.';
+
+  @override
+  String get blockerIosVersionUnsupported =>
+      'App blocking requires iOS 16 or newer.';
+
+  @override
+  String get done => 'Done';
+
+  @override
   String get timerActiveCaps => '🎵 TIMER ACTIVE 🎵';
 
   @override

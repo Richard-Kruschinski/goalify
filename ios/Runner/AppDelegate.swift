@@ -8,6 +8,9 @@ import UserNotifications
     private let timerChannelName = "com.goalify/timer_service"
     private var timerChannel: FlutterMethodChannel?
 
+    private let blockingChannelName = "com.goalify/app_blocking"
+    private var blockingChannel: FlutterMethodChannel?
+
     // Stores last known timer state for resume queries
     private var lastTimerTitle = "Timer"
     private var lastTimerPhase = ""
@@ -26,6 +29,12 @@ import UserNotifications
                 binaryMessenger: controller.binaryMessenger
             )
             timerChannel?.setMethodCallHandler(handleTimerCall)
+
+            blockingChannel = FlutterMethodChannel(
+                name: blockingChannelName,
+                binaryMessenger: controller.binaryMessenger
+            )
+            blockingChannel?.setMethodCallHandler(handleBlockingCall)
         }
 
         // Become the notification center delegate so foreground notifications show
@@ -118,6 +127,87 @@ import UserNotifications
                 remainingSeconds: remaining
             )
             result(nil)
+
+        default:
+            result(FlutterMethodNotImplemented)
+        }
+    }
+
+    // MARK: – App Blocking MethodChannel handler (Screen Time API, iOS 16+)
+
+    private func handleBlockingCall(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        guard #available(iOS 16.0, *) else {
+            // Screen Time app blocking needs iOS 16 or newer
+            switch call.method {
+            case "isAppBlockingSupported":
+                result(false)
+            case "getBlockedAttemptsCount", "getBlockedSelectionCount":
+                result(0)
+            case "stopAppBlocking":
+                result(true)
+            default:
+                result(FlutterError(
+                    code: "UNSUPPORTED_IOS_VERSION",
+                    message: "App blocking requires iOS 16 or newer",
+                    details: nil
+                ))
+            }
+            return
+        }
+
+        let manager = ScreenTimeBlockingManager.shared
+        let args = call.arguments as? [String: Any] ?? [:]
+
+        switch call.method {
+        case "isAppBlockingSupported":
+            result(true)
+
+        case "getScreenTimeAuthorizationStatus":
+            result(manager.authorizationStatus)
+
+        case "requestScreenTimeAuthorization":
+            manager.requestAuthorization { granted in
+                result(granted)
+            }
+
+        case "selectAppsToBlock":
+            guard let presenter = window?.rootViewController else {
+                result(FlutterError(code: "NO_VIEW_CONTROLLER", message: "No root view controller", details: nil))
+                return
+            }
+            let doneLabel = args["doneLabel"] as? String ?? "Done"
+            let cancelLabel = args["cancelLabel"] as? String ?? "Cancel"
+            manager.presentAppPicker(
+                from: presenter,
+                doneLabel: doneLabel,
+                cancelLabel: cancelLabel
+            ) { count in
+                // nil = user cancelled; report -1 so Flutter can tell the difference
+                result(count ?? -1)
+            }
+
+        case "getBlockedSelectionCount":
+            result(manager.selectionCount)
+
+        case "startAppBlocking":
+            let outcome = manager.startBlocking()
+            if outcome.success {
+                result(true)
+            } else {
+                result(FlutterError(
+                    code: outcome.errorCode ?? "START_ERROR",
+                    message: "Could not start app blocking",
+                    details: nil
+                ))
+            }
+
+        case "stopAppBlocking":
+            manager.stopBlocking()
+            result(true)
+
+        case "getBlockedAttemptsCount":
+            // Counting shield hits would need a ShieldAction app extension; not tracked on iOS
+            result(0)
 
         default:
             result(FlutterMethodNotImplemented)

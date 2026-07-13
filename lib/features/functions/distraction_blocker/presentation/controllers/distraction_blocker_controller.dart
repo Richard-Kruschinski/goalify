@@ -18,10 +18,15 @@ class DistractionBlockerController extends ChangeNotifier {
 
   final PlatformChannelService _platformService = PlatformChannelService();
 
+  // iOS only: number of apps/categories picked via the Screen Time picker
+  int _blockedSelectionCount = 0;
+
   bool get isActive => _isActive;
   DateTime? get activatedAt => _activatedAt;
   int get totalBlockingSeconds => _totalBlockingSeconds;
   int get blockedAttempts => _blockedAttempts;
+  int get blockedSelectionCount => _blockedSelectionCount;
+  PlatformChannelService get platformService => _platformService;
 
   /// Get formatted blocking duration for current session
   String get currentSessionDuration {
@@ -94,13 +99,14 @@ class DistractionBlockerController extends ChangeNotifier {
         _lastResetDate = DateTime.parse(lastResetString);
       }
       
-      // If the blocker was active, restart it
+      // If the blocker was active, restart it (best effort on restore)
       if (_isActive) {
         await _platformService.startAppBlocking();
         _startUpdateTimer(); // Start UI updates
       }
 
       await _refreshBlockedAttemptsCount(notify: false);
+      await refreshBlockedSelectionCount(notify: false);
       
       notifyListeners();
     } catch (e) {
@@ -162,14 +168,20 @@ class DistractionBlockerController extends ChangeNotifier {
   }
 
   /// Start blocking apps
+  /// Throws [StateError] when the platform refuses to start blocking
+  /// (e.g. missing accessibility service on Android, missing Screen Time
+  /// authorization or empty app selection on iOS).
   Future<void> startBlocking() async {
     try {
       await _checkDayReset();
-      
+
       // Start app blocking via platform channel
-      await _platformService.startAppBlocking();
+      final started = await _platformService.startAppBlocking();
+      if (!started) {
+        throw StateError('App blocking could not be started');
+      }
       await _refreshBlockedAttemptsCount(notify: false);
-      
+
       _isActive = true;
       _activatedAt = DateTime.now();
       
@@ -270,6 +282,23 @@ class DistractionBlockerController extends ChangeNotifier {
   /// Get total blocking seconds including current session
   int getTotalSecondsToday() {
     return _totalBlockingSeconds + getCurrentSessionSeconds();
+  }
+
+  /// Reload the number of apps selected for blocking (iOS Screen Time picker)
+  Future<void> refreshBlockedSelectionCount({bool notify = true}) async {
+    if (!_platformService.isIOS) return;
+
+    try {
+      final count = await _platformService.getBlockedSelectionCount();
+      if (count != _blockedSelectionCount) {
+        _blockedSelectionCount = count;
+        if (notify) {
+          notifyListeners();
+        }
+      }
+    } catch (e) {
+      debugPrint('Error refreshing blocked selection count: $e');
+    }
   }
 
   Future<void> _refreshBlockedAttemptsCount({bool notify = true}) async {

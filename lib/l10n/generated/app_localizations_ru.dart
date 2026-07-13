@@ -1239,6 +1239,36 @@ class AppLocalizationsRu extends AppLocalizations {
   String get blockedAppsCategories => 'Соцсети, игры, покупки и развлечения';
 
   @override
+  String get requiresScreenTime =>
+      'Требуется разрешение «Экранное время» iOS (iOS 16 и новее)';
+
+  @override
+  String get blockedAppsSelectionIos =>
+      'Вы сами выбираете блокируемые приложения и категории через системный диалог iOS';
+
+  @override
+  String get chooseAppsToBlock => 'Выбрать приложения';
+
+  @override
+  String get screenTimePermissionDenied =>
+      'Доступ к «Экранному времени» отклонён. Разрешите его в Настройках > Экранное время.';
+
+  @override
+  String get noAppsSelectedForBlocking =>
+      'Приложения не выбраны. Сначала выберите приложения для блокировки.';
+
+  @override
+  String get blockerStartFailed =>
+      'Не удалось запустить блокировщик. Проверьте разрешения.';
+
+  @override
+  String get blockerIosVersionUnsupported =>
+      'Для блокировки приложений требуется iOS 16 или новее.';
+
+  @override
+  String get done => 'Готово';
+
+  @override
   String get timerActiveCaps => '🎵 ТАЙМЕР АКТИВЕН 🎵';
 
   @override
