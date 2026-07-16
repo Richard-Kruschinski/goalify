@@ -3,6 +3,8 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../../../core/sounds/sound_controller.dart';
 import '../../../../core/utils/snackbar_utils.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
@@ -989,8 +991,12 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
       );
       return;
     }
+    final wasChecked = t.done;
+    if (!wasChecked) {
+      // Checking off a task: play the completion sound (respects settings)
+      context.read<SoundController>().playEvent(SoundEvent.dailyTaskCompleted);
+    }
     setState(() {
-      final wasChecked = t.done;
       t.done = !t.done;
       _recalcTodayPoints();
       _recalcTodayDoneCount();

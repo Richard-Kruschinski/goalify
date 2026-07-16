@@ -15,9 +15,16 @@
   "themeDark": "Dunkel",
   "themeDarkDescription": "Immer das dunkle Design verwenden",
 
+  "soundsSection": "Sounds",
+  "soundsEnabledTitle": "Sound-Effekte",
+  "soundsEnabledDescription": "Sounds bei Aktionen abspielen",
+  "soundVolume": "Lautstärke",
+  "soundEventDailyTaskCompleted": "Task abgehakt",
+
   "languageSection": "Sprache",
   "languageSystem": "System",
   "languageSystemDescription": "Folgt der Gerätesprache",
+  "searchHint": "Suchen",
   "languageGerman": "Deutsch",
   "languageEnglish": "English",
 

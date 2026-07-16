@@ -42,6 +42,21 @@ class AppLocalizationsDe extends AppLocalizations {
   String get themeDarkDescription => 'Immer das dunkle Design verwenden';
 
   @override
+  String get soundsSection => 'Sounds';
+
+  @override
+  String get soundsEnabledTitle => 'Sound-Effekte';
+
+  @override
+  String get soundsEnabledDescription => 'Sounds bei Aktionen abspielen';
+
+  @override
+  String get soundVolume => 'Lautstärke';
+
+  @override
+  String get soundEventDailyTaskCompleted => 'Task abgehakt';
+
+  @override
   String get languageSection => 'Sprache';
 
   @override
@@ -49,6 +64,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get languageSystemDescription => 'Folgt der Gerätesprache';
+
+  @override
+  String get searchHint => 'Suchen';
 
   @override
   String get languageGerman => 'Deutsch';

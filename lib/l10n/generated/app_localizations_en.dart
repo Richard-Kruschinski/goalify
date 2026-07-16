@@ -42,6 +42,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get themeDarkDescription => 'Always use the dark theme';
 
   @override
+  String get soundsSection => 'Sounds';
+
+  @override
+  String get soundsEnabledTitle => 'Sound effects';
+
+  @override
+  String get soundsEnabledDescription => 'Play sounds for actions';
+
+  @override
+  String get soundVolume => 'Volume';
+
+  @override
+  String get soundEventDailyTaskCompleted => 'Task completed';
+
+  @override
   String get languageSection => 'Language';
 
   @override
@@ -49,6 +64,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get languageSystemDescription => 'Follow device language';
+
+  @override
+  String get searchHint => 'Search';
 
   @override
   String get languageGerman => 'Deutsch';

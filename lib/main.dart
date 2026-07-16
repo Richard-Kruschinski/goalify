@@ -11,6 +11,7 @@ import 'features/functions/music_timer/presentation/controllers/music_timer_cont
 import 'features/functions/interval_timer/presentation/controllers/interval_timer_controller.dart';
 import 'core/services/timer_live_presentation_service.dart';
 import 'core/settings/settings_controller.dart';
+import 'core/sounds/sound_controller.dart';
 import 'l10n/generated/app_localizations.dart';
 
 Future<void> main() async {
@@ -34,6 +35,10 @@ class GoalifyApp extends StatelessWidget {
       providers: [
         // Global app settings (theme mode, language)
         ChangeNotifierProvider.value(value: settings),
+        // Sound effects (manifest + user settings load asynchronously)
+        ChangeNotifierProvider(
+          create: (_) => SoundController()..load(),
+        ),
         // Global PomodoroController - persists across navigation
         ChangeNotifierProvider(
           create: (_) => PomodoroController(),

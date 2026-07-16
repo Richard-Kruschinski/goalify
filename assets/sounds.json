@@ -1,0 +1,21 @@
+{
+  "_comment": "Sound manifest. To add a new sound: drop the file into assets/audio/ and add an entry to 'sounds'. To add a new event: add an entry to 'events' (defaultSoundId must match a sound id) and a matching SoundEvent value in lib/core/sounds/sound_controller.dart.",
+  "sounds": [
+    {
+      "id": "correct_1",
+      "name": "Sound 1",
+      "file": "audio/Correct_Sound_1.wav"
+    },
+    {
+      "id": "correct_2",
+      "name": "Sound 2",
+      "file": "audio/Correct_Sound_2.wav"
+    }
+  ],
+  "events": {
+    "daily_task_completed": {
+      "description": "Played when a daily task is checked off",
+      "defaultSoundId": "correct_1"
+    }
+  }
+}

@@ -42,6 +42,21 @@ class AppLocalizationsRu extends AppLocalizations {
   String get themeDarkDescription => 'Всегда использовать тёмную тему';
 
   @override
+  String get soundsSection => 'Звуки';
+
+  @override
+  String get soundsEnabledTitle => 'Звуковые эффекты';
+
+  @override
+  String get soundsEnabledDescription => 'Воспроизводить звуки при действиях';
+
+  @override
+  String get soundVolume => 'Громкость';
+
+  @override
+  String get soundEventDailyTaskCompleted => 'Задача выполнена';
+
+  @override
   String get languageSection => 'Язык';
 
   @override
@@ -49,6 +64,9 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get languageSystemDescription => 'Следовать языку устройства';
+
+  @override
+  String get searchHint => 'Поиск';
 
   @override
   String get languageGerman => 'Deutsch';

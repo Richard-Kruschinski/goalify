@@ -15,9 +15,16 @@
   "themeDark": "Dark",
   "themeDarkDescription": "Always use the dark theme",
 
+  "soundsSection": "Sounds",
+  "soundsEnabledTitle": "Sound effects",
+  "soundsEnabledDescription": "Play sounds for actions",
+  "soundVolume": "Volume",
+  "soundEventDailyTaskCompleted": "Task completed",
+
   "languageSection": "Language",
   "languageSystem": "System",
   "languageSystemDescription": "Follow device language",
+  "searchHint": "Search",
   "languageGerman": "Deutsch",
   "languageEnglish": "English",
 

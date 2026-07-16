@@ -15,9 +15,16 @@
   "themeDark": "Тёмная",
   "themeDarkDescription": "Всегда использовать тёмную тему",
 
+  "soundsSection": "Звуки",
+  "soundsEnabledTitle": "Звуковые эффекты",
+  "soundsEnabledDescription": "Воспроизводить звуки при действиях",
+  "soundVolume": "Громкость",
+  "soundEventDailyTaskCompleted": "Задача выполнена",
+
   "languageSection": "Язык",
   "languageSystem": "Системный",
   "languageSystemDescription": "Следовать языку устройства",
+  "searchHint": "Поиск",
   "languageGerman": "Deutsch",
   "languageEnglish": "English",
 

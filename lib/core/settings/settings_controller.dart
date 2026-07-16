@@ -8,13 +8,22 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// 2. Add an entry to [supportedLanguages] below
 /// That's it - the settings screen and MaterialApp pick it up automatically.
 class AppLanguage {
-  const AppLanguage({required this.code, required this.nativeName, required this.materialLocale});
+  const AppLanguage({
+    required this.code,
+    required this.nativeName,
+    required this.flagCountryCode,
+    required this.materialLocale,
+  });
 
   /// Two-letter language code, must match the app_<code>.arb file.
   final String code;
 
   /// The language's name in that language (shown in the picker).
   final String nativeName;
+
+  /// ISO country code for the flag shown in the language dropdown
+  /// (rendered via the country_flags package, works on all platforms).
+  final String flagCountryCode;
 
   /// Locale passed to MaterialApp. Country codes are chosen so weeks
   /// start on Monday (e.g. en_GB instead of en_US).
@@ -26,9 +35,9 @@ class SettingsController extends ChangeNotifier {
   static const _languageKey = 'settings_language_v1';
 
   static const List<AppLanguage> supportedLanguages = [
-    AppLanguage(code: 'de', nativeName: 'Deutsch', materialLocale: Locale('de', 'DE')),
-    AppLanguage(code: 'en', nativeName: 'English', materialLocale: Locale('en', 'GB')),
-    AppLanguage(code: 'ru', nativeName: 'Русский', materialLocale: Locale('ru', 'RU')),
+    AppLanguage(code: 'de', nativeName: 'Deutsch', flagCountryCode: 'DE', materialLocale: Locale('de', 'DE')),
+    AppLanguage(code: 'en', nativeName: 'English', flagCountryCode: 'GB', materialLocale: Locale('en', 'GB')),
+    AppLanguage(code: 'ru', nativeName: 'Русский', flagCountryCode: 'RU', materialLocale: Locale('ru', 'RU')),
   ];
 
   ThemeMode _themeMode = ThemeMode.system;

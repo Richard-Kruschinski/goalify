@@ -166,6 +166,36 @@ abstract class AppLocalizations {
   /// **'Always use the dark theme'**
   String get themeDarkDescription;
 
+  /// No description provided for @soundsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Sounds'**
+  String get soundsSection;
+
+  /// No description provided for @soundsEnabledTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sound effects'**
+  String get soundsEnabledTitle;
+
+  /// No description provided for @soundsEnabledDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Play sounds for actions'**
+  String get soundsEnabledDescription;
+
+  /// No description provided for @soundVolume.
+  ///
+  /// In en, this message translates to:
+  /// **'Volume'**
+  String get soundVolume;
+
+  /// No description provided for @soundEventDailyTaskCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Task completed'**
+  String get soundEventDailyTaskCompleted;
+
   /// No description provided for @languageSection.
   ///
   /// In en, this message translates to:
@@ -183,6 +213,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Follow device language'**
   String get languageSystemDescription;
+
+  /// No description provided for @searchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get searchHint;
 
   /// No description provided for @languageGerman.
   ///
