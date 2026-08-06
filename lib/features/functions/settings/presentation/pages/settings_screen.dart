@@ -271,7 +271,8 @@ class _SearchableDropdown extends StatefulWidget {
   State<_SearchableDropdown> createState() => _SearchableDropdownState();
 }
 
-class _SearchableDropdownState extends State<_SearchableDropdown> {
+class _SearchableDropdownState extends State<_SearchableDropdown>
+    with WidgetsBindingObserver {
   final OverlayPortalController _overlay = OverlayPortalController();
   final LayerLink _link = LayerLink();
   final TextEditingController _search = TextEditingController();
@@ -284,9 +285,27 @@ class _SearchableDropdownState extends State<_SearchableDropdown> {
   double _listMaxHeight = 280;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _search.dispose();
     super.dispose();
+  }
+
+  /// The keyboard can appear after the panel is already open (the user taps
+  /// the search box). Re-measure so the list does not end up behind it.
+  @override
+  void didChangeMetrics() {
+    if (!_open) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_open) return;
+      setState(_updatePlacement);
+    });
   }
 
   void _toggle() {
@@ -449,7 +468,9 @@ class _SearchableDropdownState extends State<_SearchableDropdown> {
                           Expanded(
                             child: TextField(
                               controller: _search,
-                              autofocus: true,
+                              // Kein autofocus: die Liste soll erst ohne
+                              // Tastatur erscheinen. Die Tastatur kommt erst,
+                              // wenn der Nutzer das Suchfeld antippt.
                               onChanged: (_) => setState(() {}),
                               style: TextStyle(fontSize: 14.5, color: ink),
                               decoration: InputDecoration(
