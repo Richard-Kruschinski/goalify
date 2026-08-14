@@ -2,6 +2,7 @@
 import '../../../../l10n/generated/app_localizations.dart';
 import '../../../../core/i18n/task_labels.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/day_cycle.dart';
 import '../../../../core/utils/snackbar_utils.dart';
 import '../../data/models/daily_task.dart';
 import '../../../../core/widgets/weekday_picker.dart';
@@ -85,7 +86,7 @@ class _EditDailyTaskSheetState extends State<EditDailyTaskSheet> {
     _customDays = widget.task.customDays;
     _weeklyDays = widget.task.weeklyDays.isNotEmpty
       ? widget.task.weeklyDays.toSet()
-      : (widget.task.isLimited ? <int>{} : <int>{DateTime.now().weekday});
+      : (widget.task.isLimited ? <int>{} : <int>{DayCycle.today().weekday});
     _targetCount = widget.task.targetCount ?? 2;
     _limitedCycleIntervalDays = widget.task.limitedCycleIntervalDays;
   }
@@ -269,7 +270,7 @@ class _EditDailyTaskSheetState extends State<EditDailyTaskSheet> {
         ? _weeklyDays.toList()
         : (!isLimited && (_repeatPattern == TaskRepeatPattern.weekly_days ||
             _repeatPattern == TaskRepeatPattern.biweekly))
-          ? (_weeklyDays.isEmpty ? <int>{DateTime.now().weekday}.toList() : _weeklyDays.toList())
+          ? (_weeklyDays.isEmpty ? <int>{DayCycle.today().weekday}.toList() : _weeklyDays.toList())
           : const <int>[];
     Navigator.pop(
       context,
@@ -796,7 +797,7 @@ class _EditDailyTaskSheetState extends State<EditDailyTaskSheet> {
                           setState(() {
                             _repeatPattern = pattern;
                             if (_weeklyDays.isEmpty) {
-                              _weeklyDays = <int>{DateTime.now().weekday};
+                              _weeklyDays = <int>{DayCycle.today().weekday};
                             }
                           });
                           return;

@@ -1,3 +1,4 @@
+import '../../../../core/utils/day_cycle.dart';
 import '../../domain/repositories/weekly_review_repository.dart';
 import '../datasources/weekly_review_local_data_source.dart';
 import '../models/weekly_review_data.dart';
@@ -13,8 +14,7 @@ class WeeklyReviewRepositoryImpl implements WeeklyReviewRepository {
 
   @override
   Future<WeeklyReviewData> loadWeeklyReview() async {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
+    final today = DayCycle.today();
     final thisWeekStart = today.subtract(Duration(days: today.weekday - 1));
     final lastWeekStart = thisWeekStart.subtract(const Duration(days: 7));
 
@@ -72,6 +72,5 @@ class WeeklyReviewRepositoryImpl implements WeeklyReviewRepository {
         (i) => _dateKey(weekStart.add(Duration(days: i))),
       );
 
-  String _dateKey(DateTime dt) =>
-      '${dt.year.toString().padLeft(4, '0')}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+  String _dateKey(DateTime dt) => DayCycle.dateKey(dt);
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
+import '../../../../../core/utils/day_cycle.dart';
 import '../../../../../core/utils/local_storage.dart';
 import '../../../pomodoro/data/datasources/platform_channel_service.dart';
 
@@ -138,9 +139,8 @@ class DistractionBlockerController extends ChangeNotifier {
 
   /// Check if we need to reset daily statistics
   Future<void> _checkDayReset() async {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    
+    final today = DayCycle.today();
+
     if (_lastResetDate == null) {
       _lastResetDate = today;
       await _saveState();
@@ -246,16 +246,15 @@ class DistractionBlockerController extends ChangeNotifier {
 
     var cursor = start;
     while (cursor.isBefore(end)) {
-      final nextMidnight =
-          DateTime(cursor.year, cursor.month, cursor.day + 1);
-      final sliceEnd = nextMidnight.isBefore(end) ? nextMidnight : end;
-      final key = _dateKey(cursor);
+      final nextBoundary = DayCycle.nextBoundary(cursor);
+      final sliceEnd = nextBoundary.isBefore(end) ? nextBoundary : end;
+      final key = DayCycle.keyOf(cursor);
       history[key] =
           (history[key] ?? 0) + sliceEnd.difference(cursor).inSeconds;
       cursor = sliceEnd;
     }
 
-    final cutoff = DateTime.now().subtract(const Duration(days: 30));
+    final cutoff = DayCycle.today().subtract(const Duration(days: 30));
     history.removeWhere((key, _) {
       final parts = key.split('-');
       if (parts.length != 3) return true;
@@ -269,9 +268,6 @@ class DistractionBlockerController extends ChangeNotifier {
 
     await LocalStorage.saveJson('distraction_blocker_history_v1', history);
   }
-
-  String _dateKey(DateTime dt) =>
-      '${dt.year.toString().padLeft(4, '0')}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
 
   /// Get current live session duration in seconds
   int getCurrentSessionSeconds() {

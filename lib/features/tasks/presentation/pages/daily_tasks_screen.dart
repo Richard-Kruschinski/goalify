@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/sounds/sound_controller.dart';
+import '../../../../core/utils/day_cycle.dart';
 import '../../../../core/utils/snackbar_utils.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
@@ -87,7 +88,11 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
 
   // View selection
   DailyViewMode _mode = DailyViewMode.today;
-  DateTime _selectedDate = DateTime.now();
+  DateTime _selectedDate = DayCycle.today();
+
+  /// Fires the rollover exactly at the configured day boundary while the app
+  /// stays in the foreground (e.g. someone still using the app at 2 a.m.).
+  Timer? _rolloverTimer;
 
   // Sort mode (persisted)
   TaskSortMode _sortMode = TaskSortMode.manual;
@@ -106,12 +111,16 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    DayCycle.revision.addListener(_onDayCycleChanged);
     _load(); // loads + applies rollover
+    _scheduleRolloverTimer();
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    DayCycle.revision.removeListener(_onDayCycleChanged);
+    _rolloverTimer?.cancel();
     super.dispose();
   }
 
@@ -119,17 +128,34 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _dailyRolloverIfNeeded();
+      _scheduleRolloverTimer();
     }
   }
 
-  String _dateKey(DateTime dt) {
-    final y = dt.year.toString().padLeft(4, '0');
-    final m = dt.month.toString().padLeft(2, '0');
-    final d = dt.day.toString().padLeft(2, '0');
-    return '$y-$m-$d';
+  /// The user changed the day start hour in the settings: "today" may now be a
+  /// different date, so re-run the rollover and re-arm the timer.
+  void _onDayCycleChanged() {
+    if (!mounted) return;
+    setState(() {
+      if (_mode == DailyViewMode.today) _selectedDate = DayCycle.today();
+    });
+    _dailyRolloverIfNeeded();
+    _scheduleRolloverTimer();
   }
 
-  String _todayKey() => _dateKey(DateTime.now());
+  void _scheduleRolloverTimer() {
+    _rolloverTimer?.cancel();
+    // One second of slack so the timer never fires a hair before the boundary.
+    final delay = DayCycle.untilNextBoundary() + const Duration(seconds: 1);
+    _rolloverTimer = Timer(delay, () async {
+      await _dailyRolloverIfNeeded();
+      if (mounted) _scheduleRolloverTimer();
+    });
+  }
+
+  String _dateKey(DateTime dt) => DayCycle.dateKey(dt);
+
+  String _todayKey() => DayCycle.todayKey();
   String _selectedKey() => _dateKey(_selectedDate);
 
   bool _isDoneForDate(DailyTask t, String dateKey) {
@@ -292,7 +318,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
       if ((task.repeatPattern == TaskRepeatPattern.weekly_days ||
               task.repeatPattern == TaskRepeatPattern.biweekly) &&
           task.weeklyDays.isEmpty) {
-        final anchorDate = _tryParseDateKey(task.repeatStartKey ?? '') ?? DateTime.now();
+        final anchorDate = _tryParseDateKey(task.repeatStartKey ?? '') ?? DayCycle.today();
         task.weeklyDays = <int>[anchorDate.weekday];
         changed = true;
       }
@@ -614,8 +640,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     final todayKey = _todayKey();
     if (rawLast == todayKey) return;
 
-    final todayDate = DateTime.now();
-    final today = DateTime(todayDate.year, todayDate.month, todayDate.day);
+    final today = DayCycle.today();
 
     // If no valid rollover exists, keep legacy behavior and process only 1 day.
     final parsedLast = _tryParseDateKey(rawLast);
@@ -810,7 +835,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   /// Keeps: today + 14 previous days, so the weekly review can always compare
   /// the current week against the full previous week (Mon-Sun).
   Future<void> _cleanupOldHistory() async {
-    final today = DateTime.now();
+    final today = DayCycle.today();
     final cutoffDate = today.subtract(const Duration(days: 15));
     final cutoffKey = _dateKey(cutoffDate);
     
@@ -1989,7 +2014,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   Widget build(BuildContext context) {
     final dateKey = _mode == DailyViewMode.today ? _todayKey() : _selectedKey();
     final ordered = _orderedTasksFor(dateKey);
-    final now = DateTime.now();
+    final now = DayCycle.today();
     final isToday = _selectedDate.day == now.day &&
         _selectedDate.month == now.month &&
         _selectedDate.year == now.year;
@@ -2216,7 +2241,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                         } else {
                           setState(() {
                             _mode = DailyViewMode.today;
-                            _selectedDate = DateTime.now();
+                            _selectedDate = DayCycle.today();
                           });
                         }
                       } else if (val == 2) {
@@ -2341,7 +2366,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   }
 
   Widget _buildWeekCalendar() {
-    final now = DateTime.now();
+    final now = DayCycle.today();
     final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
     
     return Row(

@@ -1,6 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../i18n/task_labels.dart';
+import '../utils/day_cycle.dart';
 
 class ModernDateRangePicker extends StatefulWidget {
   final DateTime? initialStart;
@@ -30,7 +31,7 @@ class _ModernDateRangePickerState extends State<ModernDateRangePicker> {
     super.initState();
     _selectedStart = widget.initialStart;
     _selectedEnd = widget.initialEnd;
-    _currentMonth = _selectedStart ?? DateTime.now();
+    _currentMonth = _selectedStart ?? DayCycle.today();
     _pageController = PageController(
       initialPage: _monthDifference(widget.firstDate, _currentMonth),
     );

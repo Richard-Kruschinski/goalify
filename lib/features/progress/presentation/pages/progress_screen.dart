@@ -1,6 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 import '../../../../l10n/generated/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/day_cycle.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../data/models/activity_point.dart';
 import '../../data/models/weekly_review_data.dart';
@@ -35,6 +36,8 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // A changed day start hour re-dates "today", so the charts must reload.
+    DayCycle.revision.addListener(_loadAll);
 
     _loadAll();
   }
@@ -42,6 +45,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    DayCycle.revision.removeListener(_loadAll);
     super.dispose();
   }
 
@@ -104,7 +108,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
 
     // Fallback für HEUTE: falls noch kein Eintrag, aus Daily-Tasks summieren
     // *** NUR Tasks zählen, die keep == true UND done == true sind. ***
-    final today = _midnight(DateTime.now());
+    final today = DayCycle.today();
     if (!map.containsKey(today)) {
       final tasksRaw = await _repo.loadDailyTasksRaw();
       if (tasksRaw is List) {
@@ -128,7 +132,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
     final map = await _repo.loadRatioHistory();
 
     // Heutiges Verhältnis (nur keep-Tasks): donePts / totalPts in Prozent
-    final today = _midnight(DateTime.now());
+    final today = DayCycle.today();
     final tasksRaw = await _repo.loadDailyTasksRaw();
     int donePts = 0;
     int totalPts = 0;
@@ -165,7 +169,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
   }
 
   List<ActivityPoint> _dataForRange() {
-    final today = _midnight(DateTime.now());
+    final today = DayCycle.today();
 
     switch (range) {
       case Range.week:
@@ -194,7 +198,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
   }
 
   List<ActivityPoint> _ratioDataForRange() {
-    final today = _midnight(DateTime.now());
+    final today = DayCycle.today();
 
     switch (range) {
       case Range.week:
@@ -229,7 +233,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
   }
 
   int _todayRatio() {
-    final today = _midnight(DateTime.now());
+    final today = DayCycle.today();
     return _ratioHistory[today] ?? 0;
   }
 

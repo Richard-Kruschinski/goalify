@@ -166,6 +166,18 @@ abstract class AppLocalizations {
   /// **'Always use the dark theme'**
   String get themeDarkDescription;
 
+  /// No description provided for @dayStartSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Start of day'**
+  String get dayStartSection;
+
+  /// No description provided for @dayStartDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'The time at which a new day begins. Daily tasks, gym and creatine tracking and the progress charts only roll over to the next day at this time.'**
+  String get dayStartDescription;
+
   /// No description provided for @soundsSection.
   ///
   /// In en, this message translates to:

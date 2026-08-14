@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../../l10n/generated/app_localizations.dart';
 import '../../../../core/i18n/task_labels.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/day_cycle.dart';
 import '../../../../core/utils/snackbar_utils.dart';
 import 'package:flutter/services.dart'; // rootBundle, SystemChrome, DeviceOrientation
 import 'package:fl_chart/fl_chart.dart';
@@ -312,7 +313,20 @@ class _GymScreenState extends State<GymScreen> {
   @override
   void initState() {
     super.initState();
+    // A changed day start hour moves "today", so the done/creatine markers
+    // for the current day have to be re-evaluated.
+    DayCycle.revision.addListener(_onDayCycleChanged);
     _bootstrap();
+  }
+
+  @override
+  void dispose() {
+    DayCycle.revision.removeListener(_onDayCycleChanged);
+    super.dispose();
+  }
+
+  void _onDayCycleChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
@@ -482,8 +496,10 @@ class _GymScreenState extends State<GymScreen> {
     await _repo.saveBestSetCacheMap(_bestSetCache.toMap());
   }
 
-  String _dateKey(DateTime dt) =>
-      '${dt.year.toString().padLeft(4, '0')}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+  /// Key for an already normalised day (calendar cell, picked date).
+  /// Real timestamps have to go through [DayCycle.keyOf] instead so late-night
+  /// entries land on the day the user is still in.
+  String _dateKey(DateTime dt) => DayCycle.dateKey(dt);
 
   bool _isCreatineTakenOn(DateTime date) => _creatineDates.contains(_dateKey(date));
 
@@ -500,7 +516,7 @@ class _GymScreenState extends State<GymScreen> {
   }
 
   Future<void> _syncDailyCreatineIfToday(DateTime date, bool value) async {
-    final todayKey = _dateKey(DateTime.now());
+    final todayKey = DayCycle.todayKey();
     final dateKey = _dateKey(date);
     if (dateKey != todayKey) return; // only adjust today's daily tasks
 
@@ -577,8 +593,7 @@ class _GymScreenState extends State<GymScreen> {
   }
 
   Future<void> _setDayMarkedToday(String dayName, bool value) async {
-    final now = DateTime.now();
-    final key = _dateKey(now);
+    final key = DayCycle.todayKey();
     final set = _calendarByDate.putIfAbsent(key, () => <String>{});
     if (value) {
       set.add(dayName);
@@ -799,27 +814,24 @@ class _GymScreenState extends State<GymScreen> {
   }
 
   void _addLog(String workoutId, WorkoutLog result) {
-    final now = DateTime.now();
-    final isToday = result.dateTime.year == now.year && 
-                    result.dateTime.month == now.month && 
-                    result.dateTime.day == now.day;
-    
+    // Logs carry a real timestamp, so map it onto the logical day first: a set
+    // logged at 01:00 with a 02:00 day start still belongs to the day before.
+    final resultDay = DayCycle.dayOf(result.dateTime);
+    final isToday = resultDay == DayCycle.today();
+
     setState(() {
       final list = _logs.putIfAbsent(workoutId, () => <WorkoutLog>[]);
-      
+
       // Check if there's already an entry for the same day
       int existingIndex = -1;
       for (int i = 0; i < list.length; i++) {
         final log = list[i];
-        if (log.dateTime.year == result.dateTime.year &&
-            log.dateTime.month == result.dateTime.month &&
-            log.dateTime.day == result.dateTime.day &&
-            log.day == result.day) {
+        if (DayCycle.dayOf(log.dateTime) == resultDay && log.day == result.day) {
           existingIndex = i;
           break;
         }
       }
-      
+
       if (existingIndex >= 0) {
         // Update existing entry for the same day
         list[existingIndex] = WorkoutLog(
@@ -839,7 +851,7 @@ class _GymScreenState extends State<GymScreen> {
       _ensureAssigned(result.day, workoutId);
       
       // Aktualisiere Kalender mit dem Log-Datum
-      final key = _dateKey(result.dateTime);
+      final key = _dateKey(resultDay);
       final set = _calendarByDate.putIfAbsent(key, () => <String>{});
       set.add(result.day);
       // Ensure the day has a color for calendar display
@@ -1047,7 +1059,7 @@ class _GymScreenState extends State<GymScreen> {
   }
 
   String _calendarTrackingKeyForLog(WorkoutLog log) =>
-      '${_dateKey(log.dateTime)}|${log.day}';
+      '${DayCycle.keyOf(log.dateTime)}|${log.day}';
 
   void _removeCalendarTrackingForDeletedLogs(List<WorkoutLog> deletedLogs) {
     if (deletedLogs.isEmpty) return;
@@ -2180,7 +2192,7 @@ class _GymScreenState extends State<GymScreen> {
                   )
                 : log;
 
-            final dateKey = _dateKey(log.dateTime);
+            final dateKey = DayCycle.keyOf(log.dateTime);
             final uniqueKey = '$dateKey|$normalizedDay';
             final existing = byDateAndDay[uniqueKey];
 
@@ -4441,7 +4453,7 @@ class _GymScreenState extends State<GymScreen> {
           onReorder: (ids) => _reorderDay(day, ids),
           stripeColor: stripe,
           // Checkbox oben rechts
-          isDoneToday: () => _isDayMarkedOn(DateTime.now(), day),
+          isDoneToday: () => _isDayMarkedOn(DayCycle.today(), day),
           onToggleDoneToday: (v) => _setDayMarkedToday(day, v),
           dayColor: _resolveDayColor(day, cs),
           onPickColor: () => _pickColorForDay(day),

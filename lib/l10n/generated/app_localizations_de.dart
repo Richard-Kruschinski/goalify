@@ -42,6 +42,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get themeDarkDescription => 'Immer das dunkle Design verwenden';
 
   @override
+  String get dayStartSection => 'Tagesbeginn';
+
+  @override
+  String get dayStartDescription =>
+      'Die Uhrzeit, zu der ein neuer Tag beginnt. Daily Tasks, Gym- und Kreatin-Tracking sowie die Progress-Auswertung wechseln erst zu dieser Uhrzeit auf den nächsten Tag.';
+
+  @override
   String get soundsSection => 'Sounds';
 
   @override

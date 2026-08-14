@@ -42,6 +42,13 @@ class AppLocalizationsRu extends AppLocalizations {
   String get themeDarkDescription => 'Всегда использовать тёмную тему';
 
   @override
+  String get dayStartSection => 'Начало дня';
+
+  @override
+  String get dayStartDescription =>
+      'Время, когда начинается новый день. Ежедневные задачи, отслеживание тренировок и креатина, а также графики прогресса переходят на следующий день только в это время.';
+
+  @override
   String get soundsSection => 'Звуки';
 
   @override

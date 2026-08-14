@@ -2,6 +2,7 @@
 import '../../../../l10n/generated/app_localizations.dart';
 import '../../../../core/i18n/task_labels.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/day_cycle.dart';
 import '../../../../core/utils/snackbar_utils.dart';
 import '../../data/models/daily_task.dart';
 import '../../../../core/widgets/weekday_picker.dart';
@@ -76,7 +77,7 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
 
   DateTime _dateOnly(DateTime dt) => DateTime(dt.year, dt.month, dt.day);
 
-  bool _isPastDate(DateTime dt) => _dateOnly(dt).isBefore(_dateOnly(DateTime.now()));
+  bool _isPastDate(DateTime dt) => _dateOnly(dt).isBefore(DayCycle.today());
 
   Future<int?> _showCustomDaysDialog() async {
     final controller = TextEditingController(text: _customDays.toString());

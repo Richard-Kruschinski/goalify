@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../../../core/settings/settings_controller.dart';
 import '../../../../../core/sounds/sound_controller.dart';
 import '../../../../../core/theme/app_colors.dart';
+import '../../../../../core/widgets/time_wheel_picker.dart';
 import '../../../../../l10n/generated/app_localizations.dart';
 
 /// App options: theme mode (dark mode) and language.
@@ -76,6 +77,32 @@ class SettingsScreen extends StatelessWidget {
                 onTap: () => settings.setThemeMode(ThemeMode.dark),
               ),
             ],
+          ),
+          const SizedBox(height: 24),
+          _SectionLabel(text: l10n.dayStartSection, color: muted),
+          const SizedBox(height: 8),
+          // The day boundary drives daily tasks, gym/creatine tracking and the
+          // progress charts - see DayCycle.
+          _OptionCard(
+            color: card,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: TimeWheelPicker(
+                  initialHour: settings.dayStartHour,
+                  initialMinute: settings.dayStartMinute,
+                  onChanged: settings.setDayStart,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Text(
+              l10n.dayStartDescription,
+              style: TextStyle(fontSize: 12.5, color: muted),
+            ),
           ),
           const SizedBox(height: 24),
           _SectionLabel(text: l10n.soundsSection, color: muted),

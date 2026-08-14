@@ -15,6 +15,9 @@
   "themeDark": "Dunkel",
   "themeDarkDescription": "Immer das dunkle Design verwenden",
 
+  "dayStartSection": "Tagesbeginn",
+  "dayStartDescription": "Die Uhrzeit, zu der ein neuer Tag beginnt. Daily Tasks, Gym- und Kreatin-Tracking sowie die Progress-Auswertung wechseln erst zu dieser Uhrzeit auf den nächsten Tag.",
+
   "soundsSection": "Sounds",
   "soundsEnabledTitle": "Sound-Effekte",
   "soundsEnabledDescription": "Sounds bei Aktionen abspielen",

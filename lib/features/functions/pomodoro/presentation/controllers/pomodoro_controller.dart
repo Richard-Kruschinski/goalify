@@ -7,6 +7,7 @@ import '../../data/datasources/platform_channel_service.dart';
 import '../../data/repositories/pomodoro_repository_impl.dart';
 import '../../domain/repositories/pomodoro_repository.dart';
 import '../../../../../core/models/timer_live_state.dart';
+import '../../../../../core/utils/day_cycle.dart';
 import '../../../../../core/services/timer_live_presentation_service.dart';
 
 class PomodoroController extends ChangeNotifier {
@@ -183,8 +184,7 @@ class PomodoroController extends ChangeNotifier {
   }
 
   void _checkAndResetDailyStats() {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day).toIso8601String();
+    final today = DayCycle.today().toIso8601String();
     if (_stats.lastResetDate != today) {
       _stats = _stats.copyWith(
         completedSessionsToday: 0,
@@ -204,11 +204,11 @@ class PomodoroController extends ChangeNotifier {
   /// review) and drops entries older than 30 days.
   Future<void> _recordFocusMinutes(int minutes) async {
     final history = await _repo.loadFocusHistory();
-    final now = DateTime.now();
-    final todayKey = _dateKey(now);
+    final today = DayCycle.today();
+    final todayKey = _dateKey(today);
     history[todayKey] = (history[todayKey] ?? 0) + minutes;
 
-    final cutoff = now.subtract(const Duration(days: 30));
+    final cutoff = today.subtract(const Duration(days: 30));
     history.removeWhere((key, _) {
       final parts = key.split('-');
       if (parts.length != 3) return true;
@@ -223,8 +223,7 @@ class PomodoroController extends ChangeNotifier {
     await _repo.saveFocusHistory(history);
   }
 
-  String _dateKey(DateTime dt) =>
-      '${dt.year.toString().padLeft(4, '0')}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+  String _dateKey(DateTime dt) => DayCycle.dateKey(dt);
 
   int _calculateDailyFocusScore() {
     int score = _stats.completedSessionsToday * 10;

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../l10n/generated/app_localizations.dart';
 import '../../../../core/i18n/task_labels.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/day_cycle.dart';
 import 'package:flutter/services.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../data/models/gym_models.dart';
@@ -729,7 +730,7 @@ class _FilterDialogModernState extends State<_FilterDialogModern> {
                       initialStart: _startDate,
                       initialEnd: _endDate,
                       firstDate: DateTime(2020),
-                      lastDate: DateTime.now(),
+                      lastDate: DayCycle.today(),
                     ),
                   );
                   if (range != null) {

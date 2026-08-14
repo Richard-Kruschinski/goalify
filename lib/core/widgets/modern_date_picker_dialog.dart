@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../i18n/task_labels.dart';
+import '../utils/day_cycle.dart';
 import '../../l10n/generated/app_localizations.dart';
 
 class ModernDatePickerDialog extends StatefulWidget {
@@ -276,7 +277,7 @@ class _ModernDatePickerDialogState extends State<ModernDatePickerDialog> {
 
     final localizations = MaterialLocalizations.of(context);
     final titleLabel = localizations.formatMonthYear(_currentMonth);
-    final now = DateTime.now();
+    final now = DayCycle.today();
 
     return Dialog(
       backgroundColor: Colors.transparent,

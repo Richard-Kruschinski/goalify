@@ -2,6 +2,7 @@
 import '../../../../l10n/generated/app_localizations.dart';
 import '../../../../core/i18n/task_labels.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/day_cycle.dart';
 import 'package:flutter/services.dart';
 
 /// ===============================================================
@@ -33,12 +34,11 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
   @override
   void initState() {
     super.initState();
-    final now = DateTime.now();
+    final now = DayCycle.today();
     _currentMonth = DateTime(now.year, now.month, 1);
   }
 
-  String _dateKey(DateTime dt) =>
-      '${dt.year.toString().padLeft(4, '0')}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+  String _dateKey(DateTime dt) => DayCycle.dateKey(dt);
 
   int _daysInMonth(DateTime month) {
     final next = DateTime(month.year, month.month + 1, 1);
@@ -632,7 +632,7 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
                       DateTime(_currentMonth.year, _currentMonth.month, dayNum);
                       final key = _dateKey(date);
                       final names = widget.calendarByDate[key]?.toList() ?? const <String>[];
-                      final isToday = _dateKey(date) == _dateKey(DateTime.now());
+                      final isToday = _dateKey(date) == DayCycle.todayKey();
                       final tookCreatine = widget.isCreatineTaken(date);
 
                       return GestureDetector(

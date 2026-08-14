@@ -15,6 +15,9 @@
   "themeDark": "Dark",
   "themeDarkDescription": "Always use the dark theme",
 
+  "dayStartSection": "Start of day",
+  "dayStartDescription": "The time at which a new day begins. Daily tasks, gym and creatine tracking and the progress charts only roll over to the next day at this time.",
+
   "soundsSection": "Sounds",
   "soundsEnabledTitle": "Sound effects",
   "soundsEnabledDescription": "Play sounds for actions",

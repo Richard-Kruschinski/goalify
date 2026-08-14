@@ -42,6 +42,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get themeDarkDescription => 'Always use the dark theme';
 
   @override
+  String get dayStartSection => 'Start of day';
+
+  @override
+  String get dayStartDescription =>
+      'The time at which a new day begins. Daily tasks, gym and creatine tracking and the progress charts only roll over to the next day at this time.';
+
+  @override
   String get soundsSection => 'Sounds';
 
   @override

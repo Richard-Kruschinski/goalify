@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Global app settings (theme mode, language), persisted via SharedPreferences.
+import '../utils/day_cycle.dart';
+
+/// Global app settings (theme mode, language, day start), persisted via
+/// SharedPreferences.
 ///
 /// Adding a new language:
 /// 1. Create lib/l10n/app_<code>.arb with the translations
@@ -33,6 +36,9 @@ class AppLanguage {
 class SettingsController extends ChangeNotifier {
   static const _themeModeKey = 'settings_theme_mode_v1';
   static const _languageKey = 'settings_language_v1';
+  static const _dayStartMinuteKey = 'settings_day_start_minute_v1';
+  // Superseded by the minute-precise key above; still read for migration.
+  static const _legacyDayStartHourKey = 'settings_day_start_hour_v1';
 
   static const List<AppLanguage> supportedLanguages = [
     AppLanguage(code: 'de', nativeName: 'Deutsch', flagCountryCode: 'DE', materialLocale: Locale('de', 'DE')),
@@ -42,8 +48,18 @@ class SettingsController extends ChangeNotifier {
 
   ThemeMode _themeMode = ThemeMode.system;
   String? _languageCode; // null = follow system
+  int _dayStartMinuteOfDay = DayCycle.defaultStartMinuteOfDay;
 
   ThemeMode get themeMode => _themeMode;
+
+  /// Time (as minutes since midnight) at which a new day starts for everything
+  /// tracked per day. The single source of truth at runtime is [DayCycle];
+  /// this only persists it.
+  int get dayStartMinuteOfDay => _dayStartMinuteOfDay;
+
+  int get dayStartHour => _dayStartMinuteOfDay ~/ 60;
+
+  int get dayStartMinute => _dayStartMinuteOfDay % 60;
 
   /// Selected language code, or null when following the system language.
   String? get languageCode => _languageCode;
@@ -74,6 +90,19 @@ class SettingsController extends ChangeNotifier {
     if (lang != null && supportedLanguages.any((l) => l.code == lang)) {
       _languageCode = lang;
     }
+    final minuteOfDay = prefs.getInt(_dayStartMinuteKey);
+    if (minuteOfDay != null &&
+        minuteOfDay >= 0 &&
+        minuteOfDay < DayCycle.minutesPerDay) {
+      _dayStartMinuteOfDay = minuteOfDay;
+    } else {
+      // Migration from the hour-only setting.
+      final hour = prefs.getInt(_legacyDayStartHourKey);
+      if (hour != null && hour >= 0 && hour <= 23) {
+        _dayStartMinuteOfDay = hour * 60;
+      }
+    }
+    DayCycle.setStartMinuteOfDay(_dayStartMinuteOfDay);
   }
 
   Future<void> setThemeMode(ThemeMode mode) async {
@@ -91,6 +120,26 @@ class SettingsController extends ChangeNotifier {
       case ThemeMode.system:
         await prefs.remove(_themeModeKey);
         break;
+    }
+  }
+
+  /// Sets the time at which a new day begins. Changing it immediately re-dates
+  /// "today" everywhere via [DayCycle.revision].
+  Future<void> setDayStart(int hour, int minute) async {
+    final raw = hour * 60 + minute;
+    final normalized =
+        ((raw % DayCycle.minutesPerDay) + DayCycle.minutesPerDay) %
+            DayCycle.minutesPerDay;
+    if (_dayStartMinuteOfDay == normalized) return;
+    _dayStartMinuteOfDay = normalized;
+    DayCycle.setStartMinuteOfDay(normalized);
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_legacyDayStartHourKey);
+    if (normalized == DayCycle.defaultStartMinuteOfDay) {
+      await prefs.remove(_dayStartMinuteKey);
+    } else {
+      await prefs.setInt(_dayStartMinuteKey, normalized);
     }
   }
 

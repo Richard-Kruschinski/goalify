@@ -1,3 +1,4 @@
+import '../../../../core/utils/day_cycle.dart';
 import '../../data/repositories/tasks_repository_impl.dart';
 import '../repositories/tasks_repository.dart';
 
@@ -10,7 +11,7 @@ class DailyTasksHelper {
   /// Mark gym category task as done for today
   /// Called from gym_screen when a workout day is marked as done
   static Future<void> markGymTaskDoneForToday() async {
-    final today = _dateKey(DateTime.now());
+    final today = _dateKey(DayCycle.today());
 
     // Load keep tasks
     final keepTasks = await _repo.loadKeepTasks();
