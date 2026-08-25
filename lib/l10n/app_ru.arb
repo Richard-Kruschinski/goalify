@@ -136,6 +136,8 @@
   "noStreakYet": "Серий пока нет.",
   "streakDayCount": "{count, plural, one{{count} день} few{{count} дня} many{{count} дней} other{{count} дня}}",
   "streakCount": "{count, plural, one{Серия: {count} день} few{Серия: {count} дня} many{Серия: {count} дней} other{Серия: {count} дня}}",
+  "streakCycleCount": "{count, plural, =1{1 раз подряд} other{{count} раз(а) подряд}}",
+  "streakCycleUnitCount": "{count, plural, one{{count} цикл} few{{count} цикла} many{{count} циклов} other{{count} цикла}}",
   "frozenTodayLabel": "Заморожено сегодня",
   "recurringDot": "Повтор · {label}",
   "dailyLabel": "Ежедневно",

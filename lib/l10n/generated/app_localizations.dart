@@ -850,6 +850,18 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 day streak} other{{count} days streak}}'**
   String streakCount(int count);
 
+  /// No description provided for @streakCycleCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1x in a row} other{{count}x in a row}}'**
+  String streakCycleCount(int count);
+
+  /// No description provided for @streakCycleUnitCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 cycle} other{{count} cycles}}'**
+  String streakCycleUnitCount(int count);
+
   /// No description provided for @frozenTodayLabel.
   ///
   /// In en, this message translates to:

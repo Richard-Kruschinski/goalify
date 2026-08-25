@@ -12,6 +12,7 @@ import 'package:path_provider/path_provider.dart';
 import '../../../../core/utils/icon_mapper.dart'; // IconMapper für zentrale Icon-Verwaltung
 import '../../data/repositories/tasks_repository_impl.dart';
 import '../../domain/repositories/tasks_repository.dart';
+import '../../domain/usecases/task_rules.dart';
 import '../../../progress/presentation/pages/congrats_screen.dart';
 import '../../data/models/daily_task.dart';
 import '../widgets/create_daily_task_sheet.dart';
@@ -329,6 +330,13 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
             : todayKey;
         changed = true;
       }
+      // A task turned into a repeating X-task by editing has no cycle anchor
+      // yet - without one its cycle never rolls over and no streak can build.
+      final cycleAnchor = task.limitedCycleStartKey;
+      if (task.isLimitedRecurring && (cycleAnchor == null || cycleAnchor.isEmpty)) {
+        task.limitedCycleStartKey = todayKey;
+        changed = true;
+      }
     }
 
     if (changed) {
@@ -452,13 +460,6 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   List<DailyTask> _applySortMode(List<DailyTask> list, String dateKey) {
     if (_sortMode == TaskSortMode.manual) return list;
 
-    int typeRank(DailyTask t) {
-      if (!t.keep) return 3; // one-off
-      if (t.isLimited) return 2; // X-mal
-      if (t.repeatPattern == TaskRepeatPattern.daily) return 0; // daily
-      return 1; // recurring (weekly, biweekly, custom, ...)
-    }
-
     int byTitle(DailyTask a, DailyTask b) =>
         a.title.toLowerCase().compareTo(b.title.toLowerCase());
 
@@ -473,7 +474,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
           final c = b.points.compareTo(a.points); // descending
           return c != 0 ? c : byTitle(a, b);
         case TaskSortMode.type:
-          final c = typeRank(a).compareTo(typeRank(b));
+          final c = taskTypeRank(a).compareTo(taskTypeRank(b));
           return c != 0 ? c : byTitle(a, b);
         case TaskSortMode.manual:
           return 0;
@@ -664,7 +665,8 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
       for (final t in _keepTasks) {
         if (!t.keep) continue;
 
-        // Limited tasks: cycle reset + completion count, no streak tracking
+        // Limited tasks: cycle reset + completion count. Their streak counts
+        // completed *cycles*, not days, so it is only evaluated when one ends.
         if (t.isLimited) {
           // Check if a new cycle starts on this day
           if (t.limitedCycleIntervalDays != null) {
@@ -673,8 +675,11 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
             if (cycleStart != null && dayDate != null) {
               final daysSince = dayDate.difference(cycleStart).inDays;
               if (daysSince > 0 && daysSince % t.limitedCycleIntervalDays! == 0) {
-                t.completedCount = 0;
-                t.limitedCycleStartKey = dayKey;
+                applyFinishedLimitedCycle(
+                  t,
+                  cycleEndKey: dayKey,
+                  frozen: _wasFrozenOn(dayKey, t.id),
+                );
                 changedKeep = true;
               }
             }
@@ -1978,7 +1983,9 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
 
   Future<void> _showHighestStreak(DailyTask task) async {
     final best = task.bestStreak;
-    final label = AppLocalizations.of(context).streakDayCount(best);
+    final label = task.isLimitedRecurring
+        ? AppLocalizations.of(context).streakCycleUnitCount(best)
+        : AppLocalizations.of(context).streakDayCount(best);
     await showDialog<void>(
       context: context,
       builder: (_) => AlertDialog(
@@ -2654,7 +2661,11 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                           ),
                         ),
                       ),
-                      if (task.keep && !task.isLimited && task.streak > 0)
+                      // Repeating X-tasks count completed cycles, plain
+                      // recurring ones count days - hence the two labels.
+                      if (task.keep &&
+                          (!task.isLimited || task.isLimitedRecurring) &&
+                          task.streak > 0)
                         Padding(
                           padding: const EdgeInsets.only(top: 6),
                           child: Row(
@@ -2663,7 +2674,11 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                                   size: 14, color: Color(0xFFFF5722)),
                               const SizedBox(width: 4),
                               Text(
-                                AppLocalizations.of(context).streakCount(task.streak),
+                                task.isLimitedRecurring
+                                    ? AppLocalizations.of(context)
+                                        .streakCycleCount(task.streak)
+                                    : AppLocalizations.of(context)
+                                        .streakCount(task.streak),
                                 style: const TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w500,

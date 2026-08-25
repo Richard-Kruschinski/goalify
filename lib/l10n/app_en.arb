@@ -187,6 +187,18 @@
       "count": {"type": "int"}
     }
   },
+  "streakCycleCount": "{count, plural, =1{1x in a row} other{{count}x in a row}}",
+  "@streakCycleCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "streakCycleUnitCount": "{count, plural, =1{1 cycle} other{{count} cycles}}",
+  "@streakCycleUnitCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
   "frozenTodayLabel": "Frozen today",
   "recurringDot": "Recurring · {label}",
   "@recurringDot": {

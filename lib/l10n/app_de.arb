@@ -136,6 +136,8 @@
   "noStreakYet": "Noch keine Streak aufgezeichnet.",
   "streakDayCount": "{count, plural, =1{1 Tag} other{{count} Tage}}",
   "streakCount": "{count, plural, =1{1 Tag Streak} other{{count} Tage Streak}}",
+  "streakCycleCount": "{count, plural, =1{1x in Folge} other{{count}x in Folge}}",
+  "streakCycleUnitCount": "{count, plural, =1{1 Zyklus} other{{count} Zyklen}}",
   "frozenTodayLabel": "Heute eingefroren",
   "recurringDot": "Wiederholend · {label}",
   "dailyLabel": "Täglich",

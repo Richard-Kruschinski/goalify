@@ -431,6 +431,30 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String streakCycleCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count раз(а) подряд',
+      one: '1 раз подряд',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String streakCycleUnitCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count цикла',
+      many: '$count циклов',
+      few: '$count цикла',
+      one: '$count цикл',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get frozenTodayLabel => 'Заморожено сегодня';
 
   @override
