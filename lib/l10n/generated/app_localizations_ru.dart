@@ -1616,4 +1616,62 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get sequence => 'Последовательность';
+
+  @override
+  String get weightSettings => 'Настройки веса';
+
+  @override
+  String get weightSettingsSubtitle => 'Задать вес грифа для этого упражнения';
+
+  @override
+  String weightSettingsFor(String name) {
+    return 'Настройки веса — $name';
+  }
+
+  @override
+  String get barWeightKg => 'Вес грифа (кг)';
+
+  @override
+  String get barWeightExplain =>
+      'Укажите, сколько весит пустой гриф, например 20. Оставьте пустым, если гриф не используется.';
+
+  @override
+  String get trackedIncludesBarTitle => 'Записанный вес включает гриф';
+
+  @override
+  String barPlusPlates(String bar, String plates, String unit) {
+    return 'Гриф $bar + $plates $unit';
+  }
+
+  @override
+  String get applyBarWeightToPastTitle => 'Применить к прошлым записям?';
+
+  @override
+  String applyBarWeightToPastMessage(String newValue, int count) {
+    return 'Вес грифа теперь $newValue кг. Пересчитать с ним записей: $count?';
+  }
+
+  @override
+  String get onlyNewEntries => 'Только новые записи';
+
+  @override
+  String get recalculatePast => 'Пересчитать прошлое';
+
+  @override
+  String barWeightSaved(String value) {
+    return 'Вес грифа сохранён: $value кг';
+  }
+
+  @override
+  String barWeightCurrent(String value) {
+    return 'Гриф: $value кг';
+  }
+
+  @override
+  String get barWeightRemoved => 'Вес грифа удалён';
+
+  @override
+  String pastEntriesRecalculated(int count) {
+    return 'Пересчитано записей: $count';
+  }
 }

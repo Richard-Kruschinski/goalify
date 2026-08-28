@@ -33,6 +33,10 @@ abstract class GymRepository {
   Future<Map<String, String>> loadExerciseNotes();
   Future<void> saveExerciseNotes(Map<String, String> notes);
 
+  // Weight settings (bar weight / tracking mode) per exercise id.
+  Future<Map<String, ExerciseWeightSettings>> loadWeightSettings();
+  Future<void> saveWeightSettings(Map<String, ExerciseWeightSettings> settings);
+
   // Day colors / icons.
   Future<Map<String, int>> loadDayColors();
   Future<void> saveDayColors(Map<String, int> colors);

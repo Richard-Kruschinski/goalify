@@ -78,6 +78,14 @@ class GymRepositoryImpl implements GymRepository {
       _local.saveExerciseNotes(notes);
 
   @override
+  Future<Map<String, ExerciseWeightSettings>> loadWeightSettings() =>
+      _local.loadWeightSettings();
+
+  @override
+  Future<void> saveWeightSettings(Map<String, ExerciseWeightSettings> settings) =>
+      _local.saveWeightSettings(settings);
+
+  @override
   Future<Map<String, int>> loadDayColors() => _local.loadDayColors();
 
   @override

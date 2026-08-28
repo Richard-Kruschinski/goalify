@@ -478,4 +478,20 @@
   "durationValue": "Длительность: {value}",
   "pauseDuration": "Перерыв: {pause} • Длительность: {value}",
   "sequence": "Последовательность"
+,
+  "weightSettings": "Настройки веса",
+  "weightSettingsSubtitle": "Задать вес грифа для этого упражнения",
+  "weightSettingsFor": "Настройки веса — {name}",
+  "barWeightKg": "Вес грифа (кг)",
+  "barWeightExplain": "Укажите, сколько весит пустой гриф, например 20. Оставьте пустым, если гриф не используется.",
+  "trackedIncludesBarTitle": "Записанный вес включает гриф",
+  "barPlusPlates": "Гриф {bar} + {plates} {unit}",
+  "applyBarWeightToPastTitle": "Применить к прошлым записям?",
+  "applyBarWeightToPastMessage": "Вес грифа теперь {newValue} кг. Пересчитать с ним записей: {count}?",
+  "onlyNewEntries": "Только новые записи",
+  "recalculatePast": "Пересчитать прошлое",
+  "barWeightSaved": "Вес грифа сохранён: {value} кг",
+  "barWeightCurrent": "Гриф: {value} кг",
+  "barWeightRemoved": "Вес грифа удалён",
+  "pastEntriesRecalculated": "Пересчитано записей: {count}"
 }

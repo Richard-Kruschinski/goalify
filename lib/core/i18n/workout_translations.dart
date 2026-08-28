@@ -54,6 +54,7 @@ class WorkoutTranslations {
         iconPath: w.iconPath,
         muscles: muscles,
         isDurationBased: w.isDurationBased,
+        defaultBarWeightKg: w.defaultBarWeightKg,
       );
     }).toList();
   }

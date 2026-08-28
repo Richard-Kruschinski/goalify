@@ -1592,4 +1592,62 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sequence => 'Sequence';
+
+  @override
+  String get weightSettings => 'Weight settings';
+
+  @override
+  String get weightSettingsSubtitle => 'Set the bar weight for this exercise';
+
+  @override
+  String weightSettingsFor(String name) {
+    return 'Weight settings — $name';
+  }
+
+  @override
+  String get barWeightKg => 'Bar weight (kg)';
+
+  @override
+  String get barWeightExplain =>
+      'Enter what the empty bar weighs, e.g. 20. Leave empty if the exercise has no bar.';
+
+  @override
+  String get trackedIncludesBarTitle => 'Tracked weight includes the bar';
+
+  @override
+  String barPlusPlates(String bar, String plates, String unit) {
+    return 'Bar $bar + $plates $unit';
+  }
+
+  @override
+  String get applyBarWeightToPastTitle => 'Apply to past entries?';
+
+  @override
+  String applyBarWeightToPastMessage(String newValue, int count) {
+    return 'The bar weight is now $newValue kg. Should the $count entries logged so far be recalculated with it?';
+  }
+
+  @override
+  String get onlyNewEntries => 'Only new entries';
+
+  @override
+  String get recalculatePast => 'Recalculate past';
+
+  @override
+  String barWeightSaved(String value) {
+    return 'Bar weight saved: $value kg';
+  }
+
+  @override
+  String barWeightCurrent(String value) {
+    return 'Bar: $value kg';
+  }
+
+  @override
+  String get barWeightRemoved => 'Bar weight removed';
+
+  @override
+  String pastEntriesRecalculated(int count) {
+    return '$count past entries recalculated';
+  }
 }

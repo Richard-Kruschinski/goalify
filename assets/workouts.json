@@ -10,6 +10,7 @@
     },
     {
         "id":  "bench_press",
+        "barWeightKg":  20,
         "name":  "Bench Press",
         "description":  "Classic barbell chest exercise. Focus on chest, triceps, and front shoulders.",
         "icon":  "assets/images/exercises/benchpress.png",
@@ -32,6 +33,7 @@
     },
     {
         "id":  "bench_press_smith_machine",
+        "barWeightKg":  20,
         "name":  "Bench Press (Smith Machine)",
         "description":  "Smith machine bench press with a guided bar path for chest, triceps, and shoulders.",
         "icon":  "assets/images/exercises/bench_press_smith_machine.png",
@@ -128,6 +130,7 @@
     },
     {
         "id":  "close_grip_bench_press",
+        "barWeightKg":  20,
         "name":  "Close-Grip Bench Press",
         "description":  "Narrow-grip barbell bench press variation that shifts more load to the triceps while still training chest and front shoulders.",
         "icon":  "assets/images/exercises/benchpress.png",
@@ -166,6 +169,7 @@
     },
     {
         "id":  "deadlift",
+        "barWeightKg":  20,
         "name":  "Deadlift",
         "description":  "Fundamental back and leg exercise. Keep bar close and spine neutral.",
         "icon":  "assets/images/exercises/deadlift.png",
@@ -209,6 +213,7 @@
     },
     {
         "id":  "hex_squat",
+        "barWeightKg":  20,
         "name":  "Hex Squat",
         "description":  "Machine-guided squat variation. Focuses on quadriceps activation.",
         "icon":  "assets/images/exercises/hex_squat.png",
@@ -219,6 +224,7 @@
     },
     {
         "id":  "incline_bench_press",
+        "barWeightKg":  20,
         "name":  "Incline Bench Press",
         "description":  "Performed on an incline bench. Emphasizes upper chest and shoulders.",
         "icon":  "assets/images/exercises/incline_bench_press.png",
@@ -241,6 +247,7 @@
     },
     {
         "id":  "incline_bench_press_smith_machine",
+        "barWeightKg":  20,
         "name":  "Incline Bench Press (Smith Machine)",
         "description":  "Smith machine incline bench press emphasizing upper chest and shoulders.",
         "icon":  "assets/images/exercises/incline_bench_press_smith_machine.png",
@@ -368,6 +375,7 @@
     },
     {
         "id":  "overhead_press",
+        "barWeightKg":  20,
         "name":  "Overhead Press",
         "description":  "Press barbell overhead. Focus on shoulder strength and core stability.",
         "icon":  "assets/images/exercises/overhead_press.png",
@@ -379,6 +387,7 @@
     },
     {
         "id":  "pause_rep_bench_press",
+        "barWeightKg":  20,
         "name":  "Bench Press (Pause Rep)",
         "description":  "Bench press variation where you pause for about 1 second just above the chest on every rep. Keep a small gap between the bar and your chest, and do not rest the bar on the chest.",
         "icon":  "assets/images/exercises/benchpress.png",
@@ -512,6 +521,7 @@
     },
     {
         "id":  "squat",
+        "barWeightKg":  20,
         "name":  "Squat",
         "description":  "Fundamental leg and glute exercise. Keep depth and neutral spine.",
         "icon":  "assets/images/exercises/squat.png",
@@ -524,6 +534,7 @@
     },
     {
         "id":  "tbar_row",
+        "barWeightKg":  20,
         "name":  "T-Bar Row",
         "description":  "Row variation with T-bar. Targets upper back and rear delts.",
         "icon":  "assets/images/exercises/tbar_row.png",

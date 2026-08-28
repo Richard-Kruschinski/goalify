@@ -53,6 +53,7 @@ class LogInputDialog extends StatefulWidget {
     this.contextDay,
     this.availableDays = const [],
     this.creationMode = false,
+    this.weightSettings = const ExerciseWeightSettings(),
     super.key,
   });
 
@@ -61,6 +62,9 @@ class LogInputDialog extends StatefulWidget {
   final String? contextDay;
   final List<String> availableDays;
   final bool creationMode;
+
+  /// Bar weight + tracking mode saved for this exercise.
+  final ExerciseWeightSettings weightSettings;
 
   @override
   State<LogInputDialog> createState() => _LogInputDialogState();
@@ -71,8 +75,13 @@ class _LogInputDialogState extends State<LogInputDialog> {
   final List<_SetInputField> _setFields = [];
   String? _chipDay;
 
+  /// Mirrors the saved setting; toggling it here stores it for the exercise.
+  late bool _includesBar;
+
   bool get _dayLocked => widget.contextDay != null;
   bool get isDurationWorkout => widget.workout.isDurationBased;
+  double get _barWeightKg => widget.weightSettings.barWeightKg;
+  bool get _showBarOption => !isDurationWorkout && _barWeightKg > 0;
   bool get _allowsZeroWeight =>
       widget.workout.id == 'pull_ups' ||
       widget.workout.id == 'pull_ups_machine' ||
@@ -83,6 +92,7 @@ class _LogInputDialogState extends State<LogInputDialog> {
   void initState() {
     super.initState();
     _dayController = TextEditingController();
+    _includesBar = widget.weightSettings.trackedIncludesBar;
 
     if (widget.latest != null && widget.latest!.sets.isNotEmpty) {
       // Populate from latest
@@ -264,7 +274,14 @@ class _LogInputDialogState extends State<LogInputDialog> {
       final dropsets = field.dropsets
           .map((d) => _convertSetInputFieldToWorkoutSet(d))
           .toList();
-      return WorkoutSet(weightKg: kg, reps: reps, dropsets: dropsets);
+      // Snapshot the bar setup so later setting changes leave this log alone.
+      return WorkoutSet(
+        weightKg: kg,
+        reps: reps,
+        dropsets: dropsets,
+        barWeightKg: _showBarOption ? _barWeightKg : 0,
+        weightIncludesBar: _showBarOption ? _includesBar : true,
+      );
     }
   }
 
@@ -275,7 +292,10 @@ class _LogInputDialogState extends State<LogInputDialog> {
         _showSnackBar(AppLocalizations.of(context).chooseDayForGroup);
         return;
       }
-      Navigator.pop<LogOutcome>(context, LogOutcome(assignDay: day));
+      Navigator.pop<LogOutcome>(
+        context,
+        LogOutcome(assignDay: day, trackedIncludesBar: _barSettingToPersist),
+      );
       return;
     }
 
@@ -295,6 +315,56 @@ class _LogInputDialogState extends State<LogInputDialog> {
           dateTime: DateTime.now(),
           day: day,
           sets: sets,
+        ),
+        trackedIncludesBar: _barSettingToPersist,
+      ),
+    );
+  }
+
+  /// Checkbox state to persist for the exercise — null when no bar is set up,
+  /// so the stored setting stays untouched.
+  bool? get _barSettingToPersist => _showBarOption ? _includesBar : null;
+
+  /// Hint on the weight fields that the bar still gets added on top.
+  String? get _weightSuffix => (_showBarOption && !_includesBar)
+      ? '+ ${_barWeightKg.toStringAsFixed(_barWeightKg % 1 == 0 ? 0 : 1)}'
+      : null;
+
+  /// Row with the "tracked weight includes the bar" checkbox.
+  Widget _buildBarOption() {
+    final l = AppLocalizations.of(context);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: AppColors.card(context),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => setState(() => _includesBar = !_includesBar),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(4, 4, 12, 4),
+            child: Row(
+              children: [
+                Checkbox(
+                  value: _includesBar,
+                  activeColor: AppColors.accent(context),
+                  onChanged: (v) => setState(() => _includesBar = v ?? true),
+                ),
+                Expanded(
+                  child: Text(
+                    l.trackedIncludesBarTitle,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.ink(context),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -383,6 +453,7 @@ class _LogInputDialogState extends State<LogInputDialog> {
           style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.muted(context)),
         ),
         const SizedBox(height: 8),
+        if (_showBarOption) _buildBarOption(),
         ..._setFields.asMap().entries.map((entry) {
           final index = entry.key;
           final field = entry.value;
@@ -545,6 +616,8 @@ class _LogInputDialogState extends State<LogInputDialog> {
                   decoration: InputDecoration(
                     labelText: AppLocalizations.of(context).weightKg,
                     hintText: AppLocalizations.of(context).egHint('80'),
+                    suffixText: _weightSuffix,
+                    suffixStyle: TextStyle(color: AppColors.muted(context)),
                     filled: true,
                     fillColor: AppColors.card(context),
                     border: OutlineInputBorder(
@@ -620,6 +693,8 @@ class _LogInputDialogState extends State<LogInputDialog> {
                             decoration: InputDecoration(
                               labelText: AppLocalizations.of(context).dropsetWeightKg(dropsetIndex + 1),
                               hintText: AppLocalizations.of(context).egHint('70'),
+                              suffixText: _weightSuffix,
+                              suffixStyle: TextStyle(color: AppColors.muted(context)),
                               filled: true,
                               fillColor: AppColors.card(context),
                               border: OutlineInputBorder(

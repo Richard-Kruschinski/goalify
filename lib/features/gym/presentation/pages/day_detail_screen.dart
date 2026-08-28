@@ -3,6 +3,7 @@ import '../../../../l10n/generated/app_localizations.dart';
 import '../../../../core/i18n/task_labels.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/models/gym_models.dart';
+import '../widgets/weight_settings_tile.dart';
 
 // ===============================================================
 // DayDetailScreen mit Checkbox oben rechts („heute erledigt“)
@@ -19,6 +20,9 @@ class DayDetailScreen extends StatefulWidget {
   final void Function(Workout workout) onDeleteAll;
   final void Function(Workout workout) onUnassignFromDay;
   final Future<void> Function(Workout workout) onEditNote;
+  final Future<void> Function(Workout workout) onEditWeightSettings;
+  /// Bar weight / tracking mode currently stored for an exercise.
+  final ExerciseWeightSettings Function(Workout workout) weightSettingsFor;
   final void Function(List<String> newOrder) onReorder;
   final Color stripeColor;
   final VoidCallback? onRefresh;
@@ -42,6 +46,8 @@ class DayDetailScreen extends StatefulWidget {
     required this.onDeleteAll,
     required this.onUnassignFromDay,
     required this.onEditNote,
+    required this.onEditWeightSettings,
+    required this.weightSettingsFor,
     required this.onReorder,
     required this.stripeColor,
     this.onRefresh,
@@ -547,6 +553,18 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
                         ),
                       ),
                     ),
+                  ),
+                  Container(
+                    height: 1,
+                    color: AppColors.chip(context),
+                  ),
+                  WeightSettingsTile(
+                    settings: widget.weightSettingsFor(w),
+                    onTap: () async {
+                      Navigator.pop(ctx);
+                      await widget.onEditWeightSettings(w);
+                      if (mounted) setState(() {});
+                    },
                   ),
                   Container(
                     height: 1,

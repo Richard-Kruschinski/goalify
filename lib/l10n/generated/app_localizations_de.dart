@@ -1612,4 +1612,63 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get sequence => 'Reihenfolge';
+
+  @override
+  String get weightSettings => 'Gewicht Einstellungen';
+
+  @override
+  String get weightSettingsSubtitle =>
+      'Stangengewicht für diese Übung festlegen';
+
+  @override
+  String weightSettingsFor(String name) {
+    return 'Gewicht Einstellungen — $name';
+  }
+
+  @override
+  String get barWeightKg => 'Gewicht der Stange (kg)';
+
+  @override
+  String get barWeightExplain =>
+      'Trage ein, was die leere Stange wiegt, z. B. 20. Leer lassen, wenn die Übung keine Stange hat.';
+
+  @override
+  String get trackedIncludesBarTitle => 'Getracktes Gewicht enthält die Stange';
+
+  @override
+  String barPlusPlates(String bar, String plates, String unit) {
+    return 'Stange $bar + $plates $unit';
+  }
+
+  @override
+  String get applyBarWeightToPastTitle => 'Auch für die Vergangenheit?';
+
+  @override
+  String applyBarWeightToPastMessage(String newValue, int count) {
+    return 'Das Stangengewicht ist jetzt $newValue kg. Sollen die $count bisher getrackten Einträge damit neu berechnet werden?';
+  }
+
+  @override
+  String get onlyNewEntries => 'Nur neue Einträge';
+
+  @override
+  String get recalculatePast => 'Vergangenheit neu berechnen';
+
+  @override
+  String barWeightSaved(String value) {
+    return 'Stangengewicht gespeichert: $value kg';
+  }
+
+  @override
+  String barWeightCurrent(String value) {
+    return 'Stange: $value kg';
+  }
+
+  @override
+  String get barWeightRemoved => 'Stangengewicht entfernt';
+
+  @override
+  String pastEntriesRecalculated(int count) {
+    return '$count vergangene Einträge neu berechnet';
+  }
 }

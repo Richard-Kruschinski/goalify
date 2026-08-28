@@ -478,4 +478,20 @@
   "durationValue": "Dauer: {value}",
   "pauseDuration": "Pause: {pause} • Dauer: {value}",
   "sequence": "Reihenfolge"
+,
+  "weightSettings": "Gewicht Einstellungen",
+  "weightSettingsSubtitle": "Stangengewicht für diese Übung festlegen",
+  "weightSettingsFor": "Gewicht Einstellungen — {name}",
+  "barWeightKg": "Gewicht der Stange (kg)",
+  "barWeightExplain": "Trage ein, was die leere Stange wiegt, z. B. 20. Leer lassen, wenn die Übung keine Stange hat.",
+  "trackedIncludesBarTitle": "Getracktes Gewicht enthält die Stange",
+  "barPlusPlates": "Stange {bar} + {plates} {unit}",
+  "applyBarWeightToPastTitle": "Auch für die Vergangenheit?",
+  "applyBarWeightToPastMessage": "Das Stangengewicht ist jetzt {newValue} kg. Sollen die {count} bisher getrackten Einträge damit neu berechnet werden?",
+  "onlyNewEntries": "Nur neue Einträge",
+  "recalculatePast": "Vergangenheit neu berechnen",
+  "barWeightSaved": "Stangengewicht gespeichert: {value} kg",
+  "barWeightCurrent": "Stange: {value} kg",
+  "barWeightRemoved": "Stangengewicht entfernt",
+  "pastEntriesRecalculated": "{count} vergangene Einträge neu berechnet"
 }

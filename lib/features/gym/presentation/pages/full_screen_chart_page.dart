@@ -186,7 +186,7 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
                 final dropset = set.dropsets[dropsetNum - 1];
                 value = _durationBased
                     ? (dropset.durationSeconds ?? 0).toDouble()
-                    : dropset.weightKg;
+                    : dropset.totalWeightKg;
               }
             }
           } else {
@@ -196,7 +196,7 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
               final set = log.sets[setIndex - 1];
               value = _durationBased
                   ? (set.durationSeconds ?? 0).toDouble()
-                  : set.weightKg;
+                  : set.totalWeightKg;
             }
           }
           
@@ -252,7 +252,7 @@ class _FullScreenChartPageState extends State<FullScreenChartPage> {
           final set = log.sets[setIndex];
           final value = _durationBased
               ? (set.durationSeconds ?? 0).toDouble()
-              : set.weightKg;
+              : set.totalWeightKg;
           if (value <= 0) continue;
           series.add(FlSpot(
             log.dateTime.millisecondsSinceEpoch.toDouble(),

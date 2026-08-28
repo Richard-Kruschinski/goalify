@@ -93,6 +93,11 @@ class Workout {
   final List<String> muscles;
   final bool isDurationBased;
 
+  /// Weight of the empty bar this exercise is usually done with, in kg.
+  /// 0 means the exercise has no bar. Only a starting point — the user can
+  /// override it per exercise in the weight settings.
+  final double defaultBarWeightKg;
+
   const Workout({
     required this.id,
     required this.name,
@@ -101,6 +106,7 @@ class Workout {
     this.iconPath,
     this.muscles = const [],
     this.isDurationBased = false,
+    this.defaultBarWeightKg = 0,
   });
 
   factory Workout.fromJson(Map<String, dynamic> m) {
@@ -118,43 +124,86 @@ class Workout {
           .map((e) => e.toString())
           .toList(),
       isDurationBased: inputType == 'duration' || (m['durationOnly'] == true),
+      defaultBarWeightKg: (m['barWeightKg'] as num?)?.toDouble() ?? 0.0,
     );
   }
 }
 
 class WorkoutSet {
+  /// Value the user typed. Depending on [weightIncludesBar] this is either the
+  /// full weight (bar + plates) or the plates alone.
   final double weightKg;
   final int reps;
   final int? durationSeconds;
   final List<WorkoutSet> dropsets; // Dropsets gehören zu diesem Set
+
+  /// Bar weight configured for the exercise when this set was logged. Stored
+  /// per set so changing the setting later leaves the history untouched unless
+  /// the user explicitly asks for a recalculation.
+  final double barWeightKg;
+
+  /// Whether [weightKg] already contains [barWeightKg].
+  final bool weightIncludesBar;
 
   const WorkoutSet({
     required this.weightKg,
     required this.reps,
     this.durationSeconds,
     this.dropsets = const [],
+    this.barWeightKg = 0,
+    this.weightIncludesBar = true,
   });
 
   bool get hasDuration => (durationSeconds ?? 0) > 0;
   bool get hasDropsets => dropsets.isNotEmpty;
+  bool get hasBar => barWeightKg > 0;
+
+  /// Bar + plates — the value every statistic shows.
+  double get totalWeightKg =>
+      weightIncludesBar ? weightKg : weightKg + barWeightKg;
+
+  /// The plates alone, without the bar.
+  double get plateWeightKg =>
+      weightIncludesBar ? weightKg - barWeightKg : weightKg;
+
+  /// Copy carrying a different bar weight, dropsets included. Used when the
+  /// user recalculates past logs after changing the bar weight.
+  ///
+  /// The plates stay exactly what they were — only the bar underneath changes.
+  /// So a set tracked as 80 kg including a 20 kg bar becomes 90 kg once the bar
+  /// is corrected to 30 kg (80 − 20 + 30), while a set that only tracked its
+  /// 80 kg of plates keeps that number and just totals 10 kg higher.
+  WorkoutSet withBarWeight(double newBarWeightKg) => WorkoutSet(
+    weightKg: weightIncludesBar ? plateWeightKg + newBarWeightKg : weightKg,
+    reps: reps,
+    durationSeconds: durationSeconds,
+    dropsets: dropsets.map((d) => d.withBarWeight(newBarWeightKg)).toList(),
+    barWeightKg: newBarWeightKg,
+    weightIncludesBar: weightIncludesBar,
+  );
 
   Map<String, dynamic> toMap() => {
     'weightKg': weightKg,
     'reps': reps,
     if (durationSeconds != null) 'durationSeconds': durationSeconds,
     if (dropsets.isNotEmpty) 'dropsets': dropsets.map((s) => s.toMap()).toList(),
+    if (barWeightKg > 0) 'barWeightKg': barWeightKg,
+    if (!weightIncludesBar) 'weightIncludesBar': false,
   };
 
   factory WorkoutSet.fromMap(Map<String, dynamic> m) {
     final dropsetsList = (m['dropsets'] as List? ?? [])
         .map((s) => WorkoutSet.fromMap(Map<String, dynamic>.from(s)))
         .toList();
-    
+
     return WorkoutSet(
       weightKg: (m['weightKg'] as num?)?.toDouble() ?? 0.0,
       reps: (m['reps'] as num?)?.toInt() ?? 0,
       durationSeconds: (m['durationSeconds'] as num?)?.toInt(),
       dropsets: dropsetsList,
+      // Logs written before bar weights existed carry the plain value.
+      barWeightKg: (m['barWeightKg'] as num?)?.toDouble() ?? 0.0,
+      weightIncludesBar: m['weightIncludesBar'] as bool? ?? true,
     );
   }
 }
@@ -185,12 +234,25 @@ class WorkoutLog {
   // Gibt das Set mit dem höchsten Gewicht zurück
   WorkoutSet? get heaviestSet {
     if (sets.isEmpty || hasDurationSets) return sets.isEmpty ? null : sets.first;
-    return sets.reduce((a, b) => a.weightKg >= b.weightKg ? a : b);
+    return sets.reduce((a, b) => a.totalWeightKg >= b.totalWeightKg ? a : b);
   }
 
-  // Gibt das Gewicht des heaviest Sets zurück
-  double get maxWeightKg => heaviestSet?.weightKg ?? 0.0;
-  
+  // Gewicht des heaviest Sets — immer Stange + Scheiben
+  double get maxWeightKg => heaviestSet?.totalWeightKg ?? 0.0;
+
+  // Stangengewicht dieses Logs (0 = keine Stange hinterlegt)
+  double get barWeightKg => sets.isEmpty ? 0.0 : sets.first.barWeightKg;
+
+  bool get hasBarWeight => sets.any((s) => s.hasBar);
+
+  /// Kopie mit neuem Stangengewicht für alle Sets — für die nachträgliche
+  /// Neuberechnung der Historie.
+  WorkoutLog withBarWeight(double newBarWeightKg) => WorkoutLog(
+    dateTime: dateTime,
+    day: day,
+    sets: sets.map((s) => s.withBarWeight(newBarWeightKg)).toList(),
+  );
+
   // Gibt die Reps des heaviest Sets zurück
   int get heaviestSetReps => heaviestSet?.reps ?? 0;
 
@@ -249,13 +311,54 @@ class WorkoutLog {
   }
 }
 
+/// Gewichts-Einstellungen einer Übung (Stangengewicht + Tracking-Modus).
+/// Gilt dauerhaft für die Übung; jeder neue Log übernimmt sie als Snapshot.
+class ExerciseWeightSettings {
+  /// Gewicht der Stange in kg. 0 = keine Stange hinterlegt.
+  final double barWeightKg;
+
+  /// true  -> das getrackte Gewicht enthält die Stange bereits
+  /// false -> es werden nur die Gewichtsscheiben getrackt
+  final bool trackedIncludesBar;
+
+  const ExerciseWeightSettings({
+    this.barWeightKg = 0,
+    this.trackedIncludesBar = true,
+  });
+
+  bool get hasBar => barWeightKg > 0;
+
+  ExerciseWeightSettings copyWith({
+    double? barWeightKg,
+    bool? trackedIncludesBar,
+  }) =>
+      ExerciseWeightSettings(
+        barWeightKg: barWeightKg ?? this.barWeightKg,
+        trackedIncludesBar: trackedIncludesBar ?? this.trackedIncludesBar,
+      );
+
+  Map<String, dynamic> toMap() => {
+    'barWeightKg': barWeightKg,
+    'trackedIncludesBar': trackedIncludesBar,
+  };
+
+  factory ExerciseWeightSettings.fromMap(Map<String, dynamic> m) =>
+      ExerciseWeightSettings(
+        barWeightKg: (m['barWeightKg'] as num?)?.toDouble() ?? 0.0,
+        trackedIncludesBar: m['trackedIncludesBar'] as bool? ?? true,
+      );
+}
+
 /// Rückgabewert des Dialogs:
 /// - log != null  -> tracken
 /// - assignDay != null -> nur Plan-Zuweisung (ohne History)
+/// - trackedIncludesBar != null -> Checkbox-Zustand, der für die Übung
+///   dauerhaft gespeichert werden soll
 class LogOutcome {
   final WorkoutLog? log;
   final String? assignDay;
-  const LogOutcome({this.log, this.assignDay});
+  final bool? trackedIncludesBar;
+  const LogOutcome({this.log, this.assignDay, this.trackedIncludesBar});
 }
 
 class SplitEditorResult {

@@ -2871,6 +2871,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sequence'**
   String get sequence;
+
+  /// No description provided for @weightSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Weight settings'**
+  String get weightSettings;
+
+  /// No description provided for @weightSettingsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Set the bar weight for this exercise'**
+  String get weightSettingsSubtitle;
+
+  /// No description provided for @weightSettingsFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Weight settings — {name}'**
+  String weightSettingsFor(String name);
+
+  /// No description provided for @barWeightKg.
+  ///
+  /// In en, this message translates to:
+  /// **'Bar weight (kg)'**
+  String get barWeightKg;
+
+  /// No description provided for @barWeightExplain.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter what the empty bar weighs, e.g. 20. Leave empty if the exercise has no bar.'**
+  String get barWeightExplain;
+
+  /// No description provided for @trackedIncludesBarTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tracked weight includes the bar'**
+  String get trackedIncludesBarTitle;
+
+  /// No description provided for @barPlusPlates.
+  ///
+  /// In en, this message translates to:
+  /// **'Bar {bar} + {plates} {unit}'**
+  String barPlusPlates(String bar, String plates, String unit);
+
+  /// No description provided for @applyBarWeightToPastTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply to past entries?'**
+  String get applyBarWeightToPastTitle;
+
+  /// No description provided for @applyBarWeightToPastMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'The bar weight is now {newValue} kg. Should the {count} entries logged so far be recalculated with it?'**
+  String applyBarWeightToPastMessage(String newValue, int count);
+
+  /// No description provided for @onlyNewEntries.
+  ///
+  /// In en, this message translates to:
+  /// **'Only new entries'**
+  String get onlyNewEntries;
+
+  /// No description provided for @recalculatePast.
+  ///
+  /// In en, this message translates to:
+  /// **'Recalculate past'**
+  String get recalculatePast;
+
+  /// No description provided for @barWeightSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Bar weight saved: {value} kg'**
+  String barWeightSaved(String value);
+
+  /// No description provided for @barWeightCurrent.
+  ///
+  /// In en, this message translates to:
+  /// **'Bar: {value} kg'**
+  String barWeightCurrent(String value);
+
+  /// No description provided for @barWeightRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Bar weight removed'**
+  String get barWeightRemoved;
+
+  /// No description provided for @pastEntriesRecalculated.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} past entries recalculated'**
+  String pastEntriesRecalculated(int count);
 }
 
 class _AppLocalizationsDelegate

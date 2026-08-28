@@ -26,6 +26,7 @@ import 'split_detail_screen.dart';
 import '../widgets/workout_picker_sheet.dart';
 import '../widgets/log_input_dialog.dart';
 import '../widgets/color_picker_grid.dart';
+import '../widgets/weight_settings_tile.dart';
 
 enum ViewMode { byExercise, byDay, bySplit }
 
@@ -283,6 +284,9 @@ class _GymScreenState extends State<GymScreen> {
   // Zuweisungen „Übung gehört zu Day”, auch ohne History
   final Map<String, List<String>> _assignmentsByDay = <String, List<String>>{};
   final Map<String, String> _exerciseNotesByWorkoutId = <String, String>{};
+  // Stangengewicht + Tracking-Modus je Übung
+  final Map<String, ExerciseWeightSettings> _weightSettingsByWorkoutId =
+      <String, ExerciseWeightSettings>{};
   final Map<String, Set<String>> _alternativeWorkoutIdsByDay = <String, Set<String>>{};
 
   // Reihenfolge der Workout-Days
@@ -411,6 +415,11 @@ class _GymScreenState extends State<GymScreen> {
       ..clear()
       ..addAll(await _repo.loadExerciseNotes());
 
+    // Weight settings (bar weight / tracking mode)
+    _weightSettingsByWorkoutId
+      ..clear()
+      ..addAll(await _repo.loadWeightSettings());
+
     // Day colors
     _dayColors
       ..clear()
@@ -459,6 +468,8 @@ class _GymScreenState extends State<GymScreen> {
       _repo.saveAssignments(_assignmentsByDay);
   Future<void> _saveExerciseNotes() async =>
       _repo.saveExerciseNotes(_exerciseNotesByWorkoutId);
+  Future<void> _saveWeightSettings() async =>
+      _repo.saveWeightSettings(_weightSettingsByWorkoutId);
   Future<void> _saveOrderDays() async => _repo.saveOrderDays(_orderDays);
   Future<void> _saveDayColors() async => _repo.saveDayColors(_dayColors);
   Future<void> _saveDayIcons() async => _repo.saveDayIcons(_dayIcons);
@@ -805,7 +816,19 @@ class _GymScreenState extends State<GymScreen> {
     if (isDurationWorkout(workout) && set.hasDuration) {
       return formatDurationShort(set.durationSeconds ?? 0, u);
     }
-    return '${set.weightKg.toStringAsFixed(1)} ${u.kg} × ${set.reps}';
+    // Statistics always show the full weight (bar + plates).
+    return '${set.totalWeightKg.toStringAsFixed(1)} ${u.kg} × ${set.reps}';
+  }
+
+  /// "Bar 20 + 80 kg" — only when a bar weight is stored for the set.
+  String? _formatSetBreakdown(Workout workout, WorkoutSet set) {
+    if (isDurationWorkout(workout) || !set.hasBar) return null;
+    final u = workoutUnitsOf(AppLocalizations.of(context));
+    return AppLocalizations.of(context).barPlusPlates(
+      _formatKg(set.barWeightKg),
+      _formatKg(set.plateWeightKg),
+      u.kg,
+    );
   }
 
   String _chartYAxisLabel(Workout workout) {
@@ -1097,6 +1120,7 @@ class _GymScreenState extends State<GymScreen> {
     _logs.remove(workoutId);
     _bestSetCache.updateBest(workoutId, null); // Lösche Best-Set aus Cache
     _exerciseNotesByWorkoutId.remove(workoutId);
+    _weightSettingsByWorkoutId.remove(workoutId);
 
     if (removeTrackedCalendar) {
       _removeCalendarTrackingForDeletedLogs(deletedLogs);
@@ -1118,6 +1142,7 @@ class _GymScreenState extends State<GymScreen> {
     _saveOrderDays();
     _saveBestSetCache();
     _saveExerciseNotes();
+    _saveWeightSettings();
     if (removeTrackedCalendar) {
       _saveCalendar();
     }
@@ -1275,6 +1300,195 @@ class _GymScreenState extends State<GymScreen> {
     if (!mounted) return;
     final info = note.isEmpty ? AppLocalizations.of(context).noteRemoved : AppLocalizations.of(context).noteSaved;
     ScaffoldMessenger.of(context).showSingleSnackBar(SnackBar(content: Text(info)));
+  }
+
+  // ----------------------------- Gewicht-Einstellungen -----------------------------
+
+  /// Stored settings for the exercise, falling back to the bar weight the
+  /// exercise ships with (barbell lifts) so the checkbox is there right away.
+  ExerciseWeightSettings _weightSettingsFor(Workout workout) =>
+      _weightSettingsByWorkoutId[workout.id] ??
+      ExerciseWeightSettings(barWeightKg: workout.defaultBarWeightKg);
+
+  /// Trims trailing zeros so 20.0 reads as "20" but 22.5 keeps its decimal.
+  static String _formatKg(double kg) =>
+      kg % 1 == 0 ? kg.toStringAsFixed(0) : kg.toStringAsFixed(1);
+
+  /// Stangengewicht der Übung festlegen. Bestehende Logs behalten ihr
+  /// gespeichertes Stangengewicht, bis der Nutzer die Neuberechnung bestätigt.
+  Future<void> _openWeightSettingsDialog(Workout workout) async {
+    final current = _weightSettingsFor(workout);
+    final controller = TextEditingController(
+      text: current.hasBar ? _formatKg(current.barWeightKg) : '',
+    );
+
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: AppColors.card(context),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: (AppColors.isDark(context) ? const Color(0xFF13292B) : const Color(0xFFE0F2F1)),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.straighten_rounded,
+                      color: Color(0xFF00897B),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      AppLocalizations.of(context).weightSettingsFor(workout.name),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.ink(context),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: controller,
+                autofocus: true,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.of(context).barWeightKg,
+                  hintText: AppLocalizations.of(context).egHint('20'),
+                  filled: true,
+                  fillColor: (AppColors.isDark(context) ? const Color(0xFF23272D) : const Color(0xFFF8FAFC)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppColors.accent(context), width: 2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                AppLocalizations.of(context).barWeightExplain,
+                style: TextStyle(fontSize: 13, color: AppColors.muted(context)),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: Text(AppLocalizations.of(context).cancel),
+                  ),
+                  const SizedBox(width: 8),
+                  FilledButton(
+                    onPressed: () => Navigator.pop(ctx, controller.text),
+                    child: Text(AppLocalizations.of(context).save),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    controller.dispose();
+    if (result == null || !mounted) return;
+
+    final typed = result.trim().replaceAll(',', '.');
+    final parsed = typed.isEmpty ? 0.0 : (double.tryParse(typed) ?? -1);
+    if (parsed < 0) {
+      ScaffoldMessenger.of(context).showSingleSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context).barWeightExplain)),
+      );
+      return;
+    }
+
+    await _applyBarWeight(workout, parsed);
+  }
+
+  Future<void> _applyBarWeight(Workout workout, double newBarWeightKg) async {
+    final current = _weightSettingsFor(workout);
+    final logs = _logs[workout.id] ?? const <WorkoutLog>[];
+
+    // Every log carrying a different bar shifts its total, because a
+    // recalculation keeps the plates and swaps the bar underneath them.
+    final affected = logs
+        .where((log) =>
+            log.sets.isNotEmpty &&
+            (log.barWeightKg - newBarWeightKg).abs() > 0.001)
+        .length;
+
+    bool recalculatePast = false;
+    if (affected > 0) {
+      final choice = await _showModernConfirmationDialogWithOptions<String>(
+        context: context,
+        title: AppLocalizations.of(context).applyBarWeightToPastTitle,
+        message: AppLocalizations.of(context).applyBarWeightToPastMessage(
+          _formatKg(newBarWeightKg),
+          affected,
+        ),
+        icon: Icons.history_toggle_off_rounded,
+        iconColor: AppColors.accent(context),
+        // The first entry renders as the plain cancel button.
+        options: {
+          AppLocalizations.of(context).cancel: 'cancel',
+          AppLocalizations.of(context).onlyNewEntries: 'only_new',
+          AppLocalizations.of(context).recalculatePast: 'recalculate',
+        },
+      );
+      if (choice == null) return; // dismissed -> nothing changes at all
+      recalculatePast = choice == 'recalculate';
+    }
+
+    setState(() {
+      _weightSettingsByWorkoutId[workout.id] =
+          current.copyWith(barWeightKg: newBarWeightKg);
+
+      if (recalculatePast) {
+        final list = _logs[workout.id];
+        if (list != null) {
+          for (int i = 0; i < list.length; i++) {
+            list[i] = list[i].withBarWeight(newBarWeightKg);
+          }
+          // Totals moved, so the cached best set has to be found again.
+          _bestSetCache.updateBest(workout.id, _bestSetCache.findBest(list));
+        }
+      }
+    });
+
+    await _saveWeightSettings();
+    if (recalculatePast) {
+      await _saveLogs();
+      await _saveBestSetCache();
+    }
+
+    if (!mounted) return;
+    final l = AppLocalizations.of(context);
+    final info = newBarWeightKg <= 0
+        ? l.barWeightRemoved
+        : l.barWeightSaved(_formatKg(newBarWeightKg));
+    final suffix =
+        recalculatePast ? ' • ${l.pastEntriesRecalculated(affected)}' : '';
+    ScaffoldMessenger.of(context)
+        .showSingleSnackBar(SnackBar(content: Text('$info$suffix')));
   }
 
   Future<void> _openWorkoutLongPressMenu(Workout w) async {
@@ -1558,6 +1772,17 @@ class _GymScreenState extends State<GymScreen> {
                         ),
                       ),
                     ),
+                  ),
+                  Container(
+                    height: 1,
+                    color: AppColors.chip(context),
+                  ),
+                  WeightSettingsTile(
+                    settings: _weightSettingsFor(w),
+                    onTap: () async {
+                      Navigator.pop(ctx);
+                      await _openWeightSettingsDialog(w);
+                    },
                   ),
                   Container(
                     height: 1,
@@ -2921,7 +3146,7 @@ class _GymScreenState extends State<GymScreen> {
         final set = log.sets[setIndex];
         final value = isDuration
             ? (set.durationSeconds ?? 0).toDouble()
-            : set.weightKg;
+            : set.totalWeightKg;
         if (value <= 0) continue;
         series.add(FlSpot(
           log.dateTime.millisecondsSinceEpoch.toDouble(),
@@ -4450,6 +4675,8 @@ class _GymScreenState extends State<GymScreen> {
           onDeleteAll: _confirmClearHistoryAll,
           onUnassignFromDay: (w) => _removeAssignmentForDay(day, w.id),
           onEditNote: _openExerciseNoteDialog,
+          onEditWeightSettings: _openWeightSettingsDialog,
+          weightSettingsFor: _weightSettingsFor,
           onReorder: (ids) => _reorderDay(day, ids),
           stripeColor: stripe,
           // Checkbox oben rechts
@@ -4681,23 +4908,37 @@ class _GymScreenState extends State<GymScreen> {
                           Wrap(
                             spacing: 8,
                             runSpacing: 8,
-                            children: log.sets
-                                .map((s) => Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                      decoration: BoxDecoration(
-                                        color: AppColors.card(context),
-                                        borderRadius: BorderRadius.circular(10),
-                                        border: Border.all(color: AppColors.border(context)),
+                            children: log.sets.map((s) {
+                              final breakdown = _formatSetBreakdown(w, s);
+                              return Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: AppColors.card(context),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(color: AppColors.border(context)),
+                                ),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      _formatSetValue(w, s),
+                                      style: tt.bodySmall?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.ink(context),
                                       ),
-                                      child: Text(
-                                        _formatSetValue(w, s),
-                                        style: tt.bodySmall?.copyWith(
-                                          fontWeight: FontWeight.w600,
-                                          color: AppColors.ink(context),
+                                    ),
+                                    if (breakdown != null)
+                                      Text(
+                                        breakdown,
+                                        style: tt.labelSmall?.copyWith(
+                                          color: AppColors.muted(context),
                                         ),
                                       ),
-                                    ))
-                                .toList(),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
                           ),
                         ],
                       ),
@@ -4756,8 +4997,9 @@ class _GymScreenState extends State<GymScreen> {
         String? contextDay,
         List<String> availableDays = const [],
         bool creationMode = false,
-      }) {
-    return showDialog<LogOutcome>(
+      }) async {
+    final settings = _weightSettingsFor(w);
+    final outcome = await showDialog<LogOutcome>(
       context: context,
       builder: (_) => LogInputDialog(
         workout: w,
@@ -4765,8 +5007,19 @@ class _GymScreenState extends State<GymScreen> {
         contextDay: contextDay,
         availableDays: availableDays,
         creationMode: creationMode,
+        weightSettings: settings,
       ),
     );
+
+    // The checkbox is a per-exercise preference: keep whatever the user chose.
+    final includesBar = outcome?.trackedIncludesBar;
+    if (includesBar != null && includesBar != settings.trackedIncludesBar) {
+      _weightSettingsByWorkoutId[w.id] =
+          settings.copyWith(trackedIncludesBar: includesBar);
+      await _saveWeightSettings();
+    }
+
+    return outcome;
   }
 }
 
