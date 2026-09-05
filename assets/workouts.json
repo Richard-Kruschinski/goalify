@@ -213,7 +213,6 @@
     },
     {
         "id":  "hex_squat",
-        "barWeightKg":  20,
         "name":  "Hex Squat",
         "description":  "Machine-guided squat variation. Focuses on quadriceps activation.",
         "icon":  "assets/images/exercises/hex_squat.png",
@@ -319,7 +318,7 @@
         "id":  "leg_curl",
         "name":  "Leg Curls (Lying)",
         "description":  "Lying machine hamstring curl. Isolates the hamstrings.",
-        "icon":  "assets/images/exercises/leg_curl.png",
+        "icon":  "assets/images/exercises/leg_curl_lying.png",
         "muscles":  [
                         "Hamstrings"
                     ]
@@ -328,7 +327,7 @@
         "id":  "leg_curl_seated",
         "name":  "Leg Curls (Seated)",
         "description":  "Seated machine hamstring curl. Isolates the hamstrings with the hips flexed.",
-        "icon":  "assets/images/exercises/leg_curl.png",
+        "icon":  "assets/images/exercises/leg_curl_seated.png",
         "muscles":  [
                         "Hamstrings"
                     ]
@@ -346,7 +345,7 @@
         "id":  "leg_press",
         "name":  "Leg Press",
         "description":  "It is a lower body exercise in which you push a weighted platform away from your body using your legs. The advantage is that it provides stability and allows you to train the legs with controlled movement. Important: do not let your knees collapse inward and avoid locking them out at the top to keep tension on the muscles and reduce joint stress.",
-        "icon":  "fitness_center",
+        "icon":  "assets/images/exercises/leg_press.png",
         "muscles":  [
                         "Quads",
                         "Glutes",
@@ -375,7 +374,7 @@
         "id":  "one_arm_row_dumbbell",
         "name":  "One-arm Row (Dumbbell)",
         "description":  "It is an upper body back exercise in which you pull a dumbbell with one arm. The advantage is that each side works independently. Important: the dumbbell is not pulled toward the chest, but specifically toward the hip to optimally activate the latissimus.",
-        "icon":  "fitness_center",
+        "icon":  "assets/images/exercises/leg_press.png",
         "muscles":  [
                         "Back",
                         "Lats",
@@ -384,7 +383,6 @@
     },
     {
         "id":  "overhead_press",
-        "barWeightKg":  20,
         "name":  "Overhead Press",
         "description":  "Press barbell overhead. Focus on shoulder strength and core stability.",
         "icon":  "assets/images/exercises/overhead_press.png",
@@ -543,7 +541,6 @@
     },
     {
         "id":  "tbar_row",
-        "barWeightKg":  20,
         "name":  "T-Bar Row",
         "description":  "Row variation with T-bar. Targets upper back and rear delts.",
         "icon":  "assets/images/exercises/tbar_row.png",

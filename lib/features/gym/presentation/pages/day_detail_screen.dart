@@ -20,7 +20,10 @@ class DayDetailScreen extends StatefulWidget {
   final void Function(Workout workout) onDeleteAll;
   final void Function(Workout workout) onUnassignFromDay;
   final Future<void> Function(Workout workout) onEditNote;
-  final Future<void> Function(Workout workout) onEditWeightSettings;
+  /// Opens the bar weight dialog. Takes the context to host it on so the
+  /// dialog is pushed from this screen rather than the one underneath.
+  final Future<void> Function(BuildContext context, Workout workout)
+      onEditWeightSettings;
   /// Bar weight / tracking mode currently stored for an exercise.
   final ExerciseWeightSettings Function(Workout workout) weightSettingsFor;
   final void Function(List<String> newOrder) onReorder;
@@ -554,18 +557,21 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
                       ),
                     ),
                   ),
-                  Container(
-                    height: 1,
-                    color: AppColors.chip(context),
-                  ),
-                  WeightSettingsTile(
-                    settings: widget.weightSettingsFor(w),
-                    onTap: () async {
-                      Navigator.pop(ctx);
-                      await widget.onEditWeightSettings(w);
-                      if (mounted) setState(() {});
-                    },
-                  ),
+                  // A bar weight only means something for barbell lifts.
+                  if (w.supportsBarWeight) ...[
+                    Container(
+                      height: 1,
+                      color: AppColors.chip(context),
+                    ),
+                    WeightSettingsTile(
+                      settings: widget.weightSettingsFor(w),
+                      onTap: () async {
+                        Navigator.pop(ctx);
+                        await widget.onEditWeightSettings(context, w);
+                        if (mounted) setState(() {});
+                      },
+                    ),
+                  ],
                   Container(
                     height: 1,
                     color: AppColors.chip(context),

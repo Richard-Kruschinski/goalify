@@ -81,7 +81,8 @@ class _LogInputDialogState extends State<LogInputDialog> {
   bool get _dayLocked => widget.contextDay != null;
   bool get isDurationWorkout => widget.workout.isDurationBased;
   double get _barWeightKg => widget.weightSettings.barWeightKg;
-  bool get _showBarOption => !isDurationWorkout && _barWeightKg > 0;
+  bool get _showBarOption =>
+      !isDurationWorkout && widget.workout.supportsBarWeight && _barWeightKg > 0;
   bool get _allowsZeroWeight =>
       widget.workout.id == 'pull_ups' ||
       widget.workout.id == 'pull_ups_machine' ||

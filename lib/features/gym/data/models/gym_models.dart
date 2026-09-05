@@ -98,6 +98,13 @@ class Workout {
   /// override it per exercise in the weight settings.
   final double defaultBarWeightKg;
 
+  /// Whether the bar weight setting is offered for this exercise at all.
+  ///
+  /// Only barbell lifts carry a `barWeightKg` in assets/workouts.json, so
+  /// machine, cable, dumbbell and user-created exercises never show the
+  /// option - a bar weight is meaningless for them.
+  bool get supportsBarWeight => defaultBarWeightKg > 0;
+
   const Workout({
     required this.id,
     required this.name,

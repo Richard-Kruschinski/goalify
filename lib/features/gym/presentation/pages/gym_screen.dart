@@ -1316,100 +1316,101 @@ class _GymScreenState extends State<GymScreen> {
 
   /// Stangengewicht der Übung festlegen. Bestehende Logs behalten ihr
   /// gespeichertes Stangengewicht, bis der Nutzer die Neuberechnung bestätigt.
-  Future<void> _openWeightSettingsDialog(Workout workout) async {
+  Future<void> _openWeightSettingsDialog(BuildContext host, Workout workout) async {
     final current = _weightSettingsFor(workout);
-    final controller = TextEditingController(
-      text: current.hasBar ? _formatKg(current.barWeightKg) : '',
-    );
 
     final result = await showDialog<String>(
-      context: context,
-      builder: (ctx) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: AppColors.card(context),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: (AppColors.isDark(context) ? const Color(0xFF13292B) : const Color(0xFFE0F2F1)),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.straighten_rounded,
-                      color: Color(0xFF00897B),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      AppLocalizations.of(context).weightSettingsFor(workout.name),
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.ink(context),
+      context: host,
+      // The controller belongs to the dialog, not to this method: when
+      // showDialog completes the route is still animating out, and its
+      // TextField would rebuild against an already disposed controller.
+      builder: (ctx) => _DialogTextField(
+        initialText: current.hasBar ? _formatKg(current.barWeightKg) : '',
+        builder: (ctx, controller) => Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: AppColors.card(ctx),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: (AppColors.isDark(ctx) ? const Color(0xFF13292B) : const Color(0xFFE0F2F1)),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.straighten_rounded,
+                        color: Color(0xFF00897B),
                       ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: controller,
-                autofocus: true,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(
-                  labelText: AppLocalizations.of(context).barWeightKg,
-                  hintText: AppLocalizations.of(context).egHint('20'),
-                  filled: true,
-                  fillColor: (AppColors.isDark(context) ? const Color(0xFF23272D) : const Color(0xFFF8FAFC)),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: AppColors.accent(context), width: 2),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        AppLocalizations.of(ctx).weightSettingsFor(workout.name),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.ink(ctx),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: controller,
+                  autofocus: true,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: InputDecoration(
+                    labelText: AppLocalizations.of(ctx).barWeightKg,
+                    hintText: AppLocalizations.of(ctx).egHint('20'),
+                    filled: true,
+                    fillColor: (AppColors.isDark(ctx) ? const Color(0xFF23272D) : const Color(0xFFF8FAFC)),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: AppColors.accent(ctx), width: 2),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                AppLocalizations.of(context).barWeightExplain,
-                style: TextStyle(fontSize: 13, color: AppColors.muted(context)),
-              ),
-              const SizedBox(height: 18),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(ctx),
-                    child: Text(AppLocalizations.of(context).cancel),
-                  ),
-                  const SizedBox(width: 8),
-                  FilledButton(
-                    onPressed: () => Navigator.pop(ctx, controller.text),
-                    child: Text(AppLocalizations.of(context).save),
-                  ),
-                ],
-              ),
-            ],
+                const SizedBox(height: 10),
+                Text(
+                  AppLocalizations.of(ctx).barWeightExplain,
+                  style: TextStyle(fontSize: 13, color: AppColors.muted(ctx)),
+                ),
+                const SizedBox(height: 18),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: Text(AppLocalizations.of(ctx).cancel),
+                    ),
+                    const SizedBox(width: 8),
+                    FilledButton(
+                      onPressed: () => Navigator.pop(ctx, controller.text),
+                      child: Text(AppLocalizations.of(ctx).save),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
-
-    controller.dispose();
     if (result == null || !mounted) return;
 
     final typed = result.trim().replaceAll(',', '.');
@@ -1773,17 +1774,20 @@ class _GymScreenState extends State<GymScreen> {
                       ),
                     ),
                   ),
-                  Container(
-                    height: 1,
-                    color: AppColors.chip(context),
-                  ),
-                  WeightSettingsTile(
-                    settings: _weightSettingsFor(w),
-                    onTap: () async {
-                      Navigator.pop(ctx);
-                      await _openWeightSettingsDialog(w);
-                    },
-                  ),
+                  // A bar weight only means something for barbell lifts.
+                  if (w.supportsBarWeight) ...[
+                    Container(
+                      height: 1,
+                      color: AppColors.chip(context),
+                    ),
+                    WeightSettingsTile(
+                      settings: _weightSettingsFor(w),
+                      onTap: () async {
+                        Navigator.pop(ctx);
+                        await _openWeightSettingsDialog(context, w);
+                      },
+                    ),
+                  ],
                   Container(
                     height: 1,
                     color: AppColors.chip(context),
@@ -5021,6 +5025,39 @@ class _GymScreenState extends State<GymScreen> {
 
     return outcome;
   }
+}
+
+/// Owns a [TextEditingController] for exactly as long as a dialog is on screen.
+///
+/// A controller built next to `showDialog` and disposed right after its future
+/// completes dies too early: the route is still animating out, so the still
+/// mounted TextField rebuilds against a disposed controller and throws
+/// "A TextEditingController was used after being disposed". Opening and closing
+/// such a dialog in quick succession hits this every time. Tying the controller
+/// to a State ties its disposal to the dialog's own unmount instead.
+class _DialogTextField extends StatefulWidget {
+  const _DialogTextField({required this.initialText, required this.builder});
+
+  final String initialText;
+  final Widget Function(BuildContext context, TextEditingController controller)
+      builder;
+
+  @override
+  State<_DialogTextField> createState() => _DialogTextFieldState();
+}
+
+class _DialogTextFieldState extends State<_DialogTextField> {
+  late final TextEditingController _controller =
+      TextEditingController(text: widget.initialText);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.builder(context, _controller);
 }
 
 /// ===============================================================
