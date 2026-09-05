@@ -155,8 +155,12 @@
       "description": "Seitheben am Kabelzug für konstante Spannung auf der seitlichen Schulter."
     },
     "leg_curl": {
-      "name": "Beinbeuger",
-      "description": "Maschinen-Beincurl. Isoliert die hintere Oberschenkelmuskulatur."
+      "name": "Beinbeuger (liegend)",
+      "description": "Liegender Maschinen-Beincurl. Isoliert die hintere Oberschenkelmuskulatur."
+    },
+    "leg_curl_seated": {
+      "name": "Beinbeuger (sitzend)",
+      "description": "Sitzender Maschinen-Beincurl. Isoliert die hintere Oberschenkelmuskulatur bei gebeugter Hüfte."
     },
     "leg_extension": {
       "name": "Beinstrecker",

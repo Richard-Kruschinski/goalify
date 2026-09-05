@@ -317,8 +317,17 @@
     },
     {
         "id":  "leg_curl",
-        "name":  "Leg Curls",
-        "description":  "Machine hamstring curl. Isolates the hamstrings.",
+        "name":  "Leg Curls (Lying)",
+        "description":  "Lying machine hamstring curl. Isolates the hamstrings.",
+        "icon":  "assets/images/exercises/leg_curl.png",
+        "muscles":  [
+                        "Hamstrings"
+                    ]
+    },
+    {
+        "id":  "leg_curl_seated",
+        "name":  "Leg Curls (Seated)",
+        "description":  "Seated machine hamstring curl. Isolates the hamstrings with the hips flexed.",
         "icon":  "assets/images/exercises/leg_curl.png",
         "muscles":  [
                         "Hamstrings"
