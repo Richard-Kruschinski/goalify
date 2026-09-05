@@ -49,6 +49,16 @@ class SoundController extends ChangeNotifier {
 
   final AudioPlayer _player = AudioPlayer();
 
+  final AudioContext _effectAudioContext = AudioContext(
+    android: const AudioContextAndroid(
+      contentType: AndroidContentType.sonification,
+      usageType: AndroidUsageType.assistanceSonification,
+      audioFocus: AndroidAudioFocus.none,
+    ),
+
+    iOS: AudioContextIOS(category: AVAudioSessionCategory.ambient),
+  );
+
   List<AppSound> _sounds = const [];
   /// Event id -> default sound id, from the manifest.
   Map<String, String> _eventDefaults = const {};
@@ -71,6 +81,14 @@ class SoundController extends ChangeNotifier {
       (_) {},
       onError: (Object e) => debugPrint('SoundController: player error: $e'),
     );
+    // Never steal audio focus / the audio session from other apps: checking
+    // off a task must not pause the user's music or video.
+    try {
+      await AudioPlayer.global.setAudioContext(_effectAudioContext);
+      await _player.setAudioContext(_effectAudioContext);
+    } catch (e) {
+      debugPrint('SoundController: failed to set audio context: $e');
+    }
     try {
       final manifest =
           jsonDecode(await rootBundle.loadString('assets/sounds.json'))
@@ -125,7 +143,11 @@ class SoundController extends ChangeNotifier {
   Future<void> _play(AppSound sound) async {
     try {
       await _player.stop();
-      await _player.play(AssetSource(sound.file), volume: _volume);
+      await _player.play(
+        AssetSource(sound.file),
+        volume: _volume,
+        ctx: _effectAudioContext,
+      );
     } catch (e) {
       debugPrint('SoundController: failed to play ${sound.file}: $e');
     }
