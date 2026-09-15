@@ -46,6 +46,10 @@
       "name": "Bankdrücken (Multipresse)",
       "description": "Bankdrücken an der Multipresse mit geführter Hantelbahn für Brust, Trizeps und Schultern."
     },
+    "biceps_curl_cable": {
+      "name": "Bizeps-Curls (Kabelzug)",
+      "description": "Stehender Curl am Kabelzug für konstante Spannung auf dem Bizeps über den gesamten Bewegungsumfang."
+    },
     "biceps_curl_dumbbell": {
       "name": "Bizeps-Curls (Kurzhanteln)",
       "description": "Klassischer Kurzhantel-Curl für den Bizepsaufbau."

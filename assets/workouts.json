@@ -44,10 +44,19 @@
                     ]
     },
     {
+        "id":  "biceps_curl_cable",
+        "name":  "Biceps Curl (Cable)",
+        "description":  "Standing cable curl for constant tension on the biceps throughout the range of motion.",
+        "icon":  "assets/images/exercises/biceps_curl_cable.png",
+        "muscles":  [
+                        "Biceps"
+                    ]
+    },
+    {
         "id":  "biceps_curl_dumbbell",
         "name":  "Biceps Curl (Dumbbell)",
         "description":  "Classic dumbbell curl for biceps development.",
-        "icon":  "fitness_center",
+        "icon":  "assets/images/exercises/biceps_curl_dumbbell.png",
         "muscles":  [
                         "Biceps"
                     ]
