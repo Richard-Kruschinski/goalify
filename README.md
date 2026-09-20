@@ -51,16 +51,34 @@ It’s **under consideration** to return in the future.
 
 | Daily | Gym | Progress | Profile |
 |------|-----|----------|-------------|
-| ![Daily Tasks_Screen](assets/images/screenshots/daily_tasks_screen.png) | ![Gym_Screen](assets/images/screenshots/gym_screen1.png) | ![Progress_Screen](assets/images/screenshots/progress_screen.png) | ![Profile_Screen](assets/images/screenshots/profile_screen.png)|
+| ![Daily Tasks_Screen](frontend/assets/images/screenshots/daily_tasks_screen.png) | ![Gym_Screen](frontend/assets/images/screenshots/gym_screen1.png) | ![Progress_Screen](frontend/assets/images/screenshots/progress_screen.png) | ![Profile_Screen](frontend/assets/images/screenshots/profile_screen.png)|
+
+---
+
+## Project Structure
+
+```
+goalify/
+├── frontend/   # Flutter app (Dart)
+└── backend/    # FastAPI service (Python) - see backend/README.md
+```
+
+Flutter commands run from `frontend/`, Python commands from `backend/`.
 
 ---
 
 ## Tech Stack
 
+### Frontend
 - **Flutter** (Dart)
 - Charts: **fl_chart**
-- Storage: local JSON via a small `LocalStorage` helper (no backend required)
+- Storage: local JSON via a small `LocalStorage` helper (the app runs fully offline)
 - State: straightforward `setState` + services
+
+### Backend
+- **FastAPI** (Python 3.12+), async **SQLAlchemy 2.0** + **Alembic**
+- SQLite locally, PostgreSQL for deployments
+- JWT auth with rotating refresh tokens
 
 > Previously listed: Riverpod and Firebase/Auth/Firestore, those are **not required** in the current app and are **planned/optional**.
 
@@ -70,18 +88,31 @@ It’s **under consideration** to return in the future.
 
 ### Requirements
 
-**Flutter** installed
-(see https://flutter.dev/docs/get-started/install)
+- **Flutter** installed (see https://flutter.dev/docs/get-started/install)
+- **Python 3.12+** for the backend
 
 ### Clone
 
 ```bash
 git clone https://github.com/Richard-Kruschinski/goalify.git
-cd goalify
+cd goalify/frontend
 flutter pub get
 ```
 
 ### Run the app
 ```bash
+cd frontend
 flutter run
 ```
+
+### Run the backend
+```bash
+cd backend
+python -m venv .venv
+.venv\Scripts\activate          # Windows
+pip install -r requirements-dev.txt
+copy .env.example .env
+uvicorn app.main:app --reload
+```
+
+Details in [backend/README.md](backend/README.md).
