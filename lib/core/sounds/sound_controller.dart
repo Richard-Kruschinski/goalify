@@ -49,14 +49,23 @@ class SoundController extends ChangeNotifier {
 
   final AudioPlayer _player = AudioPlayer();
 
+  /// Mix with whatever else is playing instead of taking over the audio
+  /// session: no Android audio focus request, `mixWithOthers` on iOS.
+  ///
+  /// The usage/category must stay on the *media* path. Routing effects to
+  /// Android's sonification usage (STREAM_SYSTEM) or iOS' ambient category
+  /// makes them follow the ringer and the silent switch, so they go silent
+  /// on a muted phone even though the app's own sound settings are on.
   final AudioContext _effectAudioContext = AudioContext(
     android: const AudioContextAndroid(
-      contentType: AndroidContentType.sonification,
-      usageType: AndroidUsageType.assistanceSonification,
+      contentType: AndroidContentType.music,
+      usageType: AndroidUsageType.media,
       audioFocus: AndroidAudioFocus.none,
     ),
-
-    iOS: AudioContextIOS(category: AVAudioSessionCategory.ambient),
+    iOS: AudioContextIOS(
+      category: AVAudioSessionCategory.playback,
+      options: const {AVAudioSessionOptions.mixWithOthers},
+    ),
   );
 
   List<AppSound> _sounds = const [];
