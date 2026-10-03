@@ -37,6 +37,21 @@ extension TaskSortModeStorage on TaskSortMode {
         (m) => m.name == raw,
         orElse: () => TaskSortMode.manual,
       );
+
+  /// Which way this mode sorts when it is not reversed. Modes disagree:
+  /// alphabetical reads best A-Z, while streak and points are only useful
+  /// with the biggest value on top. The reverse flag flips this, so the
+  /// arrow shown in the UI follows from both.
+  bool get isDescendingByNature => switch (this) {
+        TaskSortMode.streak || TaskSortMode.points => true,
+        TaskSortMode.manual ||
+        TaskSortMode.alphabetical ||
+        TaskSortMode.type =>
+          false,
+      };
+
+  /// Reversing a hand-made order has no meaning, so [manual] is excluded.
+  bool get supportsReverse => this != TaskSortMode.manual;
 }
 
 /// ===============================================================
@@ -97,6 +112,10 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
 
   // Sort mode (persisted)
   TaskSortMode _sortMode = TaskSortMode.manual;
+
+  /// Flips the active mode's natural direction (see [TaskSortMode.isDescendingByNature]).
+  /// Persisted, but reset whenever the mode changes.
+  bool _sortReversed = false;
 
   // Helpers
   void _showFreezeHelp() {
@@ -202,6 +221,8 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
 
     // Sort mode
     _sortMode = TaskSortModeStorage.fromString(await _repo.loadSortMode());
+    _sortReversed =
+        _sortMode.supportsReverse && (await _repo.loadSortReversed() ?? false);
 
     // Legacy orders
     _orderKeep = await _repo.loadOrderKeep();
@@ -481,7 +502,12 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
       }
     }
 
-    final sorted = List<DailyTask>.from(list)..sort(compare);
+    // Reverse inside the comparator, not on the result: the completed-at-the
+    // -bottom partition below has to stay the last word on the order.
+    final effective = _sortReversed
+        ? (DailyTask a, DailyTask b) => compare(b, a)
+        : compare;
+    final sorted = List<DailyTask>.from(list)..sort(effective);
 
     // Completed tasks always at the bottom (stable partition).
     final active = <DailyTask>[];
@@ -2186,7 +2212,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                   // Sort menu
                   PopupMenuButton<TaskSortMode>(
                     icon: Icon(
-                      Icons.swap_vert,
+                      _sortDirectionIcon,
                       color: _sortMode == TaskSortMode.manual
                           ? AppColors.muted(context)
                           : AppColors.accent(context),
@@ -2294,10 +2320,33 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     );
   }
 
+  /// Whether the list currently runs biggest/last value first.
+  bool get _sortIsDescending =>
+      _sortMode.isDescendingByNature != _sortReversed;
+
+  /// Arrow for the active sort direction. Direction rides on the icon shape,
+  /// not on colour: colour already distinguishes "sorting active" (accent)
+  /// from "custom order" (muted), and the app's blue belongs to freeze tokens.
+  IconData get _sortDirectionIcon => !_sortMode.supportsReverse
+      ? Icons.swap_vert
+      : (_sortIsDescending ? Icons.arrow_downward : Icons.arrow_upward);
+
+  /// Picking the mode that is already active flips its direction; picking a
+  /// different one starts from that mode's natural direction again, so
+  /// "reversed" never carries over into a mode where it would mean something
+  /// else.
   Future<void> _setSortMode(TaskSortMode mode) async {
-    if (mode == _sortMode) return;
-    setState(() => _sortMode = mode);
+    final reversed = mode == _sortMode
+        ? (mode.supportsReverse && !_sortReversed)
+        : false;
+    if (mode == _sortMode && reversed == _sortReversed) return;
+
+    setState(() {
+      _sortMode = mode;
+      _sortReversed = reversed;
+    });
     await _repo.saveSortMode(mode.toStorageString());
+    await _repo.saveSortReversed(reversed);
   }
 
   PopupMenuItem<TaskSortMode> _buildSortMenuItem({
@@ -2331,8 +2380,13 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
               ),
             ),
           ),
+          // The arrow doubles as the hint that tapping again flips it.
           if (selected)
-            Icon(Icons.check, size: 18, color: AppColors.accent(context)),
+            Icon(
+              mode.supportsReverse ? _sortDirectionIcon : Icons.check,
+              size: 18,
+              color: AppColors.accent(context),
+            ),
         ],
       ),
     );

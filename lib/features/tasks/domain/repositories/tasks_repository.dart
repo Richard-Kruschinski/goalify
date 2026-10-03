@@ -32,6 +32,10 @@ abstract class TasksRepository {
   Future<String?> loadSortMode();
   Future<void> saveSortMode(String mode);
 
+  // Whether the active sort mode runs against its natural direction.
+  Future<bool?> loadSortReversed();
+  Future<void> saveSortReversed(bool reversed);
+
   // Freeze tokens / usage.
   Future<int?> loadFreezeTokens();
   Future<int?> loadFreezeDaysCounter();

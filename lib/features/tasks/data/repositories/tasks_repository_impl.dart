@@ -66,6 +66,13 @@ class TasksRepositoryImpl implements TasksRepository {
   Future<void> saveSortMode(String mode) => _local.saveSortMode(mode);
 
   @override
+  Future<bool?> loadSortReversed() => _local.loadSortReversed();
+
+  @override
+  Future<void> saveSortReversed(bool reversed) =>
+      _local.saveSortReversed(reversed);
+
+  @override
   Future<int?> loadFreezeTokens() => _local.loadFreezeTokens();
 
   @override
