@@ -610,6 +610,12 @@ abstract class AppLocalizations {
   /// **'Freeze token: protects a keep-task streak for TODAY without checking it off. Long-press a keep-task and choose \"Freeze for today\". Costs 1 token.'**
   String get freezeHelp;
 
+  /// No description provided for @pointsHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Shows how many tasks you have completed'**
+  String get pointsHelp;
+
   /// No description provided for @cannotCreatePastTasks.
   ///
   /// In en, this message translates to:

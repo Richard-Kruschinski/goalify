@@ -127,6 +127,15 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     );
   }
 
+  void _showPointsHelp() {
+    ScaffoldMessenger.of(context).showSingleSnackBar(
+      SnackBar(
+        duration: const Duration(seconds: 3),
+        content: Text(AppLocalizations.of(context).pointsHelp),
+      ),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -2187,25 +2196,28 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                   ],
                   // Points
                   if (isToday)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: (AppColors.isDark(context) ? const Color(0xFF332612) : const Color(0xFFFFF3E0)),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.star, size: 16, color: Color(0xFFFF9800)),
-                          const SizedBox(width: 4),
-                          Text(
-                            '$_todayDoneCount',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFFFF9800),
-                              fontSize: 14,
+                    GestureDetector(
+                      onTap: _showPointsHelp,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: (AppColors.isDark(context) ? const Color(0xFF332612) : const Color(0xFFFFF3E0)),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.star, size: 16, color: Color(0xFFFF9800)),
+                            const SizedBox(width: 4),
+                            Text(
+                              '$_todayDoneCount',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFFFF9800),
+                                fontSize: 14,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   const SizedBox(width: 8),

@@ -284,6 +284,9 @@ class AppLocalizationsRu extends AppLocalizations {
       'Freeze-токен: защищает серию повторяющейся задачи на СЕГОДНЯ без её выполнения. Удерживайте задачу и выберите «Заморозить на сегодня». Стоит 1 токен.';
 
   @override
+  String get pointsHelp => 'Показывает количество выполненных задач';
+
+  @override
   String get cannotCreatePastTasks =>
       'Нельзя создавать задачи для прошедших дат.';
 

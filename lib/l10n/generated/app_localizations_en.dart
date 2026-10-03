@@ -280,6 +280,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Freeze token: protects a keep-task streak for TODAY without checking it off. Long-press a keep-task and choose \"Freeze for today\". Costs 1 token.';
 
   @override
+  String get pointsHelp => 'Shows how many tasks you have completed';
+
+  @override
   String get cannotCreatePastTasks => 'Cannot create tasks for past dates.';
 
   @override

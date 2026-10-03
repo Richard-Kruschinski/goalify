@@ -96,6 +96,7 @@
   "noTasksYet": "Noch keine Aufgaben",
   "addTaskToStart": "Füge eine Aufgabe hinzu, um zu starten",
   "freezeHelp": "Freeze-Token: schützt die Streak einer wiederkehrenden Aufgabe für HEUTE, ohne sie abzuhaken. Halte eine wiederkehrende Aufgabe gedrückt und wähle \"Für heute einfrieren\". Kostet 1 Token.",
+  "pointsHelp": "Zeige die Anzahl der abgeschlossenen Aufgaben an",
   "cannotCreatePastTasks": "Für vergangene Tage können keine Aufgaben erstellt werden.",
   "cannotModifyPastTasks": "Aufgaben vergangener Tage können nicht geändert werden.",
   "cannotModifyFutureTasks": "Aufgaben zukünftiger Tage können nicht geändert werden.",

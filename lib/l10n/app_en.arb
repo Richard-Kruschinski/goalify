@@ -127,6 +127,7 @@
   "noTasksYet": "No tasks yet",
   "addTaskToStart": "Add a task to get started",
   "freezeHelp": "Freeze token: protects a keep-task streak for TODAY without checking it off. Long-press a keep-task and choose \"Freeze for today\". Costs 1 token.",
+  "pointsHelp": "Shows how many tasks you have completed",
   "cannotCreatePastTasks": "Cannot create tasks for past dates.",
   "cannotModifyPastTasks": "Cannot modify tasks from past dates.",
   "cannotModifyFutureTasks": "Cannot modify tasks from future dates.",
