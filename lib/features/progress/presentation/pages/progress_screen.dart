@@ -2,6 +2,7 @@
 import '../../../../l10n/generated/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/day_cycle.dart';
+import '../../../../core/utils/duration_format.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../data/models/activity_point.dart';
 import '../../data/models/weekly_review_data.dart';
@@ -572,13 +573,8 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
     );
   }
 
-  String _formatFocusMinutes(int minutes) {
-    final l10n = AppLocalizations.of(context);
-    if (minutes < 60) return '$minutes ${l10n.unitMin}';
-    final h = minutes ~/ 60;
-    final m = minutes % 60;
-    return m == 0 ? '$h ${l10n.unitHour}' : '$h ${l10n.unitHour} $m ${l10n.unitMin}';
-  }
+  String _formatFocusMinutes(int minutes) =>
+      formatFocusMinutes(AppLocalizations.of(context), minutes);
 
   Widget _buildWeeklyReviewCard() {
     final r = _weeklyReview;

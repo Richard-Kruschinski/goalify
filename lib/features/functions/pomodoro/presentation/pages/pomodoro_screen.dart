@@ -1,6 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 import '../../../../../l10n/generated/app_localizations.dart';
 import '../../../../../core/theme/app_colors.dart';
+import '../../../../../core/utils/duration_format.dart';
 import '../../../../../core/utils/snackbar_utils.dart';
 import 'package:provider/provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -1660,7 +1661,10 @@ class _StatisticsSection extends StatelessWidget {
               child: _StatCard(
                 icon: Icons.access_time,
                 label: AppLocalizations.of(context).focusTime,
-                value: '${stats.totalFocusTimeToday}m',
+                value: formatFocusMinutes(
+                  AppLocalizations.of(context),
+                  stats.totalFocusTimeToday,
+                ),
                 color: const Color(0xFF4C9AFF),
               ),
             ),
@@ -1673,7 +1677,10 @@ class _StatisticsSection extends StatelessWidget {
               child: _StatCard(
                 icon: Icons.calendar_today,
                 label: AppLocalizations.of(context).thisWeek,
-                value: '${stats.totalFocusTimeThisWeek}m',
+                value: formatFocusMinutes(
+                  AppLocalizations.of(context),
+                  stats.totalFocusTimeThisWeek,
+                ),
                 color: const Color(0xFFFF9F43),
               ),
             ),

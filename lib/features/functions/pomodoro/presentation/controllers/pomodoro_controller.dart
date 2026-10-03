@@ -181,6 +181,10 @@ class PomodoroController extends ChangeNotifier {
       _checkAndResetDailyStats();
       notifyListeners();
     }
+    // The stored weekly total is always suspect on start: the week may have
+    // rolled over while the app was closed, and installs updating from the
+    // old running total carry a value that was never reset at all.
+    await _refreshWeeklyFocus();
   }
 
   void _checkAndResetDailyStats() {
@@ -193,6 +197,7 @@ class PomodoroController extends ChangeNotifier {
         lastResetDate: today,
       );
       _saveStats();
+      notifyListeners();
     }
   }
 
@@ -221,6 +226,34 @@ class PomodoroController extends ChangeNotifier {
     });
 
     await _repo.saveFocusHistory(history);
+  }
+
+  /// Focus minutes in the running calendar week (Monday-Sunday), summed from
+  /// the per-day history.
+  ///
+  /// Derived rather than accumulated: a running total has no way to notice a
+  /// week boundary, so it used to keep growing for the lifetime of the install.
+  /// Reading the same history the progress screen's weekly review reads also
+  /// keeps the two screens from disagreeing.
+  Future<int> _focusMinutesThisWeek() async {
+    final history = await _repo.loadFocusHistory();
+    final today = DayCycle.today();
+    final weekStart = today.subtract(Duration(days: today.weekday - 1));
+    var total = 0;
+    for (var i = 0; i < 7; i++) {
+      total += history[_dateKey(weekStart.add(Duration(days: i)))] ?? 0;
+    }
+    return total;
+  }
+
+  /// Recomputes the weekly total and publishes it. Call after anything that
+  /// changes the focus history or may have crossed a day boundary.
+  Future<void> _refreshWeeklyFocus() async {
+    final minutes = await _focusMinutesThisWeek();
+    if (minutes == _stats.totalFocusTimeThisWeek) return;
+    _stats = _stats.copyWith(totalFocusTimeThisWeek: minutes);
+    await _saveStats();
+    notifyListeners();
   }
 
   String _dateKey(DateTime dt) => DayCycle.dateKey(dt);
@@ -320,10 +353,11 @@ class PomodoroController extends ChangeNotifier {
         completedSessionsToday: _stats.completedSessionsToday + 1,
         totalFocusTimeToday:
             _stats.totalFocusTimeToday + _currentProfile.workDuration,
-        totalFocusTimeThisWeek:
-            _stats.totalFocusTimeThisWeek + _currentProfile.workDuration,
       );
       await _recordFocusMinutes(_currentProfile.workDuration);
+      _stats = _stats.copyWith(
+        totalFocusTimeThisWeek: await _focusMinutesThisWeek(),
+      );
       if (_currentCycle >= _currentProfile.cyclesBeforeLongBreak) {
         _currentPhase = PomodoroPhase.longBreak;
         _currentCycle = 1;
@@ -383,6 +417,12 @@ class PomodoroController extends ChangeNotifier {
   }
 
   void syncWithSystemTime() {
+    // The app may have sat in the background across midnight, or across the
+    // start of a new week - re-derive the day and week totals before anything
+    // else uses them.
+    _checkAndResetDailyStats();
+    _refreshWeeklyFocus();
+
     if (_timerState != PomodoroTimerState.running) return;
     _syncRemainingWithClock();
     if (_remainingSeconds <= 0) {
