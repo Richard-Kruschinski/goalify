@@ -4052,10 +4052,23 @@ class _GymScreenState extends State<GymScreen> {
       buildDefaultDragHandles: false,
       itemBuilder: (_, i) {
         final day = days[i];
-        final count = _assignmentsByDay[day]?.length ?? 0;
-        return _buildModernDayCard(day, i, count);
+        return _buildModernDayCard(day, i, _mainExerciseCount(day));
       },
     );
+  }
+
+  /// How many exercises a day actually consists of. Alternatives are stand-ins
+  /// for a main exercise, not extra work, so they are left out of the count.
+  ///
+  /// Counts the assignments that are not marked, rather than subtracting the
+  /// two set sizes: the alternatives set can still name a workout that is no
+  /// longer assigned to this day.
+  int _mainExerciseCount(String day) {
+    final ids = _assignmentsByDay[day];
+    if (ids == null) return 0;
+    final alternatives = _alternativeWorkoutIdsByDay[day];
+    if (alternatives == null || alternatives.isEmpty) return ids.length;
+    return ids.where((id) => !alternatives.contains(id)).length;
   }
 
   Widget _buildModernDayCard(String day, int index, int count) {
@@ -4285,7 +4298,7 @@ class _GymScreenState extends State<GymScreen> {
         builder: (_) => SplitDetailScreen(
           splitName: splitName,
           days: days,
-          dayExerciseCount: (day) => _assignmentsByDay[day]?.length ?? 0,
+          dayExerciseCount: _mainExerciseCount,
           dayIconBuilder: _getDayIconWidget,
           onOpenDay: _openDayDetail,
           onReorderDays: (newOrder) => _reorderSplitDays(splitName, newOrder),
