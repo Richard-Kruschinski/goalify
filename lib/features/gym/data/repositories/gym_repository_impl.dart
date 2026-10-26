@@ -108,6 +108,21 @@ class GymRepositoryImpl implements GymRepository {
       _local.saveDayCustomIcons(icons);
 
   @override
+  Future<Map<String, int>> loadSplitIcons() => _local.loadSplitIcons();
+
+  @override
+  Future<void> saveSplitIcons(Map<String, int> icons) =>
+      _local.saveSplitIcons(icons);
+
+  @override
+  Future<Map<String, String>> loadSplitCustomIcons() =>
+      _local.loadSplitCustomIcons();
+
+  @override
+  Future<void> saveSplitCustomIcons(Map<String, String> icons) =>
+      _local.saveSplitCustomIcons(icons);
+
+  @override
   Future<Map<String, Set<String>>> loadCalendar() => _local.loadCalendar();
 
   @override

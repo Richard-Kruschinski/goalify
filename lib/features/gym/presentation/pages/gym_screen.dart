@@ -30,6 +30,11 @@ import '../widgets/weight_settings_tile.dart';
 
 enum ViewMode { byExercise, byDay, bySplit }
 
+/// What an icon belongs to. Workout days and splits keep their icons in
+/// separate maps - the two name spaces are independent, so a day and a split
+/// may share a name without sharing an icon - but pick them the same way.
+enum _IconOwner { day, split }
+
 Future<bool> _showModernConfirmationDialog({
   required BuildContext context,
   required String title,
@@ -304,6 +309,10 @@ class _GymScreenState extends State<GymScreen> {
   final Map<String, int> _dayIcons = <String, int>{};
   // Custom Icons je Workout-Tag (file path)
   final Map<String, String> _dayCustomIcons = <String, String>{};
+  // Icon je Split (codePoint)
+  final Map<String, int> _splitIcons = <String, int>{};
+  // Custom Icons je Split (file path)
+  final Map<String, String> _splitCustomIcons = <String, String>{};
   // Creatine intake per date (yyyy-MM-dd)
   final Set<String> _creatineDates = <String>{};
   
@@ -435,6 +444,15 @@ class _GymScreenState extends State<GymScreen> {
       ..clear()
       ..addAll(await _repo.loadDayCustomIcons());
 
+    // Split icons
+    _splitIcons
+      ..clear()
+      ..addAll(await _repo.loadSplitIcons());
+
+    _splitCustomIcons
+      ..clear()
+      ..addAll(await _repo.loadSplitCustomIcons());
+
     // Order der Days
     _orderDays = await _repo.loadOrderDays();
 
@@ -475,6 +493,9 @@ class _GymScreenState extends State<GymScreen> {
   Future<void> _saveDayIcons() async => _repo.saveDayIcons(_dayIcons);
   Future<void> _saveDayCustomIcons() async =>
       _repo.saveDayCustomIcons(_dayCustomIcons);
+  Future<void> _saveSplitIcons() async => _repo.saveSplitIcons(_splitIcons);
+  Future<void> _saveSplitCustomIcons() async =>
+      _repo.saveSplitCustomIcons(_splitCustomIcons);
   Future<void> _saveSplits() async => _repo.saveSplits(_splitsByName);
   Future<void> _saveSplitOrder() async => _repo.saveSplitOrder(_splitOrder);
 
@@ -2463,24 +2484,46 @@ class _GymScreenState extends State<GymScreen> {
   }
 
   // ----------------------------- Day Icon Management -----------------------------
-  IconData _getDayIcon(String day) {
-    final stored = _dayIcons[day];
+  Map<String, int> _iconCodesFor(_IconOwner owner) =>
+      owner == _IconOwner.day ? _dayIcons : _splitIcons;
+
+  Map<String, String> _customIconsFor(_IconOwner owner) =>
+      owner == _IconOwner.day ? _dayCustomIcons : _splitCustomIcons;
+
+  /// Shown when nothing was picked - the icon each list used before icons
+  /// were selectable.
+  IconData _fallbackIconFor(_IconOwner owner) =>
+      owner == _IconOwner.day ? Icons.event_note : Icons.account_tree;
+
+  Future<void> _saveIconsFor(_IconOwner owner) async {
+    if (owner == _IconOwner.day) {
+      await _saveDayIcons();
+      await _saveDayCustomIcons();
+    } else {
+      await _saveSplitIcons();
+      await _saveSplitCustomIcons();
+    }
+  }
+
+  IconData _resolveIcon(String name, _IconOwner owner) {
+    final fallback = _fallbackIconFor(owner);
+    final stored = _iconCodesFor(owner)[name];
     if (stored != null) {
       // Find icon in available icons by codePoint
       try {
         return _availableIcons.firstWhere(
           (icon) => icon.codePoint == stored,
-          orElse: () => Icons.event_note,
+          orElse: () => fallback,
         );
       } catch (_) {
-        return Icons.event_note;
+        return fallback;
       }
     }
-    return Icons.event_note;
+    return fallback;
   }
 
-  Widget _getDayIconWidget(String day) {
-    final customPath = _dayCustomIcons[day];
+  Widget _iconWidgetFor(String name, _IconOwner owner) {
+    final customPath = _customIconsFor(owner)[name];
     if (customPath != null && customPath.isNotEmpty) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(12),
@@ -2490,7 +2533,7 @@ class _GymScreenState extends State<GymScreen> {
         ),
       );
     }
-    final stored = _dayIcons[day];
+    final stored = _iconCodesFor(owner)[name];
     if (GymIcons.isCustom(stored)) {
       return GymIcons.icon(
         stored!,
@@ -2499,33 +2542,43 @@ class _GymScreenState extends State<GymScreen> {
       );
     }
     return Icon(
-      _getDayIcon(day),
+      _resolveIcon(name, owner),
       color: AppColors.accent(context),
       size: 24,
     );
   }
 
-  Future<void> _pickCustomIcon(String day, BuildContext dialogContext) async {
+  Widget _getDayIconWidget(String day) =>
+      _iconWidgetFor(day, _IconOwner.day);
+
+  Widget _getSplitIconWidget(String splitName) =>
+      _iconWidgetFor(splitName, _IconOwner.split);
+
+  Future<void> _pickCustomIcon(
+    String name,
+    BuildContext dialogContext, {
+    required _IconOwner owner,
+  }) async {
     final picker = ImagePicker();
     final image = await picker.pickImage(source: ImageSource.gallery);
-    
+
     if (image != null) {
       try {
         final directory = await getApplicationDocumentsDirectory();
-        final fileName = 'day_icon_${day.replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        final prefix = owner == _IconOwner.day ? 'day_icon' : 'split_icon';
+        final fileName = '${prefix}_${name.replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}.jpg';
         final filePath = '${directory.path}/$fileName';
-        
+
         final savedImage = await File(image.path).copy(filePath);
-        
+
         setState(() {
-          _dayCustomIcons[day] = savedImage.path;
+          _customIconsFor(owner)[name] = savedImage.path;
           // Remove standard icon when custom image is set
-          _dayIcons.remove(day);
+          _iconCodesFor(owner).remove(name);
         });
-        
-        await _saveDayCustomIcons();
-        await _saveDayIcons();
-        
+
+        await _saveIconsFor(owner);
+
         if (dialogContext.mounted) {
           Navigator.pop(dialogContext);
         }
@@ -2907,7 +2960,10 @@ class _GymScreenState extends State<GymScreen> {
     );
   }
 
-  Future<void> _changeIconDialog(String day) async {
+  Future<void> _changeIconDialog(
+    String name, {
+    _IconOwner owner = _IconOwner.day,
+  }) async {
     final selectedCode = await showDialog<int>(
       context: context,
       builder: (ctx) => Dialog(
@@ -2977,7 +3033,7 @@ class _GymScreenState extends State<GymScreen> {
                     // Custom Push/Pull/Cardio icons first
                     if (index < GymIcons.all.length) {
                       final code = GymIcons.all[index];
-                      final isSelected = _dayIcons[day] == code;
+                      final isSelected = _iconCodesFor(owner)[name] == code;
 
                       return Material(
                         color: Colors.transparent,
@@ -3011,7 +3067,7 @@ class _GymScreenState extends State<GymScreen> {
                       return Material(
                         color: Colors.transparent,
                         child: InkWell(
-                          onTap: () => _pickCustomIcon(day, ctx),
+                          onTap: () => _pickCustomIcon(name, ctx, owner: owner),
                           borderRadius: BorderRadius.circular(14),
                           child: Container(
                             decoration: BoxDecoration(
@@ -3034,7 +3090,9 @@ class _GymScreenState extends State<GymScreen> {
 
                     final icon = _availableIcons[index - GymIcons.all.length];
                     final isSelected =
-                        (_dayIcons[day] ?? Icons.event_note.codePoint) == icon.codePoint;
+                        (_iconCodesFor(owner)[name] ??
+                                _fallbackIconFor(owner).codePoint) ==
+                            icon.codePoint;
 
                     return Material(
                       color: Colors.transparent,
@@ -3072,12 +3130,11 @@ class _GymScreenState extends State<GymScreen> {
 
     if (selectedCode != null) {
       setState(() {
-        _dayIcons[day] = selectedCode;
+        _iconCodesFor(owner)[name] = selectedCode;
         // Remove custom icon when switching to predefined icon
-        _dayCustomIcons.remove(day);
+        _customIconsFor(owner).remove(name);
       });
-      await _saveDayIcons();
-      await _saveDayCustomIcons();
+      await _saveIconsFor(owner);
     }
   }
 
@@ -4245,10 +4302,7 @@ class _GymScreenState extends State<GymScreen> {
                     color: AppColors.accentSoft(context),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(
-                    Icons.account_tree,
-                    color: AppColors.accent(context),
-                  ),
+                  child: _getSplitIconWidget(splitName),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -4391,6 +4445,34 @@ class _GymScreenState extends State<GymScreen> {
                       Material(
                         color: Colors.transparent,
                         child: InkWell(
+                          onTap: () => Navigator.pop(ctx, 'icon'),
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                            child: Row(
+                              children: [
+                                Icon(Icons.emoji_emotions_outlined,
+                                    color: AppColors.muted(context)),
+                                SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    AppLocalizations.of(context).changeIcon,
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.ink(context),
+                                    ),
+                                  ),
+                                ),
+                                Icon(Icons.chevron_right, color: AppColors.faint(context)),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      Divider(height: 1, color: AppColors.border(context)),
+                      Material(
+                        color: Colors.transparent,
+                        child: InkWell(
                           borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
                           onTap: () => Navigator.pop(ctx, 'delete'),
                           child: Padding(
@@ -4427,6 +4509,8 @@ class _GymScreenState extends State<GymScreen> {
 
     if (action == 'edit') {
       await _editSplit(splitName);
+    } else if (action == 'icon') {
+      await _changeIconDialog(splitName, owner: _IconOwner.split);
     } else if (action == 'delete') {
       await _deleteSplit(splitName);
     }
@@ -4475,11 +4559,19 @@ class _GymScreenState extends State<GymScreen> {
         } else if (!_splitOrder.contains(result.name)) {
           _splitOrder.add(result.name);
         }
+        // Icons are keyed by name, so a rename has to carry them over or
+        // the split silently falls back to the default icon.
+        final icon = _splitIcons.remove(splitName);
+        if (icon != null) _splitIcons[result.name] = icon;
+        final customIcon = _splitCustomIcons.remove(splitName);
+        if (customIcon != null) _splitCustomIcons[result.name] = customIcon;
       }
       _splitsByName[result.name] = List<String>.from(result.days, growable: true);
     });
     await _saveSplits();
     await _saveSplitOrder();
+    await _saveSplitIcons();
+    await _saveSplitCustomIcons();
   }
 
   Future<void> _deleteSplit(String splitName) async {
@@ -4498,9 +4590,13 @@ class _GymScreenState extends State<GymScreen> {
     setState(() {
       _splitsByName.remove(splitName);
       _splitOrder.remove(splitName);
+      _splitIcons.remove(splitName);
+      _splitCustomIcons.remove(splitName);
     });
     await _saveSplits();
     await _saveSplitOrder();
+    await _saveSplitIcons();
+    await _saveSplitCustomIcons();
   }
 
   Future<SplitEditorResult?> _openSplitEditor({

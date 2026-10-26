@@ -23,6 +23,8 @@ class GymLocalDataSource {
   static const _kDayColorsKey = 'gym_day_colors_v1';
   static const _kDayIconsKey = 'gym_day_icons_v1';
   static const _kDayCustomIconsKey = 'gym_day_custom_icons_v1';
+  static const _kSplitIconsKey = 'gym_split_icons_v1';
+  static const _kSplitCustomIconsKey = 'gym_split_custom_icons_v1';
   static const _kCreatineKey = 'gym_creatine_intake_v1';
   static const _kBestSetCacheKey = 'gym_best_set_cache_v1';
   static const _kAlternativeIdsByDayKey = 'gym_alternative_ids_by_day_v1';
@@ -179,6 +181,26 @@ class GymLocalDataSource {
 
   Future<void> saveDayCustomIcons(Map<String, String> icons) =>
       LocalStorage.saveJson(_kDayCustomIconsKey, icons);
+
+  Future<Map<String, int>> loadSplitIcons() async =>
+      _decodeIntMap(await LocalStorage.loadJson(_kSplitIconsKey, fallback: {}));
+
+  Future<void> saveSplitIcons(Map<String, int> icons) =>
+      LocalStorage.saveJson(_kSplitIconsKey, icons);
+
+  Future<Map<String, String>> loadSplitCustomIcons() async {
+    final raw = await LocalStorage.loadJson(_kSplitCustomIconsKey, fallback: {});
+    final result = <String, String>{};
+    if (raw is Map) {
+      raw.forEach((k, v) {
+        result[k.toString()] = v.toString();
+      });
+    }
+    return result;
+  }
+
+  Future<void> saveSplitCustomIcons(Map<String, String> icons) =>
+      LocalStorage.saveJson(_kSplitCustomIconsKey, icons);
 
   // --- Calendar (Map<dateKey, Set<dayName>>) ---
   Future<Map<String, Set<String>>> loadCalendar() async {

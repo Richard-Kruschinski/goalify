@@ -44,6 +44,10 @@ abstract class GymRepository {
   Future<void> saveDayIcons(Map<String, int> icons);
   Future<Map<String, String>> loadDayCustomIcons();
   Future<void> saveDayCustomIcons(Map<String, String> icons);
+  Future<Map<String, int>> loadSplitIcons();
+  Future<void> saveSplitIcons(Map<String, int> icons);
+  Future<Map<String, String>> loadSplitCustomIcons();
+  Future<void> saveSplitCustomIcons(Map<String, String> icons);
 
   // Calendar (Map<dateKey, Set<dayName>>).
   Future<Map<String, Set<String>>> loadCalendar();
