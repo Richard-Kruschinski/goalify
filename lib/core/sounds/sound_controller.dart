@@ -83,7 +83,13 @@ class SoundController extends ChangeNotifier {
   /// All sounds available in the picker.
   List<AppSound> get sounds => _sounds;
 
-  Future<void> load() async {
+  /// Completes once [load] has finished; playback waits for it so a sound
+  /// requested during startup isn't dropped.
+  Future<void>? _loading;
+
+  Future<void> load() => _loading ??= _load();
+
+  Future<void> _load() async {
     // Playback errors (e.g. missing asset) surface on the event stream,
     // not as play() exceptions - log them so failures aren't silent.
     _player.eventStream.listen(
@@ -140,6 +146,7 @@ class SoundController extends ChangeNotifier {
 
   /// Plays the sound assigned to [event]. No-op when sounds are disabled.
   Future<void> playEvent(SoundEvent event) async {
+    await load();
     if (!_enabled) return;
     final sound = soundForEvent(event);
     if (sound == null) return;
@@ -150,6 +157,7 @@ class SoundController extends ChangeNotifier {
   Future<void> preview(AppSound sound) => _play(sound);
 
   Future<void> _play(AppSound sound) async {
+    await load();
     try {
       await _player.stop();
       await _player.play(

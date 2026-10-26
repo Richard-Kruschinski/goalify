@@ -36,7 +36,10 @@ class GoalifyApp extends StatelessWidget {
         // Global app settings (theme mode, language)
         ChangeNotifierProvider.value(value: settings),
         // Sound effects (manifest + user settings load asynchronously)
+        // Not lazy: created on first read, the manifest would still be
+        // loading when the first task is checked off, and that sound is lost.
         ChangeNotifierProvider(
+          lazy: false,
           create: (_) => SoundController()..load(),
         ),
         // Global PomodoroController - persists across navigation
