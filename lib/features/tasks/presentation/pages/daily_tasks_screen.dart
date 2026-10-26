@@ -98,6 +98,9 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   int _todayDoneCount = 0;
 
   // Freeze-State
+  /// Tokens stop accruing at this cap. A balance above it (saved before the
+  /// cap existed) is kept, it just earns nothing until it drops below.
+  static const int _maxFreezeTokens = 5;
   int _freezeTokens = 0;
   int _freezeDaysCounter = 0;
   final Map<String, List<String>> _freezeUsageByDate = {};
@@ -121,7 +124,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   void _showFreezeHelp() {
     ScaffoldMessenger.of(context).showSingleSnackBar(
       SnackBar(
-        duration: const Duration(seconds: 3),
+        duration: const Duration(seconds: 5),
         content: Text(AppLocalizations.of(context).freezeHelp),
       ),
     );
@@ -766,9 +769,11 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
         changedOrderCombined = true;
       }
 
-      // --- Freeze tokens: +1 each 7 days ---
+      // --- Freeze tokens: +1 each 7 days, up to the cap ---
+      // The counter keeps running at the cap so the weekly rhythm holds;
+      // that week's token is simply forfeited.
       _freezeDaysCounter += 1;
-      if (_freezeDaysCounter % 7 == 0) {
+      if (_freezeDaysCounter % 7 == 0 && _freezeTokens < _maxFreezeTokens) {
         _freezeTokens += 1;
       }
 

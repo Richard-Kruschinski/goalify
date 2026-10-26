@@ -607,7 +607,7 @@ abstract class AppLocalizations {
   /// No description provided for @freezeHelp.
   ///
   /// In en, this message translates to:
-  /// **'Freeze token: protects a keep-task streak for TODAY without checking it off. Long-press a keep-task and choose \"Freeze for today\". Costs 1 token.'**
+  /// **'Freeze token: protects a keep-task streak for TODAY without checking it off. Long-press a keep-task and choose \"Freeze for today\". Costs 1 token. You earn one per week, up to 5.'**
   String get freezeHelp;
 
   /// No description provided for @pointsHelp.

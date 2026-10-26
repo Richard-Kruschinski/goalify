@@ -280,7 +280,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get freezeHelp =>
-      'Freeze-Token: schützt die Streak einer wiederkehrenden Aufgabe für HEUTE, ohne sie abzuhaken. Halte eine wiederkehrende Aufgabe gedrückt und wähle \"Für heute einfrieren\". Kostet 1 Token.';
+      'Freeze-Token: schützt die Streak einer wiederkehrenden Aufgabe für HEUTE, ohne sie abzuhaken. Halte eine wiederkehrende Aufgabe gedrückt und wähle \"Für heute einfrieren\". Kostet 1 Token. Jede Woche gibt es einen neuen, bis maximal 5.';
 
   @override
   String get pointsHelp => 'Zeige die Anzahl der abgeschlossenen Aufgaben an';
