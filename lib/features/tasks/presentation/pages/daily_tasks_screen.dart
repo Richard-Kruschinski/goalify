@@ -15,6 +15,7 @@ import '../../domain/repositories/tasks_repository.dart';
 import '../../domain/usecases/task_rules.dart';
 import '../../../progress/presentation/pages/congrats_screen.dart';
 import '../../data/models/daily_task.dart';
+import '../description_preview.dart';
 import '../widgets/create_daily_task_sheet.dart';
 import '../widgets/edit_daily_task_sheet.dart';
 import '../../../../core/widgets/modern_date_picker_dialog.dart';
@@ -2637,11 +2638,12 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                           decoration: isDone ? TextDecoration.lineThrough : null,
                         ),
                       ),
-                      if (task.description != null && task.description!.isNotEmpty)
+                      if (task.description != null &&
+                          task.description!.trim().isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.only(top: 4),
                           child: Text(
-                            task.description!,
+                            descriptionPreview(task.description!),
                             style: TextStyle(
                               fontSize: 13,
                               color: isDone
