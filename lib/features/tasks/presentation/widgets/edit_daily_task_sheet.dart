@@ -454,7 +454,8 @@ class _EditDailyTaskSheetState extends State<EditDailyTaskSheet> {
                     borderSide: BorderSide(color: AppColors.accent(context), width: 2),
                   ),
                 ),
-                maxLines: 2,
+                minLines: 3,
+                maxLines: 6,
               ),
               const SizedBox(height: 20),
               Text(

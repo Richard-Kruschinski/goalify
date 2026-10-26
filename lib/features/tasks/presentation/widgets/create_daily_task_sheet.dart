@@ -457,7 +457,8 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
                   ),
                   prefixIcon: Icon(Icons.notes, color: AppColors.muted(context)),
                 ),
-                maxLines: 2,
+                minLines: 3,
+                maxLines: 6,
               ),
               const SizedBox(height: 20),
               // Category
