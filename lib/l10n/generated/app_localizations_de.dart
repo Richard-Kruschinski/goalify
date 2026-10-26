@@ -642,6 +642,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get noWorkoutsYet => 'Noch keine Übungen';
 
   @override
+  String get noExercisesFound => 'Keine Übungen gefunden';
+
+  @override
   String get addFirstExercise => 'Füge deine erste Übung hinzu, um zu starten';
 
   @override

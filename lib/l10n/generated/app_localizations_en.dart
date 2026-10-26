@@ -630,6 +630,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noWorkoutsYet => 'No workouts yet';
 
   @override
+  String get noExercisesFound => 'No exercises found';
+
+  @override
   String get addFirstExercise => 'Add your first exercise to get started';
 
   @override

@@ -641,6 +641,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get noWorkoutsYet => 'Пока нет упражнений';
 
   @override
+  String get noExercisesFound => 'Упражнения не найдены';
+
+  @override
   String get addFirstExercise => 'Добавьте первое упражнение, чтобы начать';
 
   @override

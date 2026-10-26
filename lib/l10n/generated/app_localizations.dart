@@ -1210,6 +1210,12 @@ abstract class AppLocalizations {
   /// **'No workouts yet'**
   String get noWorkoutsYet;
 
+  /// No description provided for @noExercisesFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No exercises found'**
+  String get noExercisesFound;
+
   /// No description provided for @addFirstExercise.
   ///
   /// In en, this message translates to:

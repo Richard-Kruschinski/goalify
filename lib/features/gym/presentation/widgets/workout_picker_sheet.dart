@@ -3,6 +3,7 @@ import '../../../../l10n/generated/app_localizations.dart';
 import '../../../../core/i18n/task_labels.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/models/gym_models.dart';
+import 'workout_search_field.dart';
 
 /// ===============================================================
 /// Bottom Sheet: Suche + Liste + Beschreibung
@@ -26,18 +27,9 @@ class WorkoutPickerSheet extends StatefulWidget {
 class _WorkoutPickerSheetState extends State<WorkoutPickerSheet> {
   String _query = '';
 
-  List<Workout> _applyFilter() {
-    final String lower = _query.toLowerCase();
-    final List<Workout> filtered = <Workout>[];
-    for (final Workout workout in widget.workouts) {
-      final byName = workout.name.toLowerCase().contains(lower);
-      final byMuscle = workout.muscles.any((m) => m.toLowerCase().contains(lower));
-      if (byName || byMuscle) {
-        filtered.add(workout);
-      }
-    }
-    return filtered;
-  }
+  List<Workout> _applyFilter() => widget.workouts
+      .where((workout) => workoutMatchesQuery(workout, _query))
+      .toList();
 
   Widget _buildGrabber() {
     return Container(
@@ -53,26 +45,7 @@ class _WorkoutPickerSheetState extends State<WorkoutPickerSheet> {
   Widget _buildSearchField() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: TextField(
-        decoration: InputDecoration(
-          hintText: AppLocalizations.of(context).searchWorkoutHint,
-          filled: true,
-          fillColor: AppColors.card(context),
-          prefixIcon: Icon(Icons.search, color: AppColors.muted(context)),
-          contentPadding: const EdgeInsets.symmetric(vertical: 14),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: AppColors.accent(context), width: 2),
-          ),
-        ),
+      child: WorkoutSearchField(
         onChanged: (String value) => setState(() => _query = value),
       ),
     );

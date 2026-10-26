@@ -198,6 +198,7 @@
   "gotIt": "Понятно",
   "fullScreen": "Во весь экран",
   "noWorkoutsYet": "Пока нет упражнений",
+  "noExercisesFound": "Упражнения не найдены",
   "addFirstExercise": "Добавьте первое упражнение, чтобы начать",
   "noWorkoutDaysYet": "Пока нет тренировочных дней",
   "addExercisesToCreateDays": "Добавьте упражнения, чтобы создать тренировочные дни",

@@ -24,6 +24,7 @@ import 'full_screen_chart_page.dart';
 import 'workout_calendar_page.dart';
 import 'split_detail_screen.dart';
 import '../widgets/workout_picker_sheet.dart';
+import '../widgets/workout_search_field.dart';
 import '../widgets/log_input_dialog.dart';
 import '../widgets/color_picker_grid.dart';
 import '../widgets/weight_settings_tile.dart';
@@ -277,6 +278,7 @@ class _GymScreenState extends State<GymScreen> {
   late List<IconData> _availableIcons = [];
 
   ViewMode _mode = ViewMode.byExercise;
+  String _exerciseQuery = '';
 
   // Workouts from JSON
   final List<Workout> _workouts = <Workout>[];
@@ -3930,20 +3932,51 @@ class _GymScreenState extends State<GymScreen> {
     final active = _getActiveWorkouts();
     if (active.isEmpty) return _buildEmptyBody();
 
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+          child: WorkoutSearchField(
+            initialQuery: _exerciseQuery,
+            onChanged: (value) => setState(() => _exerciseQuery = value),
+          ),
+        ),
+        Expanded(child: _buildFilteredWorkoutList(active)),
+      ],
+    );
+  }
+
+  Widget _buildFilteredWorkoutList(List<Workout> active) {
+    final filtered =
+        active.where((w) => workoutMatchesQuery(w, _exerciseQuery)).toList();
+    if (filtered.isEmpty) return _buildNoSearchResults();
+
+    // _reorderMainOnly works on indices of the full list, so dragging inside
+    // a filtered list would move the wrong exercise: no drag handles then.
+    final canReorder = filtered.length == active.length;
+
     return ReorderableListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      itemCount: active.length,
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+      itemCount: filtered.length,
       onReorder: _reorderMainOnly,
       buildDefaultDragHandles: false,
       itemBuilder: (_, i) {
-        final w = active[i];
+        final w = filtered[i];
         final latest = _getLatestLogFor(w.id);
-        return _buildModernWorkoutCard(w, i, latest);
+        return _buildModernWorkoutCard(w, canReorder ? i : null, latest);
       },
     );
   }
 
-  Widget _buildModernWorkoutCard(Workout w, int index, WorkoutLog? latest) {
+  Widget _buildNoSearchResults() => Center(
+    child: Text(
+      AppLocalizations.of(context).noExercisesFound,
+      style: TextStyle(fontSize: 14, color: AppColors.faint(context)),
+    ),
+  );
+
+  /// [index] is the drag position; null hides the drag handle.
+  Widget _buildModernWorkoutCard(Workout w, int? index, WorkoutLog? latest) {
     return Container(
       key: ValueKey('ex_${w.id}'),
       margin: const EdgeInsets.only(bottom: 12),
@@ -3979,15 +4012,17 @@ class _GymScreenState extends State<GymScreen> {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                ReorderableDragStartListener(
-                  index: index,
-                  child: Icon(
-                    Icons.drag_indicator,
-                    color: AppColors.border(context),
-                    size: 20,
+                if (index != null) ...[
+                  ReorderableDragStartListener(
+                    index: index,
+                    child: Icon(
+                      Icons.drag_indicator,
+                      color: AppColors.border(context),
+                      size: 20,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 12),
+                  const SizedBox(width: 12),
+                ],
                 Container(
                   width: 48,
                   height: 48,

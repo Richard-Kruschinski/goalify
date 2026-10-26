@@ -286,6 +286,7 @@
   "gotIt": "Got it",
   "fullScreen": "Full screen",
   "noWorkoutsYet": "No workouts yet",
+  "noExercisesFound": "No exercises found",
   "addFirstExercise": "Add your first exercise to get started",
   "noWorkoutDaysYet": "No workout days yet",
   "addExercisesToCreateDays": "Add exercises to create workout days",
