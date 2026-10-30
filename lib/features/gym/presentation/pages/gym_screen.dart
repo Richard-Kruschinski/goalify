@@ -2524,7 +2524,8 @@ class _GymScreenState extends State<GymScreen> {
     return fallback;
   }
 
-  Widget _iconWidgetFor(String name, _IconOwner owner) {
+  Widget _iconWidgetFor(String name, _IconOwner owner, {Color? color}) {
+    final iconColor = color ?? AppColors.accent(context);
     final customPath = _customIconsFor(owner)[name];
     if (customPath != null && customPath.isNotEmpty) {
       return ClipRRect(
@@ -2539,13 +2540,13 @@ class _GymScreenState extends State<GymScreen> {
     if (GymIcons.isCustom(stored)) {
       return GymIcons.icon(
         stored!,
-        color: AppColors.accent(context),
+        color: iconColor,
         size: 24,
       );
     }
     return Icon(
       _resolveIcon(name, owner),
-      color: AppColors.accent(context),
+      color: iconColor,
       size: 24,
     );
   }
@@ -3664,6 +3665,11 @@ class _GymScreenState extends State<GymScreen> {
                           builder: (_) => WorkoutCalendarPage(
                             calendarByDate: _calendarByDate,
                             dayColors: _dayColors,
+                            dayIconBuilder: (day, color) => _iconWidgetFor(
+                              day,
+                              _IconOwner.day,
+                              color: color,
+                            ),
                             isCreatineTaken: _isCreatineTakenOn,
                             onToggleCreatine: _setCreatineTaken,
                           ),

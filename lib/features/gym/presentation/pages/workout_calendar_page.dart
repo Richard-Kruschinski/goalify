@@ -11,12 +11,14 @@ import 'package:flutter/services.dart';
 class WorkoutCalendarPage extends StatefulWidget {
   final Map<String, Set<String>> calendarByDate;
   final Map<String, int> dayColors;
+  final Widget Function(String day, Color color) dayIconBuilder;
   final bool Function(DateTime date) isCreatineTaken;
   final Future<void> Function(DateTime date, bool value) onToggleCreatine;
   const WorkoutCalendarPage({
     super.key,
     required this.calendarByDate,
     required this.dayColors,
+    required this.dayIconBuilder,
     required this.isCreatineTaken,
     required this.onToggleCreatine,
   });
@@ -483,7 +485,7 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
                                           : _fallbackColor(n),
                                       borderRadius: BorderRadius.circular(10),
                                     ),
-                                    child: const Icon(Icons.fitness_center, color: Colors.white, size: 20),
+                                    child: widget.dayIconBuilder(n, Colors.white),
                                   ),
                                   title: Text(
                                     n,
