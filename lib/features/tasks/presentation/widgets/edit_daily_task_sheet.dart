@@ -5,6 +5,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/day_cycle.dart';
 import '../../../../core/utils/snackbar_utils.dart';
 import '../../data/models/daily_task.dart';
+import 'checklist_editor.dart';
 import '../../../../core/widgets/weekday_picker.dart';
 
 class TaskFormData {
@@ -18,6 +19,7 @@ class TaskFormData {
   final List<int> weeklyDays;
   final int? targetCount;
   final int? limitedCycleIntervalDays;
+  final List<TaskChecklistItem> checklist;
 
   const TaskFormData({
     required this.title,
@@ -30,6 +32,7 @@ class TaskFormData {
     required this.weeklyDays,
     this.targetCount,
     this.limitedCycleIntervalDays,
+    this.checklist = const <TaskChecklistItem>[],
   });
 }
 
@@ -45,6 +48,7 @@ class _EditDailyTaskSheetState extends State<EditDailyTaskSheet> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _titleCtrl;
   late final TextEditingController _descCtrl;
+  late final List<TaskChecklistItem> _checklist;
   String? _category;
   int _points = 1;
   bool _keep = false;
@@ -79,6 +83,10 @@ class _EditDailyTaskSheetState extends State<EditDailyTaskSheet> {
     super.initState();
     _titleCtrl = TextEditingController(text: widget.task.title);
     _descCtrl = TextEditingController(text: widget.task.description ?? '');
+    // Work on a copy so Cancel leaves the task untouched; check states stay.
+    _checklist = widget.task.checklist
+        .map((c) => TaskChecklistItem(text: c.text, done: c.done))
+        .toList();
     _category = widget.task.category;
     _points = widget.task.points > 0 ? widget.task.points : 1;
     _keep = widget.task.keep;
@@ -286,6 +294,7 @@ class _EditDailyTaskSheetState extends State<EditDailyTaskSheet> {
         weeklyDays: weeklyDays,
         targetCount: isLimited ? _targetCount : null,
         limitedCycleIntervalDays: isLimited ? _limitedCycleIntervalDays : null,
+        checklist: _checklist,
       ),
     );
   }
@@ -456,6 +465,25 @@ class _EditDailyTaskSheetState extends State<EditDailyTaskSheet> {
                 ),
                 minLines: 3,
                 maxLines: 6,
+              ),
+              const SizedBox(height: 20),
+              Text(
+                AppLocalizations.of(context).checklistNote,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.muted(context),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                AppLocalizations.of(context).checklistSectionHint,
+                style: TextStyle(fontSize: 12, color: AppColors.faint(context)),
+              ),
+              const SizedBox(height: 8),
+              ChecklistEditor(
+                items: _checklist,
+                onChanged: () => setState(() {}),
               ),
               const SizedBox(height: 20),
               Text(

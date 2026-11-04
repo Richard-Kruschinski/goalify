@@ -308,16 +308,17 @@ class AppLocalizationsRu extends AppLocalizations {
       'Задачи прошедших дат доступны только для чтения.';
 
   @override
-  String get checklistNote => 'Заметка-чеклист';
+  String get checklistNote => 'Чек-лист';
 
   @override
-  String get checklistEmpty => 'Пока нет пунктов. Добавьте ниже.';
+  String get checklistEmpty =>
+      'Добавьте шаги этой задачи. Отмечайте их прямо на карточке.';
 
   @override
   String get deleteItem => 'Удалить пункт';
 
   @override
-  String get addChecklistItemHint => 'Добавить пункт...';
+  String get addChecklistItemHint => 'Добавить шаг';
 
   @override
   String get saveChecklist => 'Сохранить чеклист';
@@ -338,7 +339,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get changeIconSubtitle => 'Выберите свою или готовую иконку';
 
   @override
-  String get checklistNoteSubtitle => 'Добавьте пункты с чекбоксами к задаче';
+  String get checklistNoteSubtitle => 'Шаги, которые отмечаются на карточке';
 
   @override
   String get duplicate => 'Дублировать';
@@ -1725,4 +1726,26 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get notNow => 'Не сейчас';
+
+  @override
+  String checklistProgress(int done, int total) {
+    return '$done из $total выполнено';
+  }
+
+  @override
+  String get checklistSectionHint =>
+      'Необязательно, шаги для отметки на карточке';
+
+  @override
+  String checklistShowDone(int count) {
+    return 'Выполнено: $count';
+  }
+
+  @override
+  String checklistMore(int count) {
+    return 'Ещё $count';
+  }
+
+  @override
+  String get checklistCollapse => 'Свернуть';
 }

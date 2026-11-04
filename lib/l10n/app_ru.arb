@@ -103,17 +103,17 @@
   "recurringOnlyToday": "Повторяющиеся задачи можно отмечать только за сегодня.",
   "cannotDeletePastTasks": "Нельзя удалять задачи прошедших дат.",
   "pastTasksReadOnly": "Задачи прошедших дат доступны только для чтения.",
-  "checklistNote": "Заметка-чеклист",
-  "checklistEmpty": "Пока нет пунктов. Добавьте ниже.",
+  "checklistNote": "Чек-лист",
+  "checklistEmpty": "Добавьте шаги этой задачи. Отмечайте их прямо на карточке.",
   "deleteItem": "Удалить пункт",
-  "addChecklistItemHint": "Добавить пункт...",
+  "addChecklistItemHint": "Добавить шаг",
   "saveChecklist": "Сохранить чеклист",
   "taskActions": "Действия с задачей",
   "edit": "Изменить",
   "editTaskSubtitle": "Изменить название, описание или категорию",
   "changeIcon": "Сменить иконку",
   "changeIconSubtitle": "Выберите свою или готовую иконку",
-  "checklistNoteSubtitle": "Добавьте пункты с чекбоксами к задаче",
+  "checklistNoteSubtitle": "Шаги, которые отмечаются на карточке",
   "duplicate": "Дублировать",
   "duplicateSubtitle": "Скопировать задачу сразу ниже",
   "freezeForToday": "Заморозить день",
@@ -508,5 +508,12 @@
   "streakProtected": "{label} · защищено",
   "retroFreezeTitle": "Заморозить вчера?",
   "retroFreezeBody": "Эти серии вчера остались незавершёнными. Один токен сохранит их.",
-  "notNow": "Не сейчас"
+  "notNow": "Не сейчас",
+
+  "checklistProgress": "{done} из {total} выполнено",
+  "checklistSectionHint": "Необязательно, шаги для отметки на карточке",
+
+  "checklistShowDone": "Выполнено: {count}",
+  "checklistMore": "Ещё {count}",
+  "checklistCollapse": "Свернуть"
 }

@@ -5,6 +5,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/day_cycle.dart';
 import '../../../../core/utils/snackbar_utils.dart';
 import '../../data/models/daily_task.dart';
+import 'checklist_editor.dart';
 import '../../../../core/widgets/weekday_picker.dart';
 import '../../../../core/widgets/modern_date_picker_dialog.dart';
 
@@ -26,6 +27,7 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
   final _formKey = GlobalKey<FormState>();
   final _titleCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
+  final List<TaskChecklistItem> _checklist = <TaskChecklistItem>[];
   String? _category;
   int _points = 1;
   bool _keep = false;
@@ -357,6 +359,7 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
       completedCount: 0,
       limitedCycleIntervalDays: _isLimited ? _limitedCycleIntervalDays : null,
       limitedCycleStartKey: _isLimited ? widget.defaultDateKey : null,
+      checklist: _checklist,
     );
 
     Navigator.pop(context, CreateResult(t, effectiveKeep ? null : _dateKey(_scheduledDate)));
@@ -459,6 +462,26 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
                 ),
                 minLines: 3,
                 maxLines: 6,
+              ),
+              const SizedBox(height: 20),
+              // Checklist
+              Text(
+                AppLocalizations.of(context).checklistNote,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.muted(context),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                AppLocalizations.of(context).checklistSectionHint,
+                style: TextStyle(fontSize: 12, color: AppColors.faint(context)),
+              ),
+              const SizedBox(height: 8),
+              ChecklistEditor(
+                items: _checklist,
+                onChanged: () => setState(() {}),
               ),
               const SizedBox(height: 20),
               // Category

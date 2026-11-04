@@ -655,13 +655,13 @@ abstract class AppLocalizations {
   /// No description provided for @checklistNote.
   ///
   /// In en, this message translates to:
-  /// **'Checklist note'**
+  /// **'Checklist'**
   String get checklistNote;
 
   /// No description provided for @checklistEmpty.
   ///
   /// In en, this message translates to:
-  /// **'No checklist items yet. Add one below.'**
+  /// **'Add the steps of this task. You check them off right on the card.'**
   String get checklistEmpty;
 
   /// No description provided for @deleteItem.
@@ -673,7 +673,7 @@ abstract class AppLocalizations {
   /// No description provided for @addChecklistItemHint.
   ///
   /// In en, this message translates to:
-  /// **'Add checklist item...'**
+  /// **'Add step'**
   String get addChecklistItemHint;
 
   /// No description provided for @saveChecklist.
@@ -715,7 +715,7 @@ abstract class AppLocalizations {
   /// No description provided for @checklistNoteSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Add checkbox items to this task'**
+  /// **'Add steps you check off on the card'**
   String get checklistNoteSubtitle;
 
   /// No description provided for @duplicate.
@@ -3045,6 +3045,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Not now'**
   String get notNow;
+
+  /// No description provided for @checklistProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'{done} of {total} done'**
+  String checklistProgress(int done, int total);
+
+  /// No description provided for @checklistSectionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional, steps you check off on the card'**
+  String get checklistSectionHint;
+
+  /// No description provided for @checklistShowDone.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} done'**
+  String checklistShowDone(int count);
+
+  /// No description provided for @checklistMore.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} more'**
+  String checklistMore(int count);
+
+  /// No description provided for @checklistCollapse.
+  ///
+  /// In en, this message translates to:
+  /// **'Collapse'**
+  String get checklistCollapse;
 }
 
 class _AppLocalizationsDelegate

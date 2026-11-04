@@ -310,16 +310,17 @@ class AppLocalizationsDe extends AppLocalizations {
       'Aufgaben vergangener Tage sind schreibgeschützt.';
 
   @override
-  String get checklistNote => 'Checklisten-Notiz';
+  String get checklistNote => 'Checkliste';
 
   @override
-  String get checklistEmpty => 'Noch keine Einträge. Füge unten einen hinzu.';
+  String get checklistEmpty =>
+      'Füge die Schritte dieser Aufgabe hinzu. Du hakst sie direkt auf der Karte ab.';
 
   @override
   String get deleteItem => 'Eintrag löschen';
 
   @override
-  String get addChecklistItemHint => 'Eintrag hinzufügen...';
+  String get addChecklistItemHint => 'Schritt hinzufügen';
 
   @override
   String get saveChecklist => 'Checkliste speichern';
@@ -340,8 +341,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get changeIconSubtitle => 'Eigenes oder vordefiniertes Icon wählen';
 
   @override
-  String get checklistNoteSubtitle =>
-      'Abhakbare Einträge zu dieser Aufgabe hinzufügen';
+  String get checklistNoteSubtitle => 'Schritte, die du auf der Karte abhakst';
 
   @override
   String get duplicate => 'Duplizieren';
@@ -1722,4 +1722,26 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get notNow => 'Nicht jetzt';
+
+  @override
+  String checklistProgress(int done, int total) {
+    return '$done von $total erledigt';
+  }
+
+  @override
+  String get checklistSectionHint =>
+      'Optional, Schritte zum Abhaken auf der Karte';
+
+  @override
+  String checklistShowDone(int count) {
+    return '$count erledigt';
+  }
+
+  @override
+  String checklistMore(int count) {
+    return '$count weitere';
+  }
+
+  @override
+  String get checklistCollapse => 'Zuklappen';
 }

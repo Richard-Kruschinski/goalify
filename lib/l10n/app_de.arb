@@ -103,17 +103,17 @@
   "recurringOnlyToday": "Wiederkehrende Aufgaben können nur für heute abgehakt werden.",
   "cannotDeletePastTasks": "Aufgaben vergangener Tage können nicht gelöscht werden.",
   "pastTasksReadOnly": "Aufgaben vergangener Tage sind schreibgeschützt.",
-  "checklistNote": "Checklisten-Notiz",
-  "checklistEmpty": "Noch keine Einträge. Füge unten einen hinzu.",
+  "checklistNote": "Checkliste",
+  "checklistEmpty": "Füge die Schritte dieser Aufgabe hinzu. Du hakst sie direkt auf der Karte ab.",
   "deleteItem": "Eintrag löschen",
-  "addChecklistItemHint": "Eintrag hinzufügen...",
+  "addChecklistItemHint": "Schritt hinzufügen",
   "saveChecklist": "Checkliste speichern",
   "taskActions": "Aufgaben-Aktionen",
   "edit": "Bearbeiten",
   "editTaskSubtitle": "Titel, Beschreibung oder Kategorie ändern",
   "changeIcon": "Icon ändern",
   "changeIconSubtitle": "Eigenes oder vordefiniertes Icon wählen",
-  "checklistNoteSubtitle": "Abhakbare Einträge zu dieser Aufgabe hinzufügen",
+  "checklistNoteSubtitle": "Schritte, die du auf der Karte abhakst",
   "duplicate": "Duplizieren",
   "duplicateSubtitle": "Diese Aufgabe direkt darunter kopieren",
   "freezeForToday": "Tag einfrieren",
@@ -508,5 +508,12 @@
   "streakProtected": "{label} · geschützt",
   "retroFreezeTitle": "Gestern einfrieren?",
   "retroFreezeBody": "Diese Streaks sind gestern offen geblieben. Mit einem Token bleiben sie erhalten.",
-  "notNow": "Nicht jetzt"
+  "notNow": "Nicht jetzt",
+
+  "checklistProgress": "{done} von {total} erledigt",
+  "checklistSectionHint": "Optional, Schritte zum Abhaken auf der Karte",
+
+  "checklistShowDone": "{count} erledigt",
+  "checklistMore": "{count} weitere",
+  "checklistCollapse": "Zuklappen"
 }

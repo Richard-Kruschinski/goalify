@@ -134,17 +134,17 @@
   "recurringOnlyToday": "Recurring tasks can only be checked for today.",
   "cannotDeletePastTasks": "Cannot delete tasks from past dates.",
   "pastTasksReadOnly": "Tasks from past dates are read-only.",
-  "checklistNote": "Checklist note",
-  "checklistEmpty": "No checklist items yet. Add one below.",
+  "checklistNote": "Checklist",
+  "checklistEmpty": "Add the steps of this task. You check them off right on the card.",
   "deleteItem": "Delete item",
-  "addChecklistItemHint": "Add checklist item...",
+  "addChecklistItemHint": "Add step",
   "saveChecklist": "Save checklist",
   "taskActions": "Task actions",
   "edit": "Edit",
   "editTaskSubtitle": "Update title, description or category",
   "changeIcon": "Change icon",
   "changeIconSubtitle": "Choose a custom or predefined icon",
-  "checklistNoteSubtitle": "Add checkbox items to this task",
+  "checklistNoteSubtitle": "Add steps you check off on the card",
   "duplicate": "Duplicate",
   "duplicateSubtitle": "Copy this task right below",
   "freezeForToday": "Freeze day",
@@ -652,5 +652,15 @@
   "@streakProtected": {"placeholders":{"label":{"type":"String"}}},
   "retroFreezeTitle": "Freeze yesterday?",
   "retroFreezeBody": "These streaks stayed open yesterday. One token keeps them alive.",
-  "notNow": "Not now"
+  "notNow": "Not now",
+
+  "checklistProgress": "{done} of {total} done",
+  "@checklistProgress": {"placeholders":{"done":{"type":"int"},"total":{"type":"int"}}},
+  "checklistSectionHint": "Optional, steps you check off on the card",
+
+  "checklistShowDone": "{count} done",
+  "@checklistShowDone": {"placeholders":{"count":{"type":"int"}}},
+  "checklistMore": "{count} more",
+  "@checklistMore": {"placeholders":{"count":{"type":"int"}}},
+  "checklistCollapse": "Collapse"
 }

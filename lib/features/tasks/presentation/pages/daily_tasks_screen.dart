@@ -19,6 +19,7 @@ import '../description_preview.dart';
 import '../widgets/create_daily_task_sheet.dart';
 import '../widgets/edit_daily_task_sheet.dart';
 import '../widgets/freeze_widgets.dart';
+import '../widgets/checklist_editor.dart';
 import '../../../../core/widgets/modern_date_picker_dialog.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/i18n/task_labels.dart';
@@ -95,6 +96,14 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
 
   // Creatine intake cache (yyyy-MM-dd)
   final Set<String> _creatineDates = <String>{};
+
+  /// Task ids whose checklist is unfolded on the card (view state only).
+  final Set<String> _expandedChecklists = <String>{};
+
+  /// Task ids whose unfolded checklist also shows the done steps, or every
+  /// open step past the preview count.
+  final Set<String> _checklistShowDone = <String>{};
+  final Set<String> _checklistShowAll = <String>{};
 
   int _todayPoints = 0;
   int _todayDoneCount = 0;
@@ -876,6 +885,14 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
           t.done = false;
           changedKeep = true;
         }
+        // Steps start fresh with the task; the history snapshot above keeps
+        // what was checked on the day.
+        if (t.keep && t.checklist.any((c) => c.done)) {
+          for (final c in t.checklist) {
+            c.done = false;
+          }
+          changedKeep = true;
+        }
       }
 
       // 2) one-offs: drop this day's bucket entirely (completed or not)
@@ -1299,208 +1316,145 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     if (dateKey == _todayKey()) await _saveProgressToday();
   }
 
-  Future<void> _openChecklistNoteEditor(DailyTask task) async {
-    final draft = task.checklist
-        .map((c) => TaskChecklistItem(text: c.text, done: c.done))
-        .toList(growable: true);
-    final inputController = TextEditingController();
+  Future<void> _saveTaskList(DailyTask task) async {
+    if (task.keep) {
+      await _saveKeepTasks();
+    } else {
+      await _saveOneOffMap();
+    }
+  }
 
-    final saved = await showModalBottomSheet<bool>(
+  /// Edits the steps of [task]. Every change saves right away; checking steps
+  /// off happens on the task card.
+  Future<void> _openChecklistNoteEditor(DailyTask task) async {
+    await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
+      showDragHandle: true,
       backgroundColor: AppColors.bg(context),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
       builder: (sheetCtx) => StatefulBuilder(
         builder: (ctx, setSheetState) {
-          final bottomInset = MediaQuery.of(ctx).viewInsets.bottom;
+          final l10n = AppLocalizations.of(ctx);
           return Padding(
-            padding: EdgeInsets.only(bottom: bottomInset),
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(ctx).viewInsets.bottom,
+            ),
             child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: AppColors.chip(context),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Icon(Icons.checklist, color: AppColors.inkSoft(context)),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            AppLocalizations.of(context).checklistNote,
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.ink(context),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-                    if (draft.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      Expanded(
                         child: Text(
-                          AppLocalizations.of(context).checklistEmpty,
-                          style: TextStyle(color: AppColors.muted(context)),
+                          l10n.checklistNote,
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.ink(ctx),
+                          ),
                         ),
                       ),
-                    ...List.generate(draft.length, (index) {
-                      final item = draft[index];
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        decoration: BoxDecoration(
-                          color: AppColors.card(context),
+                      if (task.hasChecklist)
+                        Text(
+                          l10n.checklistProgress(
+                            task.checklistDoneCount,
+                            task.checklistTotalCount,
+                          ),
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: AppColors.muted(ctx),
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    task.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 14, color: AppColors.muted(ctx)),
+                  ),
+                  const SizedBox(height: 16),
+                  if (!task.hasChecklist) ...[
+                    Text(
+                      l10n.checklistEmpty,
+                      style: TextStyle(
+                        fontSize: 14,
+                        height: 1.4,
+                        color: AppColors.muted(ctx),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  ChecklistEditor(
+                    items: task.checklist,
+                    autofocus: !task.hasChecklist,
+                    onChanged: () {
+                      setSheetState(() {});
+                      if (mounted) setState(() {});
+                      _saveTaskList(task);
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: FilledButton(
+                      onPressed: () => Navigator.pop(sheetCtx),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.chip(ctx),
+                        foregroundColor: AppColors.ink(ctx),
+                        shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Row(
-                          children: [
-                            Checkbox(
-                              value: item.done,
-                              activeColor: AppColors.accent(context),
-                              onChanged: (value) {
-                                setSheetState(() => item.done = value ?? false);
-                              },
-                            ),
-                            Expanded(
-                              child: Text(
-                                item.text,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: item.done
-                                      ? AppColors.faint(context)
-                                      : AppColors.ink(context),
-                                  decoration:
-                                      item.done ? TextDecoration.lineThrough : null,
-                                ),
-                              ),
-                            ),
-                            IconButton(
-                              tooltip: AppLocalizations.of(context).deleteItem,
-                              onPressed: () => setSheetState(() => draft.removeAt(index)),
-                              icon: Icon(Icons.delete_outline, color: AppColors.accent(context)),
-                            ),
-                          ],
-                        ),
-                      );
-                    }),
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: inputController,
-                            textInputAction: TextInputAction.done,
-                            onSubmitted: (_) {
-                              final text = inputController.text.trim();
-                              if (text.isEmpty) return;
-                              setSheetState(() {
-                                draft.add(TaskChecklistItem(text: text));
-                                inputController.clear();
-                              });
-                            },
-                            decoration: InputDecoration(
-                              hintText: AppLocalizations.of(context).addChecklistItemHint,
-                              filled: true,
-                              fillColor: AppColors.card(context),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide.none,
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: AppColors.accent(context), width: 2),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        ElevatedButton(
-                          onPressed: () {
-                            final text = inputController.text.trim();
-                            if (text.isEmpty) return;
-                            setSheetState(() {
-                              draft.add(TaskChecklistItem(text: text));
-                              inputController.clear();
-                            });
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.accent(context),
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                          ),
-                          child: const Icon(Icons.add),
-                        ),
-                      ],
+                      ),
+                      child: Text(l10n.done),
                     ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () => Navigator.pop(sheetCtx, false),
-                            style: OutlinedButton.styleFrom(
-                              side: BorderSide(color: AppColors.border(context)),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: Text(AppLocalizations.of(context).cancel),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: () => Navigator.pop(sheetCtx, true),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.accent(context),
-                              foregroundColor: Colors.white,
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: Text(AppLocalizations.of(context).saveChecklist),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           );
         },
       ),
     );
+  }
 
-    inputController.dispose();
-    if (saved != true) return;
+  /// Ticks one step on the card. Finishing the last step completes the task,
+  /// unticking a step of a completed task reopens it.
+  Future<void> _toggleChecklistItem(
+    DailyTask task,
+    TaskChecklistItem item,
+    String dateKey,
+  ) async {
+    final todayKey = _todayKey();
+    if (dateKey != todayKey) {
+      ScaffoldMessenger.of(context).showSingleSnackBar(
+        SnackBar(
+          duration: const Duration(seconds: 2),
+          content: Text(
+            _isPastDate(dateKey, todayKey)
+                ? AppLocalizations.of(context).cannotModifyPastTasks
+                : AppLocalizations.of(context).cannotModifyFutureTasks,
+          ),
+        ),
+      );
+      return;
+    }
 
-    setState(() {
-      task.checklist = draft;
-    });
+    setState(() => item.done = !item.done);
+    await _saveTaskList(task);
 
-    if (task.keep) {
-      await _saveKeepTasks();
-    } else {
-      await _saveOneOffMap();
+    final allDone = task.checklist.every((c) => c.done);
+    if (allDone != task.done) {
+      await _toggleDone(task, dateKey: dateKey);
     }
   }
 
@@ -1704,9 +1658,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                               bestStreak: _keepTasks[idx].bestStreak,
                               lastDoneKey: _keepTasks[idx].lastDoneKey,
                               done: _keepTasks[idx].done,
-                              checklist: _keepTasks[idx].checklist
-                                  .map((c) => TaskChecklistItem(text: c.text, done: c.done))
-                                  .toList(),
+                              checklist: data.checklist,
                               targetCount: data.targetCount,
                               completedCount: _keepTasks[idx].completedCount,
                               limitedCycleIntervalDays: data.limitedCycleIntervalDays,
@@ -1728,9 +1680,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                               points: data.points,
                               keep: false,
                               done: list[idx].done,
-                              checklist: list[idx].checklist
-                                  .map((c) => TaskChecklistItem(text: c.text, done: c.done))
-                                  .toList(),
+                              checklist: data.checklist,
                             );
                           });
                           await _saveOneOffMap();
@@ -1756,8 +1706,8 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                   icon: Icons.checklist,
                   title: AppLocalizations.of(context).checklistNote,
                   subtitle: t.hasChecklist
-                      ? '${t.checklistDoneCount}/${t.checklistTotalCount} checked'
-                      : 'Add checkbox items to this task',
+                      ? AppLocalizations.of(context).checklistProgress(t.checklistDoneCount, t.checklistTotalCount)
+                      : AppLocalizations.of(context).checklistNoteSubtitle,
                   iconColor: AppColors.inkSoft(context),
                   onTap: () async {
                     Navigator.pop(ctx);
@@ -2682,6 +2632,204 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     );
   }
 
+  /// Progress strip (one segment per step) that unfolds into the steps, so
+  /// they can be checked off right on the card.
+  Widget _buildChecklistOnCard(DailyTask task, String dateKey) {
+    final expanded = _expandedChecklists.contains(task.id);
+    final accent = AppColors.accent(context);
+    final done = task.checklistDoneCount;
+    final total = task.checklistTotalCount;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => setState(() {
+            if (!_expandedChecklists.remove(task.id)) {
+              _expandedChecklists.add(task.id);
+            }
+          }),
+          child: Padding(
+            padding: const EdgeInsets.only(top: 8, bottom: 4),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Row(
+                    children: [
+                      for (var i = 0; i < total; i++) ...[
+                        if (i > 0) const SizedBox(width: 3),
+                        Expanded(
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: task.checklist[i].done
+                                  ? accent
+                                  : AppColors.border(context),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '$done/$total',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.muted(context),
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+                AnimatedRotation(
+                  turns: expanded ? 0.5 : 0,
+                  duration: const Duration(milliseconds: 200),
+                  child: Icon(
+                    Icons.expand_more,
+                    size: 18,
+                    color: AppColors.muted(context),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (expanded) ..._buildChecklistRows(task, dateKey),
+      ],
+    );
+  }
+
+  /// Open steps come first and at most [_checklistPreviewCount] of them show
+  /// until "n more" is tapped; done steps stay folded behind "n done". A
+  /// footer row collapses everything again, so long-term lists stay short.
+  static const int _checklistPreviewCount = 5;
+
+  List<Widget> _buildChecklistRows(DailyTask task, String dateKey) {
+    final l10n = AppLocalizations.of(context);
+    final open = task.checklist.where((c) => !c.done).toList();
+    final done = task.checklist.where((c) => c.done).toList();
+    final showAll = _checklistShowAll.contains(task.id);
+    final showDone = _checklistShowDone.contains(task.id);
+    final visibleOpen = showAll || open.length <= _checklistPreviewCount
+        ? open
+        : open.take(_checklistPreviewCount).toList();
+    final hiddenOpen = open.length - visibleOpen.length;
+
+    void toggle(Set<String> set) => setState(() {
+      if (!set.remove(task.id)) set.add(task.id);
+    });
+
+    Widget footerLink(String label, IconData icon, VoidCallback onTap) {
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.muted(context),
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+              const SizedBox(width: 2),
+              Icon(icon, size: 16, color: AppColors.muted(context)),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return [
+      for (final item in visibleOpen) _buildChecklistRow(task, item, dateKey),
+      if (showDone)
+        for (final item in done) _buildChecklistRow(task, item, dateKey),
+      Row(
+        children: [
+          if (hiddenOpen > 0)
+            footerLink(
+              l10n.checklistMore(hiddenOpen),
+              Icons.expand_more,
+              () => toggle(_checklistShowAll),
+            ),
+          if (hiddenOpen > 0 && done.isNotEmpty) const SizedBox(width: 16),
+          if (done.isNotEmpty)
+            footerLink(
+              l10n.checklistShowDone(done.length),
+              showDone ? Icons.expand_less : Icons.expand_more,
+              () => toggle(_checklistShowDone),
+            ),
+          const Spacer(),
+          footerLink(
+            l10n.checklistCollapse,
+            Icons.expand_less,
+            () => setState(() => _expandedChecklists.remove(task.id)),
+          ),
+        ],
+      ),
+    ];
+  }
+
+  Widget _buildChecklistRow(
+    DailyTask task,
+    TaskChecklistItem item,
+    String dateKey,
+  ) {
+    final accent = AppColors.accent(context);
+    return GestureDetector(
+      key: ObjectKey(item),
+      behavior: HitTestBehavior.opaque,
+      onTap: () => _toggleChecklistItem(task, item, dateKey),
+      child: SizedBox(
+        height: 32,
+        child: Row(
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              width: 18,
+              height: 18,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: item.done ? accent : Colors.transparent,
+                border: Border.all(
+                  color: item.done ? accent : AppColors.faint(context),
+                  width: 1.5,
+                ),
+              ),
+              child: item.done
+                  ? const Icon(Icons.check, size: 12, color: Colors.white)
+                  : null,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                item.text,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: item.done
+                      ? AppColors.faint(context)
+                      : AppColors.ink(context),
+                  decoration: item.done ? TextDecoration.lineThrough : null,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildModernTaskCard(DailyTask task, int index, String dateKey) {
     final dayFrozen = _isDayFrozen(dateKey);
     final streakFrozen = _hasStreak(task) && _wasFrozenOn(dateKey, task.id);
@@ -2781,27 +2929,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                           ),
                         ),
                       if (task.hasChecklist)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.checklist,
-                                size: 13,
-                                color: AppColors.inkSoft(context),
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                '${task.checklistDoneCount}/${task.checklistTotalCount} checklist items done',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: AppColors.inkSoft(context),
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                        _buildChecklistOnCard(task, dateKey),
                       // Task Type Badge
                       Padding(
                         padding: const EdgeInsets.only(top: 6),

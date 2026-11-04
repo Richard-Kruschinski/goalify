@@ -303,16 +303,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pastTasksReadOnly => 'Tasks from past dates are read-only.';
 
   @override
-  String get checklistNote => 'Checklist note';
+  String get checklistNote => 'Checklist';
 
   @override
-  String get checklistEmpty => 'No checklist items yet. Add one below.';
+  String get checklistEmpty =>
+      'Add the steps of this task. You check them off right on the card.';
 
   @override
   String get deleteItem => 'Delete item';
 
   @override
-  String get addChecklistItemHint => 'Add checklist item...';
+  String get addChecklistItemHint => 'Add step';
 
   @override
   String get saveChecklist => 'Save checklist';
@@ -333,7 +334,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get changeIconSubtitle => 'Choose a custom or predefined icon';
 
   @override
-  String get checklistNoteSubtitle => 'Add checkbox items to this task';
+  String get checklistNoteSubtitle => 'Add steps you check off on the card';
 
   @override
   String get duplicate => 'Duplicate';
@@ -1700,4 +1701,26 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get notNow => 'Not now';
+
+  @override
+  String checklistProgress(int done, int total) {
+    return '$done of $total done';
+  }
+
+  @override
+  String get checklistSectionHint =>
+      'Optional, steps you check off on the card';
+
+  @override
+  String checklistShowDone(int count) {
+    return '$count done';
+  }
+
+  @override
+  String checklistMore(int count) {
+    return '$count more';
+  }
+
+  @override
+  String get checklistCollapse => 'Collapse';
 }
