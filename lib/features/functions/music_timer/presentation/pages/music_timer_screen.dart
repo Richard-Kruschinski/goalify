@@ -13,16 +13,16 @@ class MusicTimerScreen extends StatefulWidget {
 
 class _MusicTimerScreenState extends State<MusicTimerScreen> {
   int _selectedMinutes = 30;
-  
+
   final List<int> _presetMinutes = [5, 10, 15, 20, 30, 45, 60, 90, 120];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.card(context),
+      backgroundColor: AppColors.bg(context),
       appBar: AppBar(
-        backgroundColor: AppColors.card(context),
-        elevation: 1,
+        backgroundColor: AppColors.bg(context),
+        elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: AppColors.ink(context)),
           onPressed: () => Navigator.pop(context),
@@ -32,45 +32,25 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
           style: TextStyle(
             color: AppColors.ink(context),
             fontSize: 24,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),
       body: Consumer<MusicTimerController>(
         builder: (context, controller, child) {
-          return Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  AppColors.card(context),
-                  AppColors.isDark(context)
-                      ? const Color(0xFF16202B)
-                      : Colors.blue.shade50,
-                ],
-              ),
-            ),
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Timer display card
-                  _buildTimerCard(controller),
-                  
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildTimerCard(controller),
+                const SizedBox(height: 20),
+                if (!controller.isRunning) ...[
+                  _buildPresetsCard(),
                   const SizedBox(height: 20),
-                  
-                  // Quick preset buttons
-                  if (!controller.isRunning) ...[
-                    _buildPresetsCard(),
-                    const SizedBox(height: 20),
-                  ],
-                  
-                  // Info card
-                  _buildInfoCard(),
                 ],
-              ),
+                _buildInfoCard(),
+              ],
             ),
           );
         },
@@ -78,321 +58,187 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
     );
   }
 
+  BoxDecoration _cardDecoration({Color? borderColor}) => BoxDecoration(
+        color: AppColors.card(context),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: borderColor ?? AppColors.border(context)),
+        boxShadow: AppColors.cardShadow(context),
+      );
+
   Widget _buildTimerCard(MusicTimerController controller) {
     final isRunning = controller.isRunning;
-    
+    final l10n = AppLocalizations.of(context);
+    final accent = AppColors.accent(context);
+
     return Container(
-      decoration: BoxDecoration(
-        gradient: isRunning
-            ? LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  const Color(0xFFFF6B5B),
-                  const Color(0xFFFF8A50),
-                ],
-              )
-            : LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  const Color(0xFF6C5CE7),
-                  const Color(0xFF5F3DC4),
-                ],
-              ),
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: (isRunning ? const Color(0xFFFF6B5B) : const Color(0xFF6C5CE7))
-                .withValues(alpha: 0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
+      decoration: _cardDecoration(
+        borderColor: isRunning ? accent.withValues(alpha: 0.4) : null,
       ),
+      padding: const EdgeInsets.all(24),
       child: Column(
         children: [
-          // Header with gradient background
           Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(32),
+            width: 72,
+            height: 72,
             decoration: BoxDecoration(
-              gradient: isRunning
-                  ? LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        const Color(0xFFFF6B5B),
-                        const Color(0xFFFF8A50),
-                      ],
-                    )
-                  : LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        const Color(0xFF6C5CE7),
-                        const Color(0xFF5F3DC4),
-                      ],
-                    ),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+              color: isRunning ? AppColors.accentSoft(context) : AppColors.chip(context),
+              shape: BoxShape.circle,
             ),
-            child: Column(
-              children: [
-                // Icon with animation
-                Container(
-                  width: 100,
-                  height: 100,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.4),
-                      width: 3,
-                    ),
-                  ),
-                  child: Icon(
-                    isRunning ? Icons.music_note : Icons.music_note_outlined,
-                    size: 56,
-                    color: Colors.white,
-                  ),
-                ),
-                
-                const SizedBox(height: 20),
-                
-                // Status text
-                Text(
-                  isRunning ? AppLocalizations.of(context).timerActiveCaps : AppLocalizations.of(context).setTimerCaps,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 2,
-                  ),
-                ),
-                
-                const SizedBox(height: 12),
-                Text(
-                  isRunning
-                      ? AppLocalizations.of(context).musicWillStop
-                      : AppLocalizations.of(context).musicTimerIdleHint,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.95),
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
+            child: Icon(
+              isRunning ? Icons.music_note : Icons.music_note_outlined,
+              size: 36,
+              color: isRunning ? accent : AppColors.inkSoft(context),
             ),
           ),
-          
-          // Body
-          Padding(
-            padding: const EdgeInsets.all(28),
-            child: Column(
-              children: [
-                // Timer display
-                if (isRunning) ...[
-                  Container(
-                    width: double.infinity,
-                    height: 240,
-                    padding: const EdgeInsets.all(28),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          const Color(0xFFFFF8DC),
-                          const Color(0xFFFFEF9F),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(
-                        color: const Color(0xFFFFD700),
-                        width: 2,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFFFFD700).withValues(alpha: 0.2),
-                          blurRadius: 16,
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          AppLocalizations.of(context).timeRemaining,
-                          style: TextStyle(
-                            fontSize: 15,
-                            color: Color(0xFF8B6914),
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 1,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          controller.formattedTimeWithHours,
-                          style: const TextStyle(
-                            fontSize: 56,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFFFF6B5B),
-                            fontFeatures: [FontFeature.tabularFigures()],
-                            height: 1.1,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            _buildQuickAddButton('+5 ${AppLocalizations.of(context).unitMin}', 5, controller),
-                            const SizedBox(width: 12),
-                            _buildQuickAddButton('+10 ${AppLocalizations.of(context).unitMin}', 10, controller),
-                            const SizedBox(width: 12),
-                            _buildQuickAddButton('+15 ${AppLocalizations.of(context).unitMin}', 15, controller),
-                          ],
-                        ),
-                      ],
+          const SizedBox(height: 16),
+          Text(
+            isRunning ? l10n.timerActiveCaps : l10n.setTimerCaps,
+            style: TextStyle(
+              color: AppColors.ink(context),
+              fontSize: 22,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            isRunning ? l10n.musicWillStop : l10n.musicTimerIdleHint,
+            textAlign: TextAlign.center,
+            style: TextStyle(color: AppColors.muted(context), fontSize: 15),
+          ),
+          const SizedBox(height: 24),
+          if (isRunning) ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: AppColors.chip(context),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    l10n.timeRemaining,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppColors.muted(context),
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
-                  const SizedBox(height: 28),
-                  // Stop button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        await controller.stopTimer();
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFF3838),
-                        foregroundColor: Colors.white,
-                        elevation: 8,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        shadowColor: const Color(0xFFFF3838).withValues(alpha: 0.4),
-                      ),
-                      child: Text(
-                        AppLocalizations.of(context).stopTimerCaps,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.5,
-                        ),
-                      ),
+                  const SizedBox(height: 12),
+                  Text(
+                    controller.formattedTimeWithHours,
+                    style: TextStyle(
+                      fontSize: 56,
+                      fontWeight: FontWeight.w600,
+                      color: accent,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                      height: 1.1,
                     ),
                   ),
-                ] else ...[
-                  // Timer selection
-                  Container(
-                    width: double.infinity,
-                    height: 240,
-                    padding: const EdgeInsets.all(28),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          (AppColors.isDark(context) ? const Color(0xFF14273A) : const Color(0xFFE3F2FD)),
-                          const Color(0xFFBBDEFB),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: const Color(0xFF6C5CE7),
-                        width: 2,
-                      ),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          '$_selectedMinutes',
-                          style: const TextStyle(
-                            fontSize: 72,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF6C5CE7),
-                            height: 1,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          AppLocalizations.of(context).minutesUnit,
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: Color(0xFF5F3DC4),
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 1,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        Slider(
-                          value: _selectedMinutes.toDouble(),
-                          min: 1,
-                          max: 180,
-                          divisions: 179,
-                          activeColor: const Color(0xFF6C5CE7),
-                          inactiveColor: AppColors.border(context),
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedMinutes = value.toInt();
-                            });
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 28),
-                  // Start button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            const Color(0xFF6C5CE7),
-                            const Color(0xFF5F3DC4),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(18),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF6C5CE7).withValues(alpha: 0.4),
-                            blurRadius: 16,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
-                      ),
-                      child: ElevatedButton(
-                        onPressed: () async {
-                          await controller.startTimer(_selectedMinutes * 60);
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.transparent,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(18),
-                          ),
-                        ),
-                        child: Text(
-                          AppLocalizations.of(context).startTimerCaps,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.5,
-                          ),
-                        ),
-                      ),
-                    ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      _buildQuickAddButton('+5 ${l10n.unitMin}', 5, controller),
+                      const SizedBox(width: 8),
+                      _buildQuickAddButton('+10 ${l10n.unitMin}', 10, controller),
+                      const SizedBox(width: 8),
+                      _buildQuickAddButton('+15 ${l10n.unitMin}', 15, controller),
+                    ],
                   ),
                 ],
-              ],
+              ),
             ),
-          ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton(
+                onPressed: () async {
+                  await controller.stopTimer();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.chip(context),
+                  foregroundColor: AppColors.ink(context),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                child: Text(
+                  l10n.stopTimerCaps,
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ),
+          ] else ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
+              decoration: BoxDecoration(
+                color: AppColors.chip(context),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    '$_selectedMinutes',
+                    style: TextStyle(
+                      fontSize: 72,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.ink(context),
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                      height: 1,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    l10n.minutesUnit,
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: AppColors.muted(context),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Slider(
+                    value: _selectedMinutes.toDouble(),
+                    min: 1,
+                    max: 180,
+                    divisions: 179,
+                    activeColor: accent,
+                    inactiveColor: AppColors.border(context),
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedMinutes = value.toInt();
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton(
+                onPressed: () async {
+                  await controller.startTimer(_selectedMinutes * 60);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: accent,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                child: Text(
+                  l10n.startTimerCaps,
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -400,113 +246,60 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
 
   Widget _buildQuickAddButton(String label, int minutes, MusicTimerController controller) {
     return Expanded(
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              const Color(0xFFFF8C42),
-              const Color(0xFFFF6B35),
-            ],
+      child: OutlinedButton(
+        onPressed: () {
+          controller.addMinutes(minutes);
+        },
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.ink(context),
+          backgroundColor: AppColors.card(context),
+          side: BorderSide(color: AppColors.border(context)),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
           ),
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFFFF6B35).withValues(alpha: 0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
         ),
-        child: ElevatedButton(
-          onPressed: () {
-            controller.addMinutes(minutes);
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.transparent,
-            foregroundColor: Colors.white,
-            elevation: 0,
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-          child: Text(
-            label,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.5,
-            ),
-          ),
+        child: Text(
+          label,
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
         ),
       ),
     );
   }
 
-  Widget _buildPresetsCard() {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.card(context),
-            AppColors.isDark(context)
-                ? const Color(0xFF0E262B)
-                : Colors.cyan.shade50,
-          ],
-        ),
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.cyan.withValues(alpha: 0.15),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
+  Widget _sectionHeader(IconData icon, String title) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: AppColors.chip(context),
+            borderRadius: BorderRadius.circular(10),
           ),
-        ],
-        border: Border.all(
-          color: AppColors.isDark(context)
-              ? Colors.cyan.shade800
-              : Colors.cyan.shade200,
-          width: 1.5,
+          child: Icon(icon, color: AppColors.inkSoft(context), size: 18),
         ),
-      ),
-      padding: const EdgeInsets.all(24),
+        const SizedBox(width: 12),
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w600,
+            color: AppColors.ink(context),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPresetsCard() {
+    final accent = AppColors.accent(context);
+    return Container(
+      decoration: _cardDecoration(),
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.cyan.shade400,
-                      Colors.blue.shade500,
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.bolt,
-                  color: Colors.white,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                AppLocalizations.of(context).quickPresets,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.ink(context),
-                ),
-              ),
-            ],
-          ),
+          _sectionHeader(Icons.bolt, AppLocalizations.of(context).quickPresets),
           const SizedBox(height: 16),
           Wrap(
             spacing: 8,
@@ -519,51 +312,23 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
                     _selectedMinutes = minutes;
                   });
                 },
-                child: Container(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   decoration: BoxDecoration(
-                    gradient: isSelected
-                        ? LinearGradient(
-                            colors: [
-                              Colors.cyan.shade500,
-                              Colors.blue.shade500,
-                            ],
-                          )
-                        : null,
-                    color: isSelected
-                        ? null
-                        : AppColors.isDark(context)
-                            ? const Color(0xFF12303A)
-                            : const Color(0xFFF0F8FF),
-                    borderRadius: BorderRadius.circular(12),
+                    color: isSelected ? AppColors.accentSoft(context) : AppColors.chip(context),
+                    borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                      color: isSelected
-                          ? Colors.transparent
-                          : AppColors.isDark(context)
-                              ? Colors.cyan.shade700
-                              : Colors.cyan.shade300,
-                      width: 1.5,
+                      color: isSelected ? accent.withValues(alpha: 0.5) : Colors.transparent,
                     ),
-                    boxShadow: isSelected
-                        ? [
-                            BoxShadow(
-                              color: Colors.cyan.shade500.withValues(alpha: 0.3),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ]
-                        : null,
                   ),
                   child: Text(
                     '$minutes ${AppLocalizations.of(context).unitMin}',
                     style: TextStyle(
                       fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: isSelected
-                          ? Colors.white
-                          : AppColors.isDark(context)
-                              ? Colors.cyan.shade300
-                              : Colors.cyan.shade700,
+                      fontWeight: FontWeight.w500,
+                      color: isSelected ? accent : AppColors.ink(context),
+                      fontFeatures: const [FontFeature.tabularFigures()],
                     ),
                   ),
                 ),
@@ -577,66 +342,12 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
 
   Widget _buildInfoCard() {
     return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.card(context),
-            AppColors.isDark(context)
-                ? const Color(0xFF12271A)
-                : Colors.green.shade50,
-          ],
-        ),
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.green.withValues(alpha: 0.15),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-        border: Border.all(
-          color: AppColors.isDark(context)
-              ? Colors.green.shade800
-              : Colors.green.shade200,
-          width: 1.5,
-        ),
-      ),
-      padding: const EdgeInsets.all(24),
+      decoration: _cardDecoration(),
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.green.shade400,
-                      Colors.green.shade600,
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.info_outline,
-                  color: Colors.white,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                AppLocalizations.of(context).howItWorks,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.ink(context),
-                ),
-              ),
-            ],
-          ),
+          _sectionHeader(Icons.info_outline, AppLocalizations.of(context).howItWorks),
           const SizedBox(height: 16),
           Text(
             AppLocalizations.of(context).musicTimerHowItWorks,
@@ -648,35 +359,14 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
           ),
           const SizedBox(height: 16),
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: AppColors.isDark(context)
-                    ? [const Color(0xFF2E2410), const Color(0xFF33260F)]
-                    : [Colors.amber.shade100, Colors.orange.shade100],
-              ),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: AppColors.isDark(context)
-                    ? Colors.amber.shade800
-                    : Colors.amber.shade300,
-                width: 1.5,
-              ),
+              color: AppColors.chip(context),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.shade500,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    Icons.music_note,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                ),
+                Icon(Icons.music_note, color: AppColors.muted(context), size: 18),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
@@ -684,7 +374,7 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
                     style: TextStyle(
                       fontSize: 13,
                       color: AppColors.muted(context),
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),

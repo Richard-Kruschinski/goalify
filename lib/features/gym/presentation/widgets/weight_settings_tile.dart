@@ -41,14 +41,12 @@ class WeightSettingsTile extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: (AppColors.isDark(context)
-                      ? const Color(0xFF13292B)
-                      : const Color(0xFFE0F2F1)),
+                  color: AppColors.chip(context),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.straighten_rounded,
-                  color: Color(0xFF00897B),
+                  color: AppColors.inkSoft(context),
                   size: 24,
                 ),
               ),

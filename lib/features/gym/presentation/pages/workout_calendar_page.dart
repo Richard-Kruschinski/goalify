@@ -198,8 +198,8 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
                       const SizedBox(height: 10),
                       Text(
                         errorText!,
-                        style: const TextStyle(
-                          color: Color(0xFFD32F2F),
+                        style: TextStyle(
+                          color: AppColors.accent(context),
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                         ),
@@ -466,13 +466,7 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
                                 decoration: BoxDecoration(
                                   color: AppColors.card(context),
                                   borderRadius: BorderRadius.circular(12),
-                                  boxShadow: const [
-                                    BoxShadow(
-                                      color: Color(0x0A000000),
-                                      blurRadius: 8,
-                                      offset: Offset(0, 2),
-                                    ),
-                                  ],
+                                  boxShadow: AppColors.cardShadow(context),
                                 ),
                                 child: ListTile(
                                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -553,13 +547,7 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
                           decoration: BoxDecoration(
                             color: AppColors.card(context),
                             borderRadius: BorderRadius.circular(12),
-                            boxShadow: const [
-                              BoxShadow(
-                                color: Color(0x14000000),
-                                blurRadius: 10,
-                                offset: Offset(0, 3),
-                              )
-                            ],
+                            boxShadow: AppColors.cardShadow(context),
                           ),
                           child: Icon(Icons.arrow_back, color: AppColors.inkSoft(context)),
                         ),
@@ -649,13 +637,7 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
                                 border: isToday
                                     ? Border.all(color: AppColors.accent(context), width: 1.5)
                                     : Border.all(color: AppColors.border(context)),
-                                boxShadow: const [
-                                  BoxShadow(
-                                    color: Color(0x0F000000),
-                                    blurRadius: 8,
-                                    offset: Offset(0, 2),
-                                  ),
-                                ],
+                                boxShadow: AppColors.cardShadow(context),
                               ),
                               padding: const EdgeInsets.all(10),
                               child: Column(
@@ -692,12 +674,7 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
                                   decoration: BoxDecoration(
                                     color: AppColors.accent(context),
                                     shape: BoxShape.circle,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Color(0x33000000),
-                                        blurRadius: 4,
-                                      ),
-                                    ],
+                                    boxShadow: AppColors.cardShadow(context),
                                   ),
                                 ),
                               ),
@@ -754,13 +731,7 @@ class _MonthIconButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: isPrimary ? AppColors.accent(context) : AppColors.card(context),
           borderRadius: BorderRadius.circular(12),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x14000000),
-              blurRadius: 10,
-              offset: Offset(0, 3),
-            )
-          ],
+          boxShadow: AppColors.cardShadow(context),
         ),
         child: Icon(icon, color: isPrimary ? Colors.white : AppColors.inkSoft(context)),
       ),
@@ -783,13 +754,7 @@ class _ToggleButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.card(context),
           borderRadius: BorderRadius.circular(12),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x14000000),
-              blurRadius: 10,
-              offset: Offset(0, 3),
-            )
-          ],
+          boxShadow: AppColors.cardShadow(context),
         ),
         child: Icon(icon, color: AppColors.inkSoft(context), size: 20),
       ),

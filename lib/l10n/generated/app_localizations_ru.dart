@@ -1324,10 +1324,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get done => 'Готово';
 
   @override
-  String get timerActiveCaps => '🎵 ТАЙМЕР АКТИВЕН 🎵';
+  String get timerActiveCaps => 'Таймер запущен';
 
   @override
-  String get setTimerCaps => '⏱️ УСТАНОВИТЕ ТАЙМЕР';
+  String get setTimerCaps => 'Установите таймер';
 
   @override
   String get musicWillStop => 'Музыка остановится автоматически';
@@ -1339,10 +1339,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get timeRemaining => 'Осталось времени';
 
   @override
-  String get stopTimerCaps => 'ОСТАНОВИТЬ ТАЙМЕР';
+  String get stopTimerCaps => 'Остановить таймер';
 
   @override
-  String get startTimerCaps => 'ЗАПУСТИТЬ ТАЙМЕР';
+  String get startTimerCaps => 'Запустить таймер';
 
   @override
   String get minutesUnit => 'минут';

@@ -522,13 +522,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
                       decoration: BoxDecoration(
                         color: AppColors.card(context),
                         borderRadius: BorderRadius.circular(16),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Color(0x0F000000),
-                            blurRadius: 10,
-                            offset: Offset(0, 3),
-                          ),
-                        ],
+                        boxShadow: AppColors.cardShadow(context),
                       ),
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(8, 12, 16, 8),
@@ -583,13 +577,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
       decoration: BoxDecoration(
         color: AppColors.card(context),
         borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0F000000),
-            blurRadius: 10,
-            offset: Offset(0, 3),
-          ),
-        ],
+        boxShadow: AppColors.cardShadow(context),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -680,8 +668,8 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
     final Color deltaBg;
     final IconData deltaIcon;
     if (delta > 0) {
-      deltaColor = const Color(0xFF2E7D32);
-      deltaBg = (AppColors.isDark(context) ? const Color(0xFF15291C) : const Color(0xFFE8F5E9));
+      deltaColor = AppColors.success(context);
+      deltaBg = AppColors.successSoft(context);
       deltaIcon = Icons.arrow_upward;
     } else if (delta < 0) {
       deltaColor = AppColors.accent(context);
@@ -759,13 +747,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
       decoration: BoxDecoration(
         color: AppColors.card(context),
         borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0F000000),
-            blurRadius: 10,
-            offset: Offset(0, 3),
-          ),
-        ],
+        boxShadow: AppColors.cardShadow(context),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -797,13 +779,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.card(context),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: AppColors.cardShadow(context),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -867,13 +843,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
             decoration: BoxDecoration(
               color: AppColors.card(context),
               borderRadius: BorderRadius.circular(16),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x14000000),
-                  blurRadius: 20,
-                  offset: Offset(0, 10),
-                ),
-              ],
+              boxShadow: AppColors.cardShadow(context),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -918,13 +888,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
       decoration: BoxDecoration(
         color: AppColors.card(context),
         borderRadius: BorderRadius.circular(12),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0A000000),
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          ),
-        ],
+        boxShadow: AppColors.cardShadow(context),
       ),
       child: Row(
         children: [
@@ -961,13 +925,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
       decoration: BoxDecoration(
         color: AppColors.card(context),
         borderRadius: BorderRadius.circular(12),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0A000000),
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          ),
-        ],
+        boxShadow: AppColors.cardShadow(context),
       ),
       child: Row(
         children: [

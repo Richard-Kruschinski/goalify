@@ -11,6 +11,7 @@ import 'features/functions/music_timer/presentation/controllers/music_timer_cont
 import 'features/functions/interval_timer/presentation/controllers/interval_timer_controller.dart';
 import 'core/services/timer_live_presentation_service.dart';
 import 'core/settings/settings_controller.dart';
+import 'core/theme/app_theme.dart';
 import 'core/sounds/sound_controller.dart';
 import 'l10n/generated/app_localizations.dart';
 
@@ -62,18 +63,8 @@ class GoalifyApp extends StatelessWidget {
       child: Consumer<SettingsController>(
         builder: (context, settings, _) => MaterialApp(
           onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
-          theme: ThemeData(
-            useMaterial3: true,
-            colorScheme: ColorScheme.fromSeed(seedColor: Colors.pink),
-          ),
-          darkTheme: ThemeData(
-            useMaterial3: true,
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: Colors.pink,
-              brightness: Brightness.dark,
-            ),
-            scaffoldBackgroundColor: const Color(0xFF141619),
-          ),
+          theme: AppTheme.light(),
+          darkTheme: AppTheme.dark(),
           themeMode: settings.themeMode,
           // Country codes are chosen so weeks start on Monday (de_DE, en_GB)
           locale: settings.locale,
@@ -142,17 +133,21 @@ class _MainNavState extends State<MainNav> {
     final l10n = AppLocalizations.of(context);
     return Scaffold(
       body: screens[currentIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        currentIndex: currentIndex,
-        onTap: (i) => setState(() => currentIndex = i),
-        selectedItemColor: Colors.pink,
-        items: [
-          BottomNavigationBarItem(icon: const Icon(Icons.show_chart),     label: l10n.progressTitle),
-          BottomNavigationBarItem(icon: const Icon(Icons.check_circle),   label: l10n.navDaily),
-          BottomNavigationBarItem(icon: const Icon(Icons.fitness_center), label: l10n.gymTitle),
-          BottomNavigationBarItem(icon: const Icon(Icons.settings),       label: l10n.functionsTitle),
-        ],
+      bottomNavigationBar: DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border(top: BorderSide(color: Theme.of(context).dividerColor)),
+        ),
+        child: BottomNavigationBar(
+          type: BottomNavigationBarType.fixed,
+          currentIndex: currentIndex,
+          onTap: (i) => setState(() => currentIndex = i),
+          items: [
+            BottomNavigationBarItem(icon: const Icon(Icons.show_chart),     label: l10n.progressTitle),
+            BottomNavigationBarItem(icon: const Icon(Icons.check_circle),   label: l10n.navDaily),
+            BottomNavigationBarItem(icon: const Icon(Icons.fitness_center), label: l10n.gymTitle),
+            BottomNavigationBarItem(icon: const Icon(Icons.settings),       label: l10n.functionsTitle),
+          ],
+        ),
       ),
     );
   }

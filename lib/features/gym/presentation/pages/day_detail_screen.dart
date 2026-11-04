@@ -231,13 +231,7 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.card(context),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: AppColors.cardShadow(context),
       ),
       child: Row(
         children: [
@@ -280,7 +274,7 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: _checkedToday ? (AppColors.isDark(context) ? Color(0xFF15291C) : Color(0xFFE8F5E9)) : AppColors.chip(context),
+                color: _checkedToday ? AppColors.successSoft(context) : AppColors.chip(context),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Row(
@@ -288,7 +282,7 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
                   Icon(
                     _checkedToday ? Icons.check_circle : Icons.radio_button_unchecked,
                     size: 16,
-                    color: _checkedToday ? Color(0xFF4CAF50) : AppColors.muted(context),
+                    color: _checkedToday ? AppColors.success(context) : AppColors.muted(context),
                   ),
                   const SizedBox(width: 6),
                   Text(
@@ -296,7 +290,7 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: _checkedToday ? Color(0xFF4CAF50) : AppColors.muted(context),
+                      color: _checkedToday ? AppColors.success(context) : AppColors.muted(context),
                     ),
                   ),
                 ],
@@ -315,13 +309,7 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
       decoration: BoxDecoration(
         color: AppColors.card(context),
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: AppColors.cardShadow(context),
       ),
       child: Material(
         color: Colors.transparent,
@@ -515,12 +503,12 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
                             Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: (AppColors.isDark(context) ? const Color(0xFF241F33) : const Color(0xFFEDE9FE)),
+                                color: AppColors.chip(context),
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.sticky_note_2_outlined,
-                                color: Color(0xFF7C3AED),
+                                color: AppColors.inkSoft(context),
                                 size: 24,
                               ),
                             ),
@@ -598,14 +586,14 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
                             Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: (AppColors.isDark(context) ? const Color(0xFF332612) : const Color(0xFFFFF3E0)),
+                                color: AppColors.warningSoft(context),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Icon(
                                 _alternativeIds.contains(w.id)
                                     ? Icons.star_rounded
                                     : Icons.swap_horiz_rounded,
-                                color: const Color(0xFFFF9800),
+                                color: AppColors.warning(context),
                                 size: 24,
                               ),
                             ),
@@ -667,12 +655,12 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
                             Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: (AppColors.isDark(context) ? const Color(0xFF14273A) : const Color(0xFFE3F2FD)),
+                                color: AppColors.chip(context),
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.remove_circle_outline,
-                                color: Color(0xFF2196F3),
+                                color: AppColors.inkSoft(context),
                                 size: 24,
                               ),
                             ),

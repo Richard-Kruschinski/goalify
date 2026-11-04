@@ -218,8 +218,8 @@ class _ModernDateRangePickerState extends State<ModernDateRangePicker> {
                         const SizedBox(height: 10),
                         Text(
                           errorText!,
-                          style: const TextStyle(
-                            color: Color(0xFFD32F2F),
+                          style: TextStyle(
+                            color: AppColors.accent(context),
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                           ),
@@ -315,7 +315,7 @@ class _ModernDateRangePickerState extends State<ModernDateRangePicker> {
                   style: TextStyle(
                     fontSize: isLandscape ? 16 : 18,
                     fontWeight: FontWeight.w700,
-                    color: const Color(0xFF111827),
+                    color: AppColors.ink(context),
                   ),
                 ),
                 SizedBox(height: isLandscape ? 12 : 16),
@@ -333,11 +333,11 @@ class _ModernDateRangePickerState extends State<ModernDateRangePicker> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               'Anfangsdatum',
                               style: TextStyle(
                                 fontSize: 10,
-                                color: Color(0xFF6B7280),
+                                color: AppColors.muted(context),
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -350,7 +350,7 @@ class _ModernDateRangePickerState extends State<ModernDateRangePicker> {
                                 fontSize: isLandscape ? 12 : 14,
                                 fontWeight: FontWeight.w600,
                                 color: _selectedStart != null
-                                    ? const Color(0xFF111827)
+                                    ? AppColors.ink(context)
                                     : AppColors.faint(context),
                               ),
                             ),
@@ -370,11 +370,11 @@ class _ModernDateRangePickerState extends State<ModernDateRangePicker> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               'Enddatum',
                               style: TextStyle(
                                 fontSize: 11,
-                                color: Color(0xFF6B7280),
+                                color: AppColors.muted(context),
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -385,7 +385,7 @@ class _ModernDateRangePickerState extends State<ModernDateRangePicker> {
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
                                 color: _selectedEnd != null
-                                    ? const Color(0xFF111827)
+                                    ? AppColors.ink(context)
                                     : AppColors.faint(context),
                               ),
                             ),
@@ -434,7 +434,7 @@ class _ModernDateRangePickerState extends State<ModernDateRangePicker> {
                           style: TextStyle(
                             fontSize: isLandscape ? 12 : 14,
                             fontWeight: FontWeight.w600,
-                            color: const Color(0xFF111827),
+                            color: AppColors.ink(context),
                           ),
                         ),
                       ),
@@ -450,7 +450,7 @@ class _ModernDateRangePickerState extends State<ModernDateRangePicker> {
                           },
                           icon: const Icon(Icons.chevron_left),
                           iconSize: isLandscape ? 18 : 20,
-                          color: const Color(0xFF6B7280),
+                          color: AppColors.muted(context),
                         ),
                         IconButton(
                           onPressed: () {
@@ -461,7 +461,7 @@ class _ModernDateRangePickerState extends State<ModernDateRangePicker> {
                           },
                           icon: const Icon(Icons.chevron_right),
                           iconSize: isLandscape ? 18 : 20,
-                          color: const Color(0xFF6B7280),
+                          color: AppColors.muted(context),
                         ),
                       ],
                     ),
@@ -476,7 +476,7 @@ class _ModernDateRangePickerState extends State<ModernDateRangePicker> {
                       child: Text(
                         'Abbrechen',
                         style: TextStyle(
-                          color: const Color(0xFF6B7280),
+                          color: AppColors.muted(context),
                           fontSize: isLandscape ? 12 : 14,
                         ),
                       ),
@@ -550,10 +550,10 @@ class _ModernDateRangePickerState extends State<ModernDateRangePicker> {
                         child: Center(
                           child: Text(
                             day,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
-                              color: Color(0xFF6B7280),
+                              color: AppColors.muted(context),
                             ),
                           ),
                         ),
@@ -621,7 +621,7 @@ class _ModernDateRangePickerState extends State<ModernDateRangePicker> {
                           fontWeight: isStart || isEnd ? FontWeight.w700 : FontWeight.w500,
                           color: isStart || isEnd
                               ? Colors.white
-                              : const Color(0xFF111827),
+                              : AppColors.ink(context),
                         ),
                       ),
                     ),

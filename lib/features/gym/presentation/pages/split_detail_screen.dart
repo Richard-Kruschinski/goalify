@@ -53,13 +53,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: AppColors.card(context),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.03),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+                boxShadow: AppColors.cardShadow(context),
               ),
               child: Row(
                 children: [
@@ -103,13 +97,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
                           decoration: BoxDecoration(
                             color: AppColors.card(context),
                             borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.04),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
+                            boxShadow: AppColors.cardShadow(context),
                           ),
                           child: Material(
                             color: Colors.transparent,

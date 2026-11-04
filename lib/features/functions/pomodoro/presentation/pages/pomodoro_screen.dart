@@ -70,7 +70,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
       ScaffoldMessenger.of(context).showSingleSnackBar(
         SnackBar(
           content: Text(AppLocalizations.of(context).defaultProfilesNotEditable),
-          backgroundColor: Color(0xFFFF6B6B),
+          backgroundColor: AppColors.accent(context),
         ),
       );
       return;
@@ -87,7 +87,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.edit, color: Color(0xFFFF6B6B)),
+              leading: Icon(Icons.edit, color: AppColors.accent(context)),
               title: Text(AppLocalizations.of(context).edit),
               onTap: () {
                 Navigator.pop(sheetContext);
@@ -95,7 +95,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
               },
             ),
             ListTile(
-              leading: const Icon(Icons.delete_outline, color: Colors.redAccent),
+              leading: Icon(Icons.delete_outline, color: AppColors.accent(context)),
               title: Text(AppLocalizations.of(context).delete),
               onTap: () {
                 Navigator.pop(sheetContext);
@@ -130,13 +130,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
           decoration: BoxDecoration(
             color: AppColors.card(context),
             borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.1),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-            ],
+            boxShadow: AppColors.cardShadow(context),
           ),
           child: StatefulBuilder(
             builder: (context, setState) => SingleChildScrollView(
@@ -152,12 +146,12 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFFF6B6B).withValues(alpha: 0.1),
+                            color: AppColors.accent(context).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.edit_note,
-                            color: Color(0xFFFF6B6B),
+                            color: AppColors.accent(context),
                             size: 28,
                           ),
                         ),
@@ -237,7 +231,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                     subtitle: Text(AppLocalizations.of(context).blockAppsSubtitle),
                     dense: true,
                     contentPadding: EdgeInsets.zero,
-                    activeColor: const Color(0xFFFF6B6B),
+                    activeColor: AppColors.accent(context),
                   ),
                   const SizedBox(height: 24),
                   
@@ -273,7 +267,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                               messenger.showSingleSnackBar(
                                 SnackBar(
                                   content: Text(AppLocalizations.of(context).enterProfileName),
-                                  backgroundColor: Color(0xFFFF6B6B),
+                                  backgroundColor: AppColors.accent(context),
                                 ),
                               );
                               return;
@@ -295,13 +289,13 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                               messenger.showSingleSnackBar(
                                 SnackBar(
                                   content: Text(AppLocalizations.of(context).profileUpdated),
-                                  backgroundColor: Color(0xFF51CF66),
+                                  backgroundColor: AppColors.success(context),
                                 ),
                               );
                             }
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFFF6B6B),
+                            backgroundColor: AppColors.accent(context),
                             foregroundColor: Colors.white,
                             elevation: 0,
                             padding: const EdgeInsets.symmetric(vertical: 16),
@@ -345,13 +339,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
           decoration: BoxDecoration(
             color: AppColors.card(context),
             borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.1),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-            ],
+            boxShadow: AppColors.cardShadow(context),
           ),
           child: Padding(
             padding: const EdgeInsets.all(24),
@@ -365,12 +353,12 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.redAccent.withValues(alpha: 0.1),
+                        color: AppColors.accent(context).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.delete_outline,
-                        color: Colors.redAccent,
+                        color: AppColors.accent(context),
                         size: 28,
                       ),
                     ),
@@ -433,13 +421,13 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                             messenger.showSingleSnackBar(
                               SnackBar(
                                 content: Text(AppLocalizations.of(context).profileDeleted),
-                                backgroundColor: Color(0xFF51CF66),
+                                backgroundColor: AppColors.success(context),
                               ),
                             );
                           }
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.redAccent,
+                          backgroundColor: AppColors.accent(context),
                           foregroundColor: Colors.white,
                           elevation: 0,
                           padding: const EdgeInsets.symmetric(vertical: 16),
@@ -550,13 +538,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
           decoration: BoxDecoration(
             color: AppColors.card(context),
             borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.1),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-            ],
+            boxShadow: AppColors.cardShadow(context),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -565,12 +547,12 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFF6B6B).withValues(alpha: 0.1),
+                  color: AppColors.accent(context).withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.notifications_active,
-                  color: Color(0xFFFF6B6B),
+                  color: AppColors.accent(context),
                   size: 48,
                 ),
               ),
@@ -607,7 +589,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                     await Permission.notification.request();
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF6B6B),
+                    backgroundColor: AppColors.accent(context),
                     foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
@@ -667,13 +649,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
           decoration: BoxDecoration(
             color: AppColors.card(context),
             borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.1),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-            ],
+            boxShadow: AppColors.cardShadow(context),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -682,12 +658,12 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFF6B6B).withValues(alpha: 0.1),
+                  color: AppColors.accent(context).withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.accessibility_new,
-                  color: Color(0xFFFF6B6B),
+                  color: AppColors.accent(context),
                   size: 48,
                 ),
               ),
@@ -725,7 +701,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                     await controller.platformService.openAccessibilitySettings();
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF6B6B),
+                    backgroundColor: AppColors.accent(context),
                     foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
@@ -785,13 +761,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
           decoration: BoxDecoration(
             color: AppColors.card(context),
             borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.1),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-            ],
+            boxShadow: AppColors.cardShadow(context),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -800,12 +770,12 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF4C9AFF).withValues(alpha: 0.1),
+                  color: AppColors.info(context).withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.info_outline,
-                  color: Color(0xFF4C9AFF),
+                  color: AppColors.info(context),
                   size: 48,
                 ),
               ),
@@ -839,7 +809,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                 child: ElevatedButton(
                   onPressed: () => Navigator.pop(context),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4C9AFF),
+                    backgroundColor: AppColors.info(context),
                     foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
@@ -914,7 +884,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                             Navigator.pop(sheetContext);
                             _showCreateProfileDialog(parentContext);
                           },
-                          color: const Color(0xFFFF6B6B),
+                          color: AppColors.accent(context),
                         ),
                       ],
                     ),
@@ -973,13 +943,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
           decoration: BoxDecoration(
             color: AppColors.card(context),
             borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.1),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-            ],
+            boxShadow: AppColors.cardShadow(context),
           ),
           child: StatefulBuilder(
             builder: (context, setState) => SingleChildScrollView(
@@ -995,12 +959,12 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFFF6B6B).withValues(alpha: 0.1),
+                            color: AppColors.accent(context).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.add_circle_outline,
-                            color: Color(0xFFFF6B6B),
+                            color: AppColors.accent(context),
                             size: 28,
                           ),
                         ),
@@ -1080,7 +1044,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                     subtitle: Text(AppLocalizations.of(context).blockAppsSubtitle),
                     dense: true,
                     contentPadding: EdgeInsets.zero,
-                    activeColor: const Color(0xFFFF6B6B),
+                    activeColor: AppColors.accent(context),
                   ),
                   const SizedBox(height: 24),
                   
@@ -1115,7 +1079,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                               messenger.showSingleSnackBar(
                                 SnackBar(
                                   content: Text(AppLocalizations.of(context).enterProfileName),
-                                  backgroundColor: Color(0xFFFF6B6B),
+                                  backgroundColor: AppColors.accent(context),
                                 ),
                               );
                               return;
@@ -1137,7 +1101,7 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                               messenger.showSingleSnackBar(
                                 SnackBar(
                                   content: Text(AppLocalizations.of(context).enterValidDurations),
-                                  backgroundColor: Color(0xFFFF6B6B),
+                                  backgroundColor: AppColors.accent(context),
                                 ),
                               );
                               return;
@@ -1160,13 +1124,13 @@ class _PomodoroScreenContentState extends State<_PomodoroScreenContent> with Wid
                               messenger.showSingleSnackBar(
                                 SnackBar(
                                   content: Text(AppLocalizations.of(context).profileCreated(profile.name)),
-                                  backgroundColor: const Color(0xFF51CF66),
+                                  backgroundColor: AppColors.success(context),
                                 ),
                               );
                             }
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFFF6B6B),
+                            backgroundColor: AppColors.accent(context),
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             elevation: 0,
@@ -1307,13 +1271,13 @@ class _PhaseIndicator extends StatelessWidget {
 
   const _PhaseIndicator({required this.controller});
 
-  Color _getPhaseColor() {
+  Color _getPhaseColor(BuildContext context) {
     switch (controller.currentPhase) {
       case PomodoroPhase.work:
-        return const Color(0xFFFF6B6B);
+        return AppColors.accent(context);
       case PomodoroPhase.shortBreak:
       case PomodoroPhase.longBreak:
-        return const Color(0xFF51CF66);
+        return AppColors.success(context);
     }
   }
 
@@ -1324,13 +1288,7 @@ class _PhaseIndicator extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.card(context),
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: AppColors.cardShadow(context),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1343,7 +1301,7 @@ class _PhaseIndicator extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: _getPhaseColor(),
+                  color: _getPhaseColor(context),
                 ),
               ),
               const SizedBox(height: 4),
@@ -1359,14 +1317,14 @@ class _PhaseIndicator extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: _getPhaseColor().withValues(alpha: 0.1),
+              color: _getPhaseColor(context).withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(
               controller.currentPhase == PomodoroPhase.work
                   ? Icons.work_outline
                   : Icons.coffee_outlined,
-              color: _getPhaseColor(),
+              color: _getPhaseColor(context),
               size: 28,
             ),
           ),
@@ -1381,13 +1339,13 @@ class _TimerDisplay extends StatelessWidget {
 
   const _TimerDisplay({required this.controller});
 
-  Color _getPhaseColor() {
+  Color _getPhaseColor(BuildContext context) {
     switch (controller.currentPhase) {
       case PomodoroPhase.work:
-        return const Color(0xFFFF6B6B);
+        return AppColors.accent(context);
       case PomodoroPhase.shortBreak:
       case PomodoroPhase.longBreak:
-        return const Color(0xFF51CF66);
+        return AppColors.success(context);
     }
   }
 
@@ -1399,13 +1357,7 @@ class _TimerDisplay extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.card(context),
         shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        boxShadow: AppColors.cardShadow(context),
       ),
       child: Stack(
         alignment: Alignment.center,
@@ -1418,7 +1370,7 @@ class _TimerDisplay extends StatelessWidget {
               value: controller.progress,
               strokeWidth: 12,
               backgroundColor: AppColors.border(context),
-              valueColor: AlwaysStoppedAnimation<Color>(_getPhaseColor()),
+              valueColor: AlwaysStoppedAnimation<Color>(_getPhaseColor(context)),
               strokeCap: StrokeCap.round,
             ),
           ),
@@ -1439,7 +1391,7 @@ class _TimerDisplay extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                 decoration: BoxDecoration(
-                  color: _getPhaseColor().withValues(alpha: 0.1),
+                  color: _getPhaseColor(context).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -1451,7 +1403,7 @@ class _TimerDisplay extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: _getPhaseColor(),
+                    color: _getPhaseColor(context),
                   ),
                 ),
               ),
@@ -1478,7 +1430,7 @@ class _ControlButtons extends StatelessWidget {
           SnackBar(
             content: Text(AppLocalizations.of(context).notificationPermissionRequired),
             duration: Duration(seconds: 4),
-            backgroundColor: Color(0xFFFF6B6B),
+            backgroundColor: AppColors.accent(context),
           ),
         );
       }
@@ -1494,7 +1446,8 @@ class _ControlButtons extends StatelessWidget {
         _CircularButton(
           icon: Icons.refresh,
           onPressed: controller.reset,
-          color: AppColors.muted(context),
+          color: AppColors.chip(context),
+          iconColor: AppColors.ink(context),
           size: 56,
         ),
         const SizedBox(width: 20),
@@ -1506,8 +1459,8 @@ class _ControlButtons extends StatelessWidget {
               : Icons.play_arrow,
           onPressed: () => _handlePlayPause(context),
           color: controller.currentPhase == PomodoroPhase.work
-              ? const Color(0xFFFF6B6B)
-              : const Color(0xFF51CF66),
+              ? AppColors.accent(context)
+              : AppColors.success(context),
           size: 80,
           iconSize: 40,
         ),
@@ -1517,7 +1470,8 @@ class _ControlButtons extends StatelessWidget {
         _CircularButton(
           icon: Icons.skip_next,
           onPressed: controller.skipToNextPhase,
-          color: AppColors.muted(context),
+          color: AppColors.chip(context),
+          iconColor: AppColors.ink(context),
           size: 56,
         ),
       ],
@@ -1531,6 +1485,7 @@ class _CircularButton extends StatelessWidget {
   final Color color;
   final double size;
   final double? iconSize;
+  final Color iconColor;
 
   const _CircularButton({
     required this.icon,
@@ -1538,6 +1493,7 @@ class _CircularButton extends StatelessWidget {
     required this.color,
     this.size = 60,
     this.iconSize,
+    this.iconColor = Colors.white,
   });
 
   @override
@@ -1545,8 +1501,7 @@ class _CircularButton extends StatelessWidget {
     return Material(
       color: color,
       shape: const CircleBorder(),
-      elevation: 4,
-      shadowColor: color.withValues(alpha: 0.5),
+      elevation: 0,
       child: InkWell(
         onTap: onPressed,
         customBorder: const CircleBorder(),
@@ -1555,7 +1510,7 @@ class _CircularButton extends StatelessWidget {
           height: size,
           child: Icon(
             icon,
-            color: Colors.white,
+            color: iconColor,
             size: iconSize ?? size * 0.5,
           ),
         ),
@@ -1570,10 +1525,10 @@ class _FocusModeIndicator extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFFF6B6B).withValues(alpha: 0.1),
+        color: AppColors.accent(context).withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: const Color(0xFFFF6B6B).withValues(alpha: 0.3),
+          color: AppColors.accent(context).withValues(alpha: 0.3),
           width: 2,
         ),
       ),
@@ -1581,8 +1536,8 @@ class _FocusModeIndicator extends StatelessWidget {
         children: [
           Container(
             padding: const EdgeInsets.all(8),
-            decoration: const BoxDecoration(
-              color: Color(0xFFFF6B6B),
+            decoration: BoxDecoration(
+              color: AppColors.accent(context),
               shape: BoxShape.circle,
             ),
             child: const Icon(
@@ -1601,7 +1556,7 @@ class _FocusModeIndicator extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFFFF6B6B),
+                    color: AppColors.accent(context),
                   ),
                 ),
                 SizedBox(height: 2),
@@ -1653,7 +1608,7 @@ class _StatisticsSection extends StatelessWidget {
                 icon: Icons.check_circle_outline,
                 label: AppLocalizations.of(context).sessions,
                 value: '${stats.completedSessionsToday}',
-                color: const Color(0xFF51CF66),
+                color: AppColors.inkSoft(context),
               ),
             ),
             const SizedBox(width: 12),
@@ -1665,7 +1620,7 @@ class _StatisticsSection extends StatelessWidget {
                   AppLocalizations.of(context),
                   stats.totalFocusTimeToday,
                 ),
-                color: const Color(0xFF4C9AFF),
+                color: AppColors.inkSoft(context),
               ),
             ),
           ],
@@ -1681,7 +1636,7 @@ class _StatisticsSection extends StatelessWidget {
                   AppLocalizations.of(context),
                   stats.totalFocusTimeThisWeek,
                 ),
-                color: const Color(0xFFFF9F43),
+                color: AppColors.inkSoft(context),
               ),
             ),
             const SizedBox(width: 12),
@@ -1690,7 +1645,7 @@ class _StatisticsSection extends StatelessWidget {
                 icon: Icons.repeat,
                 label: AppLocalizations.of(context).cycles,
                 value: '${stats.completedCycles}',
-                color: const Color(0xFFE056FD),
+                color: AppColors.inkSoft(context),
               ),
             ),
           ],
@@ -1712,13 +1667,7 @@ class _DailyFocusScoreCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.card(context),
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: AppColors.cardShadow(context),
       ),
       child: Row(
         children: [
@@ -1734,7 +1683,7 @@ class _DailyFocusScoreCard extends StatelessWidget {
                   strokeWidth: 8,
                   backgroundColor: AppColors.border(context),
                   valueColor: AlwaysStoppedAnimation<Color>(
-                    _getScoreColor(score),
+                    _getScoreColor(context, score),
                   ),
                   strokeCap: StrokeCap.round,
                 ),
@@ -1743,7 +1692,7 @@ class _DailyFocusScoreCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: _getScoreColor(score),
+                    color: _getScoreColor(context, score),
                   ),
                 ),
               ],
@@ -1778,11 +1727,11 @@ class _DailyFocusScoreCard extends StatelessWidget {
     );
   }
 
-  Color _getScoreColor(int score) {
-    if (score >= 80) return const Color(0xFF51CF66);
-    if (score >= 50) return const Color(0xFF4C9AFF);
-    if (score >= 20) return const Color(0xFFFF9F43);
-    return const Color(0xFFFF6B6B);
+  Color _getScoreColor(BuildContext context, int score) {
+    if (score >= 80) return AppColors.success(context);
+    if (score >= 50) return AppColors.info(context);
+    if (score >= 20) return AppColors.warning(context);
+    return AppColors.accent(context);
   }
 
   String _getScoreMessage(BuildContext context, int score) {
@@ -1813,13 +1762,7 @@ class _StatCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.card(context),
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: AppColors.cardShadow(context),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1870,10 +1813,10 @@ class _ProfileTile extends StatelessWidget {
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected ? Color(0xFFFF6B6B).withValues(alpha: 0.1) : AppColors.chip(context),
+          color: isSelected ? AppColors.accent(context).withValues(alpha: 0.1) : AppColors.chip(context),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? Color(0xFFFF6B6B) : AppColors.border(context),
+            color: isSelected ? AppColors.accent(context) : AppColors.border(context),
             width: 2,
           ),
         ),
@@ -1885,9 +1828,9 @@ class _ProfileTile extends StatelessWidget {
               height: 24,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: isSelected ? const Color(0xFFFF6B6B) : Colors.transparent,
+                color: isSelected ? AppColors.accent(context) : Colors.transparent,
                 border: Border.all(
-                  color: isSelected ? Color(0xFFFF6B6B) : AppColors.faint(context),
+                  color: isSelected ? AppColors.accent(context) : AppColors.faint(context),
                   width: 2,
                 ),
               ),
@@ -1907,7 +1850,7 @@ class _ProfileTile extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: isSelected ? Color(0xFFFF6B6B) : AppColors.ink(context),
+                      color: isSelected ? AppColors.accent(context) : AppColors.ink(context),
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -1989,7 +1932,7 @@ class _ModernTextField extends StatelessWidget {
               ),
               prefixIcon: Icon(
                 icon,
-                color: const Color(0xFFFF6B6B),
+                color: AppColors.accent(context),
                 size: 22,
               ),
               border: InputBorder.none,

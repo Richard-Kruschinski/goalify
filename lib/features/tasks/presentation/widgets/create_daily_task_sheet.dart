@@ -669,12 +669,12 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
                     padding: const EdgeInsets.only(top: 8),
                     child: Row(
                       children: [
-                        const Icon(Icons.info_outline, size: 14, color: Color(0xFFFF9800)),
+                        Icon(Icons.info_outline, size: 14, color: AppColors.warning(context)),
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
                             AppLocalizations.of(context).sameAsCycleHint,
-                            style: const TextStyle(fontSize: 12, color: Color(0xFFFF9800)),
+                            style: TextStyle(fontSize: 12, color: AppColors.warning(context)),
                           ),
                         ),
                       ],
@@ -738,7 +738,7 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.star, size: 20, color: Color(0xFFFF9800)),
+                          Icon(Icons.star, size: 20, color: AppColors.warning(context)),
                           const SizedBox(width: 8),
                           Text(
                             AppLocalizations.of(context).points,
@@ -752,15 +752,15 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
-                              color: (AppColors.isDark(context) ? const Color(0xFF332612) : const Color(0xFFFFF3E0)),
+                              color: AppColors.warningSoft(context),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
                               '$_points',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFFFF9800),
+                                color: AppColors.warning(context),
                               ),
                             ),
                           ),

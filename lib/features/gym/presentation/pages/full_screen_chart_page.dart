@@ -638,7 +638,7 @@ class _FilterDialogModernState extends State<_FilterDialogModern> {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF111827),
+                  color: AppColors.ink(context),
                 ),
               ),
               const SizedBox(height: 20),
@@ -705,8 +705,8 @@ class _FilterDialogModernState extends State<_FilterDialogModern> {
                           vertical: 10,
                         ),
                         suffixText: AppLocalizations.of(context).unitKg,
-                        suffixStyle: const TextStyle(
-                          color: Color(0xFF6B7280),
+                        suffixStyle: TextStyle(
+                          color: AppColors.muted(context),
                           fontSize: 12,
                         ),
                       ),
@@ -755,9 +755,9 @@ class _FilterDialogModernState extends State<_FilterDialogModern> {
                 children: [
                   TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text(
+                    child: Text(
                       'Abbrechen',
-                      style: TextStyle(color: Color(0xFF6B7280)),
+                      style: TextStyle(color: AppColors.muted(context)),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -847,17 +847,17 @@ class _FilterDialogModernState extends State<_FilterDialogModern> {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF111827),
+                      color: AppColors.ink(context),
                     ),
                   ),
                   Text(
                     subtitle,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: Color(0xFF6B7280),
+                      color: AppColors.muted(context),
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,

@@ -248,7 +248,7 @@ class _OptionCard extends StatelessWidget {
     return Material(
       color: color,
       borderRadius: BorderRadius.circular(20),
-      elevation: 2,
+      elevation: AppColors.isDark(context) ? 0 : 1,
       shadowColor: Colors.black.withValues(alpha: 0.08),
       child: Column(
         children: [
@@ -636,7 +636,6 @@ class _SwitchTile extends StatelessWidget {
             Switch(
               value: value,
               onChanged: onChanged,
-              activeColor: accent,
             ),
           ],
         ),

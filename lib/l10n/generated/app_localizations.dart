@@ -2341,13 +2341,13 @@ abstract class AppLocalizations {
   /// No description provided for @timerActiveCaps.
   ///
   /// In en, this message translates to:
-  /// **'🎵 TIMER ACTIVE 🎵'**
+  /// **'Timer running'**
   String get timerActiveCaps;
 
   /// No description provided for @setTimerCaps.
   ///
   /// In en, this message translates to:
-  /// **'⏱️ SET TIMER'**
+  /// **'Set timer'**
   String get setTimerCaps;
 
   /// No description provided for @musicWillStop.
@@ -2371,13 +2371,13 @@ abstract class AppLocalizations {
   /// No description provided for @stopTimerCaps.
   ///
   /// In en, this message translates to:
-  /// **'STOP TIMER'**
+  /// **'Stop timer'**
   String get stopTimerCaps;
 
   /// No description provided for @startTimerCaps.
   ///
   /// In en, this message translates to:
-  /// **'START TIMER'**
+  /// **'Start timer'**
   String get startTimerCaps;
 
   /// No description provided for @minutesUnit.

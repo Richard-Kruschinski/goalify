@@ -1225,10 +1225,10 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                         Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: (AppColors.isDark(context) ? const Color(0xFF241F33) : const Color(0xFFEDE9FE)),
+                            color: AppColors.chip(context),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Icon(Icons.checklist, color: Color(0xFF7C3AED)),
+                          child: Icon(Icons.checklist, color: AppColors.inkSoft(context)),
                         ),
                         const SizedBox(width: 10),
                         Expanded(
@@ -1463,10 +1463,10 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
         }) {
           final foreground = enabled
               ? (danger ? AppColors.accent(context) : iconColor ?? AppColors.ink(context))
-              : const Color(0xFFBFC5D2);
+              : AppColors.faint(context);
           final textColor = enabled
               ? (danger ? AppColors.accent(context) : AppColors.ink(context))
-              : const Color(0xFFBFC5D2);
+              : AppColors.faint(context);
           final bgColor = danger
               ? AppColors.accentSoft(context)
               : (iconColor ?? AppColors.ink(context)).withOpacity(0.12);
@@ -1481,13 +1481,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                 decoration: BoxDecoration(
                   color: AppColors.card(context),
                   borderRadius: BorderRadius.circular(14),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x0A000000),
-                      blurRadius: 8,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
+                  boxShadow: AppColors.cardShadow(context),
                 ),
                 child: Row(
                   children: [
@@ -1521,7 +1515,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                                 fontSize: 12,
                                 color: enabled
                                     ? AppColors.muted(context)
-                                    : const Color(0xFFBFC5D2),
+                                    : AppColors.faint(context),
                               ),
                             ),
                           ],
@@ -1659,7 +1653,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                   subtitle: t.hasChecklist
                       ? '${t.checklistDoneCount}/${t.checklistTotalCount} checked'
                       : 'Add checkbox items to this task',
-                  iconColor: const Color(0xFF7C3AED),
+                  iconColor: AppColors.inkSoft(context),
                   onTap: () async {
                     Navigator.pop(ctx);
                     await _openChecklistNoteEditor(t);
@@ -1738,7 +1732,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                         : (_freezeTokens > 0
                         ? AppLocalizations.of(context).protectYourStreak
                         : AppLocalizations.of(context).noTokensLeft),
-                    iconColor: const Color(0xFF2196F3),
+                    iconColor: AppColors.info(context),
                     enabled: !frozenToday && _freezeTokens > 0,
                     onTap: (!frozenToday && _freezeTokens > 0)
                         ? () async {
@@ -1783,7 +1777,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                     icon: Icons.local_fire_department_outlined,
                     title: AppLocalizations.of(context).resetCurrentStreak,
                     subtitle: AppLocalizations.of(context).resetCurrentStreakSubtitle,
-                    iconColor: const Color(0xFFFF5722),
+                    iconColor: AppColors.warning(context),
                     onTap: () async {
                       setState(() => t.streak = 0);
                       await _saveKeepTasks();
@@ -2107,13 +2101,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.card(context),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: AppColors.cardShadow(context),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2179,18 +2167,18 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: (AppColors.isDark(context) ? const Color(0xFF14273A) : const Color(0xFFE3F2FD)),
+                          color: AppColors.infoSoft(context),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.ac_unit, size: 16, color: Color(0xFF2196F3)),
+                            Icon(Icons.ac_unit, size: 16, color: AppColors.info(context)),
                             const SizedBox(width: 4),
                             Text(
                               '$_freezeTokens',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.w600,
-                                color: Color(0xFF2196F3),
+                                color: AppColors.info(context),
                                 fontSize: 14,
                               ),
                             ),
@@ -2207,18 +2195,18 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: (AppColors.isDark(context) ? const Color(0xFF332612) : const Color(0xFFFFF3E0)),
+                          color: AppColors.warningSoft(context),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.star, size: 16, color: Color(0xFFFF9800)),
+                            Icon(Icons.star, size: 16, color: AppColors.warning(context)),
                             const SizedBox(width: 4),
                             Text(
                               '$_todayDoneCount',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.w600,
-                                color: Color(0xFFFF9800),
+                                color: AppColors.warning(context),
                                 fontSize: 14,
                               ),
                             ),
@@ -2238,7 +2226,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                     tooltip: AppLocalizations.of(context).sortTasks,
                     color: AppColors.card(context),
                     surfaceTintColor: AppColors.card(context),
-                    elevation: 10,
+                    elevation: AppColors.isDark(context) ? 0 : 10,
                     shadowColor: const Color(0x29000000),
                     offset: const Offset(0, 44),
                     shape: RoundedRectangleBorder(
@@ -2279,7 +2267,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                     icon: Icon(Icons.more_horiz, color: AppColors.muted(context)),
                     color: AppColors.card(context),
                     surfaceTintColor: AppColors.card(context),
-                    elevation: 10,
+                    elevation: AppColors.isDark(context) ? 0 : 10,
                     shadowColor: const Color(0x29000000),
                     offset: const Offset(0, 44),
                     shape: RoundedRectangleBorder(
@@ -2569,13 +2557,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
       decoration: BoxDecoration(
         color: AppColors.card(context),
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: AppColors.cardShadow(context),
       ),
       child: Material(
         color: Colors.transparent,
@@ -2647,7 +2629,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                             style: TextStyle(
                               fontSize: 13,
                               color: isDone
-                                  ? const Color(0xFFBFC5D2)
+                                  ? AppColors.faint(context)
                                   : AppColors.muted(context),
                             ),
                             maxLines: 1,
@@ -2659,17 +2641,17 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                           padding: const EdgeInsets.only(top: 4),
                           child: Row(
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.checklist,
                                 size: 13,
-                                color: Color(0xFF7C3AED),
+                                color: AppColors.inkSoft(context),
                               ),
                               const SizedBox(width: 4),
                               Text(
                                 '${task.checklistDoneCount}/${task.checklistTotalCount} checklist items done',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 12,
-                                  color: Color(0xFF7C3AED),
+                                  color: AppColors.inkSoft(context),
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -2685,8 +2667,8 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                             color: task.isLimited
                                 ? AppColors.accentSoft(context)
                                 : task.keep
-                                    ? (AppColors.isDark(context) ? const Color(0xFF14273A) : const Color(0xFFE3F2FD))
-                                    : (AppColors.isDark(context) ? const Color(0xFF332612) : const Color(0xFFFFF3E0)),
+                                    ? AppColors.infoSoft(context)
+                                    : AppColors.warningSoft(context),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Row(
@@ -2700,8 +2682,8 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                                 color: task.isLimited
                                     ? AppColors.accent(context)
                                     : task.keep
-                                        ? const Color(0xFF2196F3)
-                                        : const Color(0xFFFF9800),
+                                        ? AppColors.info(context)
+                                        : AppColors.warning(context),
                               ),
                               const SizedBox(width: 4),
                               Text(
@@ -2726,8 +2708,8 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                                   color: task.isLimited
                                       ? AppColors.accent(context)
                                       : task.keep
-                                          ? const Color(0xFF2196F3)
-                                          : const Color(0xFFFF9800),
+                                          ? AppColors.info(context)
+                                          : AppColors.warning(context),
                                 ),
                               ),
                             ],
@@ -2743,8 +2725,8 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                           padding: const EdgeInsets.only(top: 6),
                           child: Row(
                             children: [
-                              const Icon(Icons.local_fire_department,
-                                  size: 14, color: Color(0xFFFF5722)),
+                              Icon(Icons.local_fire_department,
+                                  size: 14, color: AppColors.warning(context)),
                               const SizedBox(width: 4),
                               Text(
                                 task.isLimitedRecurring
@@ -2752,10 +2734,10 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                                         .streakCycleCount(task.streak)
                                     : AppLocalizations.of(context)
                                         .streakCount(task.streak),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w500,
-                                  color: Color(0xFFFF5722),
+                                  color: AppColors.warning(context),
                                 ),
                               ),
                             ],
@@ -2766,15 +2748,15 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                           padding: const EdgeInsets.only(top: 6),
                           child: Row(
                             children: [
-                              const Icon(Icons.ac_unit,
-                                  size: 14, color: Color(0xFF2196F3)),
+                              Icon(Icons.ac_unit,
+                                  size: 14, color: AppColors.info(context)),
                               const SizedBox(width: 4),
                               Text(
                                 AppLocalizations.of(context).frozenTodayLabel,
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w500,
-                                  color: Color(0xFF2196F3),
+                                  color: AppColors.info(context),
                                 ),
                               ),
                             ],
@@ -2897,19 +2879,9 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
       width: 60,
       height: 60,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppColors.accent(context), const Color(0xFFEF5350)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: AppColors.accent(context),
         borderRadius: BorderRadius.circular(30),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.accent(context).withOpacity(0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: AppColors.cardShadow(context),
       ),
       child: Material(
         color: Colors.transparent,

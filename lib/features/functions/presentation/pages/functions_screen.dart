@@ -49,7 +49,7 @@ class FunctionsScreen extends StatelessWidget {
                     ? l10n.pomodoroCardRunning(pomodoroController.formattedTime)
                     : l10n.pomodoroCardSubtitle,
                 icon: Icons.timer,
-                iconBackgroundColor: (AppColors.isDark(context) ? const Color(0xFF331D1D) : const Color(0xFFFFE8E8)),
+                iconBackgroundColor: AppColors.chip(context),
                 isActive: isTimerRunning,
                 onTap: () {
                   Navigator.push(
@@ -72,7 +72,7 @@ class FunctionsScreen extends StatelessWidget {
                     ? l10n.blockerCardActive(distractionBlocker.currentSessionDuration)
                     : l10n.blockerCardSubtitle,
                 icon: Icons.block,
-                iconBackgroundColor: (AppColors.isDark(context) ? const Color(0xFF2B2038) : const Color(0xFFE8D6F7)),
+                iconBackgroundColor: AppColors.chip(context),
                 isActive: isActive,
                 onTap: () {
                   Navigator.push(
@@ -95,7 +95,7 @@ class FunctionsScreen extends StatelessWidget {
                     ? l10n.musicTimerCardRunning(musicTimer.formattedTimeWithHours)
                     : l10n.musicTimerCardSubtitle,
                 icon: Icons.music_note,
-                iconBackgroundColor: (AppColors.isDark(context) ? const Color(0xFF322414) : const Color(0xFFFEE8D1)),
+                iconBackgroundColor: AppColors.chip(context),
                 isActive: isRunning,
                 onTap: () {
                   Navigator.push(
@@ -119,7 +119,7 @@ class FunctionsScreen extends StatelessWidget {
                         intervalItemLabel(l10n, intervalTimer), intervalTimer.formattedTime)
                     : l10n.intervalCardSubtitle,
                 icon: Icons.sports_martial_arts,
-                iconBackgroundColor: (AppColors.isDark(context) ? const Color(0xFF16291F) : const Color(0xFFDDF4E7)),
+                iconBackgroundColor: AppColors.chip(context),
                 isActive: isRunning,
                 onTap: () {
                   Navigator.push(
@@ -137,7 +137,7 @@ class FunctionsScreen extends StatelessWidget {
             title: AppLocalizations.of(context).settingsTitle,
             subtitle: AppLocalizations.of(context).settingsSubtitle,
             icon: Icons.tune,
-            iconBackgroundColor: (AppColors.isDark(context) ? const Color(0xFF232833) : const Color(0xFFE9EDF5)),
+            iconBackgroundColor: AppColors.chip(context),
             onTap: () {
               Navigator.push(
                 context,
@@ -177,11 +177,14 @@ class FunctionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: AppColors.card(context),
-      borderRadius: BorderRadius.circular(20),
-      elevation: isActive ? 4 : 2,
-      shadowColor: isActive 
-          ? Colors.red.withValues(alpha: 0.2)
-          : Colors.black.withValues(alpha: 0.08),
+      elevation: AppColors.isDark(context) ? 0 : 1,
+      shadowColor: Colors.black.withValues(alpha: 0.08),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: AppColors.isDark(context)
+            ? BorderSide(color: isActive ? AppColors.accent(context).withValues(alpha: 0.4) : AppColors.border(context))
+            : BorderSide.none,
+      ),
       child: InkWell(
         onTap: isInteractive
             ? (onTap ?? () {
@@ -202,13 +205,13 @@ class FunctionCard extends StatelessWidget {
                   // Leading Icon
                   Container(
                     decoration: BoxDecoration(
-                      color: iconBackgroundColor,
+                      color: isActive ? AppColors.accentSoft(context) : iconBackgroundColor,
                       shape: BoxShape.circle,
                     ),
                     padding: const EdgeInsets.all(12),
                     child: Icon(
                       icon,
-                      color: AppColors.inkSoft(context),
+                      color: isActive ? AppColors.accent(context) : AppColors.inkSoft(context),
                       size: 28,
                     ),
                   ),
@@ -230,7 +233,7 @@ class FunctionCard extends StatelessWidget {
                           subtitle,
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                 color: isActive
-                                    ? const Color(0xFFFF6B6B)
+                                    ? AppColors.accent(context)
                                     : AppColors.muted(context),
                                 fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
                               ),
@@ -248,7 +251,7 @@ class FunctionCard extends StatelessWidget {
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: isActive
-                              ? const Color(0xFFFF6B6B)
+                              ? AppColors.accent(context)
                               : AppColors.border(context),
                           width: 1.5,
                         ),
@@ -258,7 +261,7 @@ class FunctionCard extends StatelessWidget {
                         Icons.arrow_forward,
                         size: 20,
                         color: isActive
-                            ? const Color(0xFFFF6B6B)
+                            ? AppColors.accent(context)
                             : AppColors.muted(context),
                       ),
                     ),
@@ -271,7 +274,7 @@ class FunctionCard extends StatelessWidget {
                   right: 0,
                   child: Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFF6B6B),
+                      color: AppColors.accent(context),
                       shape: BoxShape.circle,
                     ),
                     padding: const EdgeInsets.all(4),

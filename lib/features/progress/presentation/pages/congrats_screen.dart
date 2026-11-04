@@ -2,6 +2,7 @@
 import 'package:confetti/confetti.dart';
 import 'progress_screen.dart';
 import '../../../../l10n/generated/app_localizations.dart';
+import '../../../../core/theme/app_colors.dart';
 
 class CongratsScreen extends StatefulWidget {
   const CongratsScreen({
@@ -86,13 +87,7 @@ class _CongratsScreenState extends State<CongratsScreen>
                     border: Border.all(
                       color: cs.outlineVariant.withValues(alpha: 0.35),
                     ),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x33000000),
-                        blurRadius: 22,
-                        offset: Offset(0, 12),
-                      ),
-                    ],
+                    boxShadow: AppColors.cardShadow(context),
                   ),
                   constraints: const BoxConstraints(maxWidth: 380),
                   child: Column(
@@ -103,14 +98,7 @@ class _CongratsScreenState extends State<CongratsScreen>
                         height: 84,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          gradient: LinearGradient(
-                            colors: [
-                              cs.primaryContainer,
-                              cs.primary.withValues(alpha: 0.22),
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
+                          color: cs.primaryContainer,
                         ),
                         child: Icon(
                           Icons.emoji_events_rounded,

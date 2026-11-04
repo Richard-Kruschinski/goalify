@@ -60,7 +60,7 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.edit_outlined, color: Color(0xFFFF6B6B)),
+              leading: Icon(Icons.edit_outlined, color: AppColors.accent(context)),
               title: Text(AppLocalizations.of(context).editTaskTitle),
               onTap: () {
                 Navigator.pop(sheetContext);
@@ -68,7 +68,7 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
               },
             ),
             ListTile(
-              leading: const Icon(Icons.delete_outline, color: Colors.redAccent),
+              leading: Icon(Icons.delete_outline, color: AppColors.accent(context)),
               title: Text(AppLocalizations.of(context).deleteTaskAction),
               onTap: () {
                 controller.removeTask(taskIndex);
@@ -115,13 +115,7 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
           decoration: BoxDecoration(
             color: AppColors.card(context),
             borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.12),
-                blurRadius: 24,
-                offset: const Offset(0, 12),
-              ),
-            ],
+            boxShadow: AppColors.cardShadow(context),
           ),
           child: SingleChildScrollView(
             child: Column(
@@ -133,12 +127,12 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFF6B6B).withValues(alpha: 0.12),
+                        color: AppColors.accent(context).withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.edit_note,
-                        color: Color(0xFFFF6B6B),
+                        color: AppColors.accent(context),
                         size: 22,
                       ),
                     ),
@@ -166,7 +160,7 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFFFF6B6B), width: 1.5),
+                      borderSide: BorderSide(color: AppColors.accent(context), width: 1.5),
                     ),
                   ),
                 ),
@@ -184,7 +178,7 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFFFF6B6B), width: 1.5),
+                      borderSide: BorderSide(color: AppColors.accent(context), width: 1.5),
                     ),
                     helperText: AppLocalizations.of(context).decimalsAllowed,
                   ),
@@ -207,7 +201,7 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFFFF6B6B), width: 1.5),
+                      borderSide: BorderSide(color: AppColors.accent(context), width: 1.5),
                     ),
                   ),
                 ),
@@ -225,7 +219,7 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                     const SizedBox(width: 8),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFF6B6B),
+                        backgroundColor: AppColors.accent(context),
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(999),
@@ -283,7 +277,7 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.add_circle_outline, color: Color(0xFF4CAF50)),
+              leading: Icon(Icons.add_circle_outline, color: AppColors.success(context)),
               title: Text(AppLocalizations.of(context).saveProfile),
               onTap: () {
                 Navigator.pop(sheetContext);
@@ -307,13 +301,13 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                         ? Icons.check_circle
                         : Icons.radio_button_unchecked,
                     color: controller.selectedProfileId == profile.id
-                        ? const Color(0xFF4CAF50)
+                        ? AppColors.success(context)
                         : AppColors.muted(context),
                   ),
                   title: Text(profile.name),
                   subtitle: Text('${profile.tasks.length} Tasks'),
                   trailing: IconButton(
-                    icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                    icon: Icon(Icons.delete_outline, color: AppColors.accent(context)),
                     onPressed: () async {
                       await controller.deleteCustomProfile(profile.id);
                       if (sheetContext.mounted) {
@@ -361,13 +355,7 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
           decoration: BoxDecoration(
             color: AppColors.card(context),
             borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.12),
-                blurRadius: 24,
-                offset: const Offset(0, 12),
-              ),
-            ],
+            boxShadow: AppColors.cardShadow(context),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -378,12 +366,12 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFF6B6B).withValues(alpha: 0.12),
+                      color: AppColors.accent(context).withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.bookmark_add_outlined,
-                      color: Color(0xFFFF6B6B),
+                      color: AppColors.accent(context),
                       size: 22,
                     ),
                   ),
@@ -417,8 +405,8 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
-                      color: Color(0xFFFF6B6B),
+                    borderSide: BorderSide(
+                      color: AppColors.accent(context),
                       width: 1.5,
                     ),
                   ),
@@ -438,7 +426,7 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
                   const SizedBox(width: 8),
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFFF6B6B),
+                      backgroundColor: AppColors.accent(context),
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(999),
@@ -593,13 +581,7 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 14),
       decoration: BoxDecoration(
         color: AppColors.card(context),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: AppColors.cardShadow(context),
       ),
       child: Row(
         children: [
@@ -630,25 +612,16 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
   Widget _buildHeroTimer(IntervalTimerController controller) {
     final inTask = controller.currentPhase == IntervalTimerPhase.task;
     final isRunning = controller.timerState == IntervalTimerState.running;
-    final accent = inTask ? Color(0xFF2E7D32) : AppColors.accent(context);
-    final ringBg = inTask ? (AppColors.isDark(context) ? Color(0xFF15291C) : Color(0xFFE8F5E9)) : AppColors.accentSoft(context);
+    final accent = inTask ? AppColors.success(context) : AppColors.accent(context);
+    final ringBg = inTask ? AppColors.successSoft(context) : AppColors.accentSoft(context);
 
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFFFFFFFF), (AppColors.isDark(context) ? Color(0xFF1B1F24) : Color(0xFFF9FAFC))],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: AppColors.card(context),
+        border: Border.all(color: AppColors.border(context)),
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ],
+        boxShadow: AppColors.cardShadow(context),
       ),
       child: Column(
         children: [
@@ -772,17 +745,17 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
       primaryAction = controller.pause;
       primaryLabel = AppLocalizations.of(context).pause;
       primaryIcon = Icons.pause;
-      primaryColor = const Color(0xFFFF9800);
+      primaryColor = AppColors.warning(context);
     } else if (controller.timerState == IntervalTimerState.paused) {
       primaryAction = controller.resume;
       primaryLabel = AppLocalizations.of(context).resume;
       primaryIcon = Icons.play_arrow;
-      primaryColor = const Color(0xFF2E7D32);
+      primaryColor = AppColors.success(context);
     } else {
       primaryAction = controller.start;
       primaryLabel = AppLocalizations.of(context).start;
       primaryIcon = Icons.play_arrow;
-      primaryColor = const Color(0xFF2E7D32);
+      primaryColor = AppColors.success(context);
     }
 
     return Row(

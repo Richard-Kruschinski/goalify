@@ -182,8 +182,8 @@ class _ModernDatePickerDialogState extends State<ModernDatePickerDialog> {
                         const SizedBox(height: 10),
                         Text(
                           errorText!,
-                          style: const TextStyle(
-                            color: Color(0xFFD32F2F),
+                          style: TextStyle(
+                            color: AppColors.accent(context),
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                           ),
@@ -308,13 +308,7 @@ class _ModernDatePickerDialogState extends State<ModernDatePickerDialog> {
                         decoration: BoxDecoration(
                           color: AppColors.card(context),
                           borderRadius: BorderRadius.circular(12),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color(0x14000000),
-                              blurRadius: 10,
-                              offset: Offset(0, 3),
-                            )
-                          ],
+                          boxShadow: AppColors.cardShadow(context),
                         ),
                         child: Icon(Icons.arrow_back, color: AppColors.inkSoft(context)),
                       ),
@@ -400,21 +394,7 @@ class _ModernDatePickerDialogState extends State<ModernDatePickerDialog> {
                               ? Border.all(color: AppColors.accent(context), width: 1.5)
                               : null,
                           borderRadius: BorderRadius.circular(10),
-                          boxShadow: isSelected
-                              ? const [
-                                  BoxShadow(
-                                    color: Color(0x33EF4444),
-                                    blurRadius: 8,
-                                    offset: Offset(0, 2),
-                                  )
-                                ]
-                              : const [
-                                  BoxShadow(
-                                    color: Color(0x0A000000),
-                                    blurRadius: 4,
-                                    offset: Offset(0, 1),
-                                  )
-                                ],
+                          boxShadow: isSelected ? null : AppColors.cardShadow(context),
                         ),
                         alignment: Alignment.center,
                         child: Text(
@@ -466,13 +446,7 @@ class _MonthIconButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: isPrimary ? AppColors.accent(context) : AppColors.card(context),
           borderRadius: BorderRadius.circular(12),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x14000000),
-              blurRadius: 10,
-              offset: Offset(0, 3),
-            )
-          ],
+          boxShadow: AppColors.cardShadow(context),
         ),
         child: Icon(
           icon,

@@ -1302,10 +1302,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get done => 'Done';
 
   @override
-  String get timerActiveCaps => '🎵 TIMER ACTIVE 🎵';
+  String get timerActiveCaps => 'Timer running';
 
   @override
-  String get setTimerCaps => '⏱️ SET TIMER';
+  String get setTimerCaps => 'Set timer';
 
   @override
   String get musicWillStop => 'Music will stop automatically';
@@ -1317,10 +1317,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get timeRemaining => 'Time Remaining';
 
   @override
-  String get stopTimerCaps => 'STOP TIMER';
+  String get stopTimerCaps => 'Stop timer';
 
   @override
-  String get startTimerCaps => 'START TIMER';
+  String get startTimerCaps => 'Start timer';
 
   @override
   String get minutesUnit => 'minutes';

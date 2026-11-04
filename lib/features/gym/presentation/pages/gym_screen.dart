@@ -67,7 +67,7 @@ Future<bool> _showModernConfirmationDialog({
                   decoration: BoxDecoration(
                     color: isDangerous 
                       ? AppColors.accentSoft(context)
-                      : (AppColors.isDark(context) ? const Color(0xFF14273A) : const Color(0xFFE3F2FD)),
+                      : AppColors.chip(context),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
@@ -171,7 +171,7 @@ Future<T?> _showModernConfirmationDialogWithOptions<T>({
                   decoration: BoxDecoration(
                     color: isDangerous 
                       ? AppColors.accentSoft(context)
-                      : (AppColors.isDark(context) ? const Color(0xFF14273A) : const Color(0xFFE3F2FD)),
+                      : AppColors.chip(context),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
@@ -1235,12 +1235,12 @@ class _GymScreenState extends State<GymScreen> {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: (AppColors.isDark(context) ? const Color(0xFF241F33) : const Color(0xFFEDE9FE)),
+                      color: AppColors.chip(context),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.sticky_note_2_outlined,
-                      color: Color(0xFF7C3AED),
+                      color: AppColors.inkSoft(context),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -1265,7 +1265,7 @@ class _GymScreenState extends State<GymScreen> {
                 decoration: InputDecoration(
                   hintText: AppLocalizations.of(context).addNoteHint,
                   filled: true,
-                  fillColor: (AppColors.isDark(context) ? const Color(0xFF23272D) : const Color(0xFFF8FAFC)),
+                  fillColor: AppColors.chip(context),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
@@ -1367,12 +1367,12 @@ class _GymScreenState extends State<GymScreen> {
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        color: (AppColors.isDark(ctx) ? const Color(0xFF13292B) : const Color(0xFFE0F2F1)),
+                        color: AppColors.chip(ctx),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.straighten_rounded,
-                        color: Color(0xFF00897B),
+                        color: AppColors.inkSoft(context),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -1397,7 +1397,7 @@ class _GymScreenState extends State<GymScreen> {
                     labelText: AppLocalizations.of(ctx).barWeightKg,
                     hintText: AppLocalizations.of(ctx).egHint('20'),
                     filled: true,
-                    fillColor: (AppColors.isDark(ctx) ? const Color(0xFF23272D) : const Color(0xFFF8FAFC)),
+                    fillColor: AppColors.chip(ctx),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
@@ -1561,10 +1561,8 @@ class _GymScreenState extends State<GymScreen> {
                     _longPressMenuRow(
                       ctx,
                       icon: Icons.show_chart,
-                      iconColor: const Color(0xFF2196F3),
-                      iconBg: AppColors.isDark(context)
-                          ? const Color(0xFF14273A)
-                          : const Color(0xFFE3F2FD),
+                      iconColor: AppColors.inkSoft(context),
+                      iconBg: AppColors.chip(context),
                       title: AppLocalizations.of(context).showProgressChart,
                       value: 'chart',
                       topRounded: true,
@@ -1693,12 +1691,12 @@ class _GymScreenState extends State<GymScreen> {
                             Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: (AppColors.isDark(context) ? const Color(0xFF14273A) : const Color(0xFFE3F2FD)),
+                                color: AppColors.chip(context),
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.remove_circle_outline,
-                                color: Color(0xFF2196F3),
+                                color: AppColors.inkSoft(context),
                                 size: 24,
                               ),
                             ),
@@ -1753,12 +1751,12 @@ class _GymScreenState extends State<GymScreen> {
                             Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: (AppColors.isDark(context) ? const Color(0xFF241F33) : const Color(0xFFEDE9FE)),
+                                color: AppColors.chip(context),
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.sticky_note_2_outlined,
-                                color: Color(0xFF7C3AED),
+                                color: AppColors.inkSoft(context),
                                 size: 24,
                               ),
                             ),
@@ -1996,12 +1994,12 @@ class _GymScreenState extends State<GymScreen> {
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: (AppColors.isDark(context) ? const Color(0xFF14273A) : const Color(0xFFE3F2FD)),
+                        color: AppColors.chip(context),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.remove_circle_outline,
-                        color: Color(0xFF2196F3),
+                        color: AppColors.inkSoft(context),
                         size: 24,
                       ),
                     ),
@@ -2034,7 +2032,7 @@ class _GymScreenState extends State<GymScreen> {
                     ElevatedButton(
                       onPressed: () => Navigator.pop(context),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2196F3),
+                        backgroundColor: AppColors.accent(context),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                         shape: RoundedRectangleBorder(
@@ -2078,12 +2076,12 @@ class _GymScreenState extends State<GymScreen> {
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: (AppColors.isDark(context) ? const Color(0xFF14273A) : const Color(0xFFE3F2FD)),
+                        color: AppColors.chip(context),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.remove_circle_outline,
-                        color: Color(0xFF2196F3),
+                        color: AppColors.inkSoft(context),
                         size: 24,
                       ),
                     ),
@@ -2117,13 +2115,13 @@ class _GymScreenState extends State<GymScreen> {
                     return FilterChip(
                       label: Text(d),
                       selected: isSel,
-                      selectedColor: const Color(0xFF2196F3),
+                      selectedColor: AppColors.accent(context),
                       labelStyle: TextStyle(
                         color: isSel ? Colors.white : AppColors.muted(context),
                         fontWeight: FontWeight.w500,
                       ),
                       side: BorderSide(
-                        color: isSel ? Color(0xFF2196F3) : AppColors.border(context),
+                        color: isSel ? AppColors.accent(context) : AppColors.border(context),
                       ),
                       onSelected: (v) => setS(() {
                         if (v) {
@@ -2160,7 +2158,7 @@ class _GymScreenState extends State<GymScreen> {
                         Navigator.pop(ctx);
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2196F3),
+                        backgroundColor: AppColors.accent(context),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                         shape: RoundedRectangleBorder(
@@ -2314,12 +2312,12 @@ class _GymScreenState extends State<GymScreen> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: (AppColors.isDark(context) ? Color(0xFF332612) : Color(0xFFFFF3E0)),
+                    color: AppColors.warningSoft(context),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.warning_rounded,
-                    color: Color(0xFFFF9800),
+                    color: AppColors.warning(context),
                     size: 32,
                   ),
                 ),
@@ -2647,12 +2645,12 @@ class _GymScreenState extends State<GymScreen> {
                             Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: (AppColors.isDark(context) ? const Color(0xFF14273A) : const Color(0xFFE3F2FD)),
+                                color: AppColors.chip(context),
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.edit,
-                                color: Color(0xFF2196F3),
+                                color: AppColors.inkSoft(context),
                                 size: 24,
                               ),
                             ),
@@ -3535,7 +3533,7 @@ class _GymScreenState extends State<GymScreen> {
                           style: TextStyle(
                             color: AppColors.ink(context),
                             fontWeight: FontWeight.w500,
-                            backgroundColor: isBest ? const Color(0xFFFFD700).withValues(alpha: 0.3) : null,
+                            backgroundColor: isBest ? AppColors.warning(context).withValues(alpha: 0.3) : null,
                           ),
                         ),
                       ],
@@ -3561,7 +3559,7 @@ class _GymScreenState extends State<GymScreen> {
                           // Gold-Punkt für den besten Satz
                           return FlDotCirclePainter(
                             radius: 5.0,
-                            color: const Color(0xFFFFD700), // Gold
+                            color: AppColors.warning(context), // Gold
                             strokeWidth: 2.0,
                             strokeColor: const Color(0xFFFFA500), // Orange border
                           );
@@ -3615,13 +3613,7 @@ class _GymScreenState extends State<GymScreen> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.card(context),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: AppColors.cardShadow(context),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -3712,13 +3704,7 @@ class _GymScreenState extends State<GymScreen> {
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(10),
                   boxShadow: _mode == ViewMode.byExercise
-                      ? [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
+                      ? AppColors.cardShadow(context)
                       : null,
                 ),
                 child: Row(
@@ -3761,13 +3747,7 @@ class _GymScreenState extends State<GymScreen> {
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(10),
                   boxShadow: _mode == ViewMode.byDay
-                      ? [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
+                      ? AppColors.cardShadow(context)
                       : null,
                 ),
                 child: Row(
@@ -3810,13 +3790,7 @@ class _GymScreenState extends State<GymScreen> {
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(10),
                   boxShadow: _mode == ViewMode.bySplit
-                      ? [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
+                      ? AppColors.cardShadow(context)
                       : null,
                 ),
                 child: Row(
@@ -3867,19 +3841,9 @@ class _GymScreenState extends State<GymScreen> {
       width: 60,
       height: 60,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppColors.accent(context), Color(0xFFEF5350)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: AppColors.accent(context),
         borderRadius: BorderRadius.circular(30),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.accent(context).withOpacity(0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: AppColors.cardShadow(context),
       ),
       child: Material(
         color: Colors.transparent,
@@ -3989,13 +3953,7 @@ class _GymScreenState extends State<GymScreen> {
       decoration: BoxDecoration(
         color: AppColors.card(context),
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: AppColors.cardShadow(context),
       ),
       child: Material(
         color: Colors.transparent,
@@ -4176,13 +4134,7 @@ class _GymScreenState extends State<GymScreen> {
       decoration: BoxDecoration(
         color: AppColors.card(context),
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: AppColors.cardShadow(context),
       ),
       child: Material(
         color: Colors.transparent,
@@ -4309,13 +4261,7 @@ class _GymScreenState extends State<GymScreen> {
       decoration: BoxDecoration(
         color: AppColors.card(context),
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: AppColors.cardShadow(context),
       ),
       child: Material(
         color: Colors.transparent,
@@ -4450,7 +4396,7 @@ class _GymScreenState extends State<GymScreen> {
                 const SizedBox(height: 14),
                 Container(
                   decoration: BoxDecoration(
-                    color: (AppColors.isDark(context) ? const Color(0xFF23272D) : const Color(0xFFF8FAFC)),
+                    color: AppColors.chip(context),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Column(
@@ -4872,15 +4818,9 @@ class _GymScreenState extends State<GymScreen> {
         child: Container(
           constraints: const BoxConstraints(maxWidth: 560),
           decoration: BoxDecoration(
-            color: (AppColors.isDark(context) ? const Color(0xFF22262B) : const Color(0xFFFAFAFC)),
+            color: AppColors.chip(context),
             borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.12),
-                blurRadius: 30,
-                offset: const Offset(0, 12),
-              ),
-            ],
+            boxShadow: AppColors.cardShadow(context),
           ),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
@@ -4893,7 +4833,7 @@ class _GymScreenState extends State<GymScreen> {
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: (AppColors.isDark(context) ? const Color(0xFF272B31) : const Color(0xFFF1F3F7)),
+                        color: AppColors.chip(context),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Icon(Icons.history_rounded, color: Color(0xFF4B5565)),
@@ -4954,15 +4894,9 @@ class _GymScreenState extends State<GymScreen> {
         height: dialogHeight,
         constraints: const BoxConstraints(maxWidth: 680),
         decoration: BoxDecoration(
-          color: (AppColors.isDark(context) ? const Color(0xFF22262B) : const Color(0xFFFAFAFC)),
+          color: AppColors.chip(context),
           borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.14),
-              blurRadius: 34,
-              offset: const Offset(0, 14),
-            ),
-          ],
+          boxShadow: AppColors.cardShadow(context),
         ),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
@@ -4974,7 +4908,7 @@ class _GymScreenState extends State<GymScreen> {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: (AppColors.isDark(context) ? const Color(0xFF272B31) : const Color(0xFFF1F3F7)),
+                      color: AppColors.chip(context),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(Icons.history_rounded, color: Color(0xFF4B5565)),
@@ -5008,11 +4942,11 @@ class _GymScreenState extends State<GymScreen> {
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
                         color: best
-                            ? (AppColors.isDark(context) ? const Color(0xFF2E2712) : const Color(0xFFFFF8E1))
+                            ? AppColors.warningSoft(context)
                             : AppColors.card(context),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: best ? Color(0xFFE7B835) : AppColors.border(context),
+                          color: best ? AppColors.warning(context) : AppColors.border(context),
                         ),
                       ),
                       child: Column(
@@ -5038,7 +4972,7 @@ class _GymScreenState extends State<GymScreen> {
                                   decoration: BoxDecoration(
                                     color: (AppColors.isDark(context) ? const Color(0xFF3A3012) : const Color(0xFFFFE9A8)),
                                     borderRadius: BorderRadius.circular(999),
-                                    border: Border.all(color: const Color(0xFFE7B835)),
+                                    border: Border.all(color: AppColors.warning(context)),
                                   ),
                                   child: Text(
                                     AppLocalizations.of(context).bestWorkout,
