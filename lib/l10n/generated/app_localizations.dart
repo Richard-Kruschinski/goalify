@@ -2185,25 +2185,25 @@ abstract class AppLocalizations {
   /// No description provided for @statusActive.
   ///
   /// In en, this message translates to:
-  /// **'ACTIVE'**
+  /// **'Active'**
   String get statusActive;
 
   /// No description provided for @statusInactive.
   ///
   /// In en, this message translates to:
-  /// **'INACTIVE'**
+  /// **'Inactive'**
   String get statusInactive;
 
   /// No description provided for @toggleOn.
   ///
   /// In en, this message translates to:
-  /// **'ON'**
+  /// **'On'**
   String get toggleOn;
 
   /// No description provided for @toggleOff.
   ///
   /// In en, this message translates to:
-  /// **'OFF'**
+  /// **'Off'**
   String get toggleOff;
 
   /// No description provided for @blockerCurrentSession.

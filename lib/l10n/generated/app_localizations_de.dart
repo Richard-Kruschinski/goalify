@@ -1230,16 +1230,16 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get statusActive => 'AKTIV';
+  String get statusActive => 'Aktiv';
 
   @override
-  String get statusInactive => 'INAKTIV';
+  String get statusInactive => 'Inaktiv';
 
   @override
-  String get toggleOn => 'AN';
+  String get toggleOn => 'An';
 
   @override
-  String get toggleOff => 'AUS';
+  String get toggleOff => 'Aus';
 
   @override
   String get blockerCurrentSession => 'Aktuelle Sitzung';

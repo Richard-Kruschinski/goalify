@@ -1236,16 +1236,16 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get statusActive => 'АКТИВНО';
+  String get statusActive => 'Активно';
 
   @override
-  String get statusInactive => 'НЕАКТИВНО';
+  String get statusInactive => 'Неактивно';
 
   @override
-  String get toggleOn => 'ВКЛ';
+  String get toggleOn => 'Вкл';
 
   @override
-  String get toggleOff => 'ВЫКЛ';
+  String get toggleOff => 'Выкл';
 
   @override
   String get blockerCurrentSession => 'Текущая сессия';

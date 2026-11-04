@@ -1214,16 +1214,16 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get statusActive => 'ACTIVE';
+  String get statusActive => 'Active';
 
   @override
-  String get statusInactive => 'INACTIVE';
+  String get statusInactive => 'Inactive';
 
   @override
-  String get toggleOn => 'ON';
+  String get toggleOn => 'On';
 
   @override
-  String get toggleOff => 'OFF';
+  String get toggleOff => 'Off';
 
   @override
   String get blockerCurrentSession => 'Current Session';
