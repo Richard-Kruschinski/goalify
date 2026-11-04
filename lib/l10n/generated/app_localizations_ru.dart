@@ -1748,4 +1748,22 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get checklistCollapse => 'Свернуть';
+
+  @override
+  String get sortList => 'Сортировка';
+
+  @override
+  String get sortRecent => 'Последняя тренировка';
+
+  @override
+  String get sortHeaviest => 'Максимальный вес';
+
+  @override
+  String get sortByWorkout => 'По тренировке';
+
+  @override
+  String get sortExerciseCount => 'Количество упражнений';
+
+  @override
+  String get sortWorkoutCount => 'Количество тренировок';
 }

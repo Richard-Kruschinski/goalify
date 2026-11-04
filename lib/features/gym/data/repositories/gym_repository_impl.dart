@@ -20,6 +20,13 @@ class GymRepositoryImpl implements GymRepository {
   Future<void> saveViewMode(String name) => _local.saveViewMode(name);
 
   @override
+  Future<Map<String, dynamic>> loadSortPrefs() => _local.loadSortPrefs();
+
+  @override
+  Future<void> saveSortPrefs(Map<String, dynamic> prefs) =>
+      _local.saveSortPrefs(prefs);
+
+  @override
   Future<Map<String, List<WorkoutLog>>> loadLogs() => _local.loadLogs();
 
   @override

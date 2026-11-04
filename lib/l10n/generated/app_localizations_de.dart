@@ -1744,4 +1744,22 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get checklistCollapse => 'Zuklappen';
+
+  @override
+  String get sortList => 'Sortieren';
+
+  @override
+  String get sortRecent => 'Zuletzt trainiert';
+
+  @override
+  String get sortHeaviest => 'Höchstes Gewicht';
+
+  @override
+  String get sortByWorkout => 'Nach Workout';
+
+  @override
+  String get sortExerciseCount => 'Anzahl Übungen';
+
+  @override
+  String get sortWorkoutCount => 'Anzahl Workouts';
 }

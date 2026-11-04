@@ -11,6 +11,7 @@ class GymLocalDataSource {
   // --- Gym-owned storage keys ---
   static const _kGymLogsKey = 'gym_logs_v1';
   static const _kGymViewKey = 'gym_view_mode_v1';
+  static const _kGymSortKey = 'gym_sort_v1';
   static const _kOrderActiveKey = 'gym_order_by_exercise_v1';
   static const _kOrderByDayKey = 'gym_order_by_day_v1';
   static const _kAssignmentsKey = 'gym_assignments_by_day_v1';
@@ -42,6 +43,15 @@ class GymLocalDataSource {
 
   Future<void> saveViewMode(String name) =>
       LocalStorage.saveJson(_kGymViewKey, name);
+
+  // --- Sort per tab ({tab: {mode, reversed}}) ---
+  Future<Map<String, dynamic>> loadSortPrefs() async {
+    final raw = await LocalStorage.loadJson(_kGymSortKey, fallback: {});
+    return raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
+  }
+
+  Future<void> saveSortPrefs(Map<String, dynamic> prefs) =>
+      LocalStorage.saveJson(_kGymSortKey, prefs);
 
   // --- Logs ---
   Future<Map<String, List<WorkoutLog>>> loadLogs() async {

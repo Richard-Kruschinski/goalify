@@ -28,6 +28,8 @@ import '../widgets/workout_search_field.dart';
 import '../widgets/log_input_dialog.dart';
 import '../widgets/color_picker_grid.dart';
 import '../widgets/weight_settings_tile.dart';
+import '../gym_sort.dart';
+import '../../../../core/widgets/sort_menu_button.dart';
 
 enum ViewMode { byExercise, byDay, bySplit }
 
@@ -278,6 +280,10 @@ class _GymScreenState extends State<GymScreen> {
   late List<IconData> _availableIcons = [];
 
   ViewMode _mode = ViewMode.byExercise;
+
+  /// Sort per tab; a tab without an entry keeps the custom order.
+  final Map<ViewMode, GymSortState> _sortByTab = <ViewMode, GymSortState>{};
+  GymSortState get _sort => _sortByTab[_mode] ?? const GymSortState();
   String _exerciseQuery = '';
 
   // Workouts from JSON
@@ -393,6 +399,12 @@ class _GymScreenState extends State<GymScreen> {
 
   // ----------------------------- Persistenter State -----------------------------
   Future<void> _loadState() async {
+    // Sort per tab
+    final sortPrefs = await _repo.loadSortPrefs();
+    for (final m in ViewMode.values) {
+      _sortByTab[m] = GymSortState.fromMap(sortPrefs[m.name]);
+    }
+
     // View mode
     final vm = await _repo.loadViewMode();
     if (vm == 'byDay') {
@@ -3608,6 +3620,110 @@ class _GymScreenState extends State<GymScreen> {
     );
   }
 
+  // ----------------------------- Sorting -----------------------------
+  List<SortOption<GymSortMode>> _sortOptionsFor(ViewMode mode) {
+    final l10n = AppLocalizations.of(context);
+    final manual = SortOption(
+      value: GymSortMode.manual,
+      icon: Icons.drag_indicator,
+      label: l10n.sortManual,
+      reversible: false,
+    );
+    final alphabetical = SortOption(
+      value: GymSortMode.alphabetical,
+      icon: Icons.sort_by_alpha,
+      label: l10n.sortAlphabetical,
+    );
+    return switch (mode) {
+      ViewMode.byExercise => [
+          manual,
+          alphabetical,
+          SortOption(value: GymSortMode.recent, icon: Icons.history, label: l10n.sortRecent),
+          SortOption(value: GymSortMode.heaviest, icon: Icons.fitness_center, label: l10n.sortHeaviest),
+          SortOption(value: GymSortMode.byWorkout, icon: Icons.view_agenda_outlined, label: l10n.sortByWorkout),
+        ],
+      ViewMode.byDay => [
+          manual,
+          alphabetical,
+          SortOption(value: GymSortMode.recent, icon: Icons.history, label: l10n.sortRecent),
+          SortOption(value: GymSortMode.exerciseCount, icon: Icons.format_list_numbered, label: l10n.sortExerciseCount),
+        ],
+      ViewMode.bySplit => [
+          manual,
+          alphabetical,
+          SortOption(value: GymSortMode.workoutCount, icon: Icons.format_list_numbered, label: l10n.sortWorkoutCount),
+        ],
+    };
+  }
+
+  Widget _buildSortButton() {
+    final sort = _sort;
+    return SortMenuButton<GymSortMode>(
+      tooltip: AppLocalizations.of(context).sortList,
+      options: _sortOptionsFor(_mode),
+      selected: sort.mode,
+      descending: sort.descending,
+      onSelected: (next) async {
+        setState(() => _sortByTab[_mode] = sort.select(next));
+        await _repo.saveSortPrefs({
+          for (final e in _sortByTab.entries) e.key.name: e.value.toMap(),
+        });
+      },
+    );
+  }
+
+  /// Date key (yyyy-MM-dd) of the last calendar entry for [day], or null.
+  String? _lastTrainedKey(String day) {
+    String? last;
+    _calendarByDate.forEach((key, days) {
+      if (days.contains(day) && (last == null || key.compareTo(last!) > 0)) {
+        last = key;
+      }
+    });
+    return last;
+  }
+
+  List<Workout> _sortExercises(List<Workout> list) {
+    final sort = _sortByTab[ViewMode.byExercise] ?? const GymSortState();
+    return sort.apply<Workout>(
+      list,
+      name: (w) => w.name,
+      key: (w) => switch (sort.mode) {
+        GymSortMode.recent => _getLatestLogFor(w.id)?.dateTime,
+        GymSortMode.heaviest => _bestSetCache.getBest(w.id)?.maxWeight,
+        GymSortMode.byWorkout => (_daysForWorkout(w.id).toList()..sort())
+            .firstOrNull
+            ?.toLowerCase(),
+        _ => w.name.toLowerCase(),
+      },
+    );
+  }
+
+  List<String> _sortDays(List<String> days) {
+    final sort = _sortByTab[ViewMode.byDay] ?? const GymSortState();
+    return sort.apply<String>(
+      days,
+      name: (d) => d,
+      key: (d) => switch (sort.mode) {
+        GymSortMode.recent => _lastTrainedKey(d),
+        GymSortMode.exerciseCount => _mainExerciseCount(d),
+        _ => d.toLowerCase(),
+      },
+    );
+  }
+
+  List<String> _sortSplits(List<String> splits) {
+    final sort = _sortByTab[ViewMode.bySplit] ?? const GymSortState();
+    return sort.apply<String>(
+      splits,
+      name: (sp) => sp,
+      key: (sp) => switch (sort.mode) {
+        GymSortMode.workoutCount => _splitsByName[sp]?.length ?? 0,
+        _ => sp.toLowerCase(),
+      },
+    );
+  }
+
   Widget _buildModernHeader(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -3648,6 +3764,7 @@ class _GymScreenState extends State<GymScreen> {
               ),
               Row(
                 children: [
+                  _buildSortButton(),
                   IconButton(
                     tooltip: AppLocalizations.of(context).calendarTitle,
                     icon: Icon(Icons.calendar_month, color: AppColors.muted(context)),
@@ -3917,13 +4034,15 @@ class _GymScreenState extends State<GymScreen> {
   }
 
   Widget _buildFilteredWorkoutList(List<Workout> active) {
-    final filtered =
-        active.where((w) => workoutMatchesQuery(w, _exerciseQuery)).toList();
+    final filtered = _sortExercises(
+        active.where((w) => workoutMatchesQuery(w, _exerciseQuery)).toList());
     if (filtered.isEmpty) return _buildNoSearchResults();
 
     // _reorderMainOnly works on indices of the full list, so dragging inside
     // a filtered list would move the wrong exercise: no drag handles then.
-    final canReorder = filtered.length == active.length;
+    // A sorted list is not the stored order either.
+    final canReorder = filtered.length == active.length &&
+        (_sortByTab[ViewMode.byExercise]?.isManual ?? true);
 
     return ReorderableListView.builder(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
@@ -4061,7 +4180,8 @@ class _GymScreenState extends State<GymScreen> {
 
   // Day-Ansicht
   Widget _buildDayListBody() {
-    final days = _getOrderedDays();
+    final days = _sortDays(_getOrderedDays());
+    final dayDrag = _sortByTab[ViewMode.byDay]?.isManual ?? true;
     if (days.isEmpty) {
       return Center(
         child: Column(
@@ -4108,7 +4228,7 @@ class _GymScreenState extends State<GymScreen> {
       buildDefaultDragHandles: false,
       itemBuilder: (_, i) {
         final day = days[i];
-        return _buildModernDayCard(day, i, _mainExerciseCount(day));
+        return _buildModernDayCard(day, dayDrag ? i : null, _mainExerciseCount(day));
       },
     );
   }
@@ -4127,7 +4247,8 @@ class _GymScreenState extends State<GymScreen> {
     return ids.where((id) => !alternatives.contains(id)).length;
   }
 
-  Widget _buildModernDayCard(String day, int index, int count) {
+  /// [index] is the drag position; null hides the drag handle (sorted list).
+  Widget _buildModernDayCard(String day, int? index, int count) {
     return Container(
       key: ValueKey('day_$day'),
       margin: const EdgeInsets.only(bottom: 12),
@@ -4146,15 +4267,17 @@ class _GymScreenState extends State<GymScreen> {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                ReorderableDragStartListener(
-                  index: index,
-                  child: Icon(
-                    Icons.drag_indicator,
-                    color: AppColors.border(context),
-                    size: 20,
+                if (index != null) ...[
+                  ReorderableDragStartListener(
+                    index: index,
+                    child: Icon(
+                      Icons.drag_indicator,
+                      color: AppColors.border(context),
+                      size: 20,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 12),
+                  const SizedBox(width: 12),
+                ],
                 Container(
                   width: 48,
                   height: 48,
@@ -4201,7 +4324,8 @@ class _GymScreenState extends State<GymScreen> {
   }
 
   Widget _buildSplitListBody() {
-    final splits = _getOrderedSplits();
+    final splits = _sortSplits(_getOrderedSplits());
+    final splitDrag = _sortByTab[ViewMode.bySplit]?.isManual ?? true;
     if (splits.isEmpty) {
       return Center(
         child: Column(
@@ -4249,12 +4373,13 @@ class _GymScreenState extends State<GymScreen> {
       itemBuilder: (_, i) {
         final splitName = splits[i];
         final count = _splitsByName[splitName]?.length ?? 0;
-        return _buildModernSplitCard(splitName, i, count);
+        return _buildModernSplitCard(splitName, splitDrag ? i : null, count);
       },
     );
   }
 
-  Widget _buildModernSplitCard(String splitName, int index, int count) {
+  /// [index] is the drag position; null hides the drag handle (sorted list).
+  Widget _buildModernSplitCard(String splitName, int? index, int count) {
     return Container(
       key: ValueKey('split_$splitName'),
       margin: const EdgeInsets.only(bottom: 12),
@@ -4273,15 +4398,17 @@ class _GymScreenState extends State<GymScreen> {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                ReorderableDragStartListener(
-                  index: index,
-                  child: Icon(
-                    Icons.drag_indicator,
-                    color: AppColors.border(context),
-                    size: 20,
+                if (index != null) ...[
+                  ReorderableDragStartListener(
+                    index: index,
+                    child: Icon(
+                      Icons.drag_indicator,
+                      color: AppColors.border(context),
+                      size: 20,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 12),
+                  const SizedBox(width: 12),
+                ],
                 Container(
                   width: 48,
                   height: 48,

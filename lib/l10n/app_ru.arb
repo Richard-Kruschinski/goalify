@@ -515,5 +515,12 @@
 
   "checklistShowDone": "Выполнено: {count}",
   "checklistMore": "Ещё {count}",
-  "checklistCollapse": "Свернуть"
+  "checklistCollapse": "Свернуть",
+
+  "sortList": "Сортировка",
+  "sortRecent": "Последняя тренировка",
+  "sortHeaviest": "Максимальный вес",
+  "sortByWorkout": "По тренировке",
+  "sortExerciseCount": "Количество упражнений",
+  "sortWorkoutCount": "Количество тренировок"
 }

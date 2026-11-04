@@ -662,5 +662,12 @@
   "@checklistShowDone": {"placeholders":{"count":{"type":"int"}}},
   "checklistMore": "{count} more",
   "@checklistMore": {"placeholders":{"count":{"type":"int"}}},
-  "checklistCollapse": "Collapse"
+  "checklistCollapse": "Collapse",
+
+  "sortList": "Sort",
+  "sortRecent": "Last trained",
+  "sortHeaviest": "Heaviest weight",
+  "sortByWorkout": "By workout",
+  "sortExerciseCount": "Number of exercises",
+  "sortWorkoutCount": "Number of workouts"
 }

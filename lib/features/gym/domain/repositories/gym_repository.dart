@@ -11,6 +11,10 @@ abstract class GymRepository {
   Future<String> loadViewMode();
   Future<void> saveViewMode(String name);
 
+  // Sort mode per tab, keyed by view mode name.
+  Future<Map<String, dynamic>> loadSortPrefs();
+  Future<void> saveSortPrefs(Map<String, dynamic> prefs);
+
   // Logs per exercise id.
   Future<Map<String, List<WorkoutLog>>> loadLogs();
   Future<void> saveLogs(Map<String, List<WorkoutLog>> logs);

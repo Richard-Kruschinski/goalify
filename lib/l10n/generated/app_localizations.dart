@@ -3075,6 +3075,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Collapse'**
   String get checklistCollapse;
+
+  /// No description provided for @sortList.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort'**
+  String get sortList;
+
+  /// No description provided for @sortRecent.
+  ///
+  /// In en, this message translates to:
+  /// **'Last trained'**
+  String get sortRecent;
+
+  /// No description provided for @sortHeaviest.
+  ///
+  /// In en, this message translates to:
+  /// **'Heaviest weight'**
+  String get sortHeaviest;
+
+  /// No description provided for @sortByWorkout.
+  ///
+  /// In en, this message translates to:
+  /// **'By workout'**
+  String get sortByWorkout;
+
+  /// No description provided for @sortExerciseCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Number of exercises'**
+  String get sortExerciseCount;
+
+  /// No description provided for @sortWorkoutCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Number of workouts'**
+  String get sortWorkoutCount;
 }
 
 class _AppLocalizationsDelegate

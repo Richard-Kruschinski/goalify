@@ -515,5 +515,12 @@
 
   "checklistShowDone": "{count} erledigt",
   "checklistMore": "{count} weitere",
-  "checklistCollapse": "Zuklappen"
+  "checklistCollapse": "Zuklappen",
+
+  "sortList": "Sortieren",
+  "sortRecent": "Zuletzt trainiert",
+  "sortHeaviest": "Höchstes Gewicht",
+  "sortByWorkout": "Nach Workout",
+  "sortExerciseCount": "Anzahl Übungen",
+  "sortWorkoutCount": "Anzahl Workouts"
 }
