@@ -669,5 +669,8 @@
   "sortHeaviest": "Heaviest weight",
   "sortByWorkout": "By workout",
   "sortExerciseCount": "Number of exercises",
-  "sortWorkoutCount": "Number of workouts"
+  "sortWorkoutCount": "Number of workouts",
+
+  "cyclesBeforeLongBreakCount": "{count, plural, =1{1 cycle before the long break} other{{count} cycles before the long break}}",
+  "@cyclesBeforeLongBreakCount": {"placeholders": {"count": {"type": "int"}}}
 }

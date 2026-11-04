@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../../../../../core/i18n/current_l10n.dart';
 import 'package:flutter/foundation.dart';
 import '../../data/models/interval_timer_state.dart';
 import '../../data/repositories/interval_timer_repository_impl.dart';
@@ -32,13 +33,6 @@ class IntervalTimerController extends ChangeNotifier {
   List<IntervalTimerProfile> get customProfiles =>
       List.unmodifiable(_customProfiles);
   String? get selectedProfileId => _selectedProfileId;
-  String get selectedProfileName {
-    if (_selectedProfileId == null) return 'No profile';
-    final profile =
-        _customProfiles.where((p) => p.id == _selectedProfileId).firstOrNull;
-    return profile?.name ?? 'No profile';
-  }
-
   IntervalTimerPhase get currentPhase => _currentPhase;
   IntervalTimerState get timerState => _timerState;
   int get remainingSeconds => _remainingSeconds;
@@ -46,9 +40,6 @@ class IntervalTimerController extends ChangeNotifier {
   int get totalTasks => _tasks.length;
   bool get hasTasks => _tasks.isNotEmpty;
   bool get isInPause => _currentPhase == IntervalTimerPhase.pause;
-
-  String get currentPhaseLabel =>
-      _currentPhase == IntervalTimerPhase.task ? 'Aufgabe' : 'Pause';
 
   /// True while in the task phase (used by the UI to pick a localized label).
   bool get isTaskPhase => _currentPhase == IntervalTimerPhase.task;
@@ -70,9 +61,10 @@ class IntervalTimerController extends ChangeNotifier {
   }
 
   String get currentItemLabel {
-    if (_tasks.isEmpty) return 'No profile created';
+    final l10n = CurrentL10n.of;
+    if (_tasks.isEmpty) return l10n.noProfileCreated;
     if (_currentPhase == IntervalTimerPhase.pause) {
-      return 'Pause vor ${_tasks[_pendingTaskIndex].name}';
+      return l10n.pauseBefore(_tasks[_pendingTaskIndex].name);
     }
     return _tasks[_currentTaskIndex].name;
   }
@@ -104,7 +96,7 @@ class IntervalTimerController extends ChangeNotifier {
   TimerLiveState _buildLiveState() => TimerLiveState(
         timerId: 'interval',
         timerType: TimerType.interval,
-        title: 'Interval Timer',
+        title: CurrentL10n.of.intervalTimerTitle,
         remainingSeconds: _remainingSeconds,
         totalSeconds: totalSecondsForPhase,
         isRunning: _timerState == IntervalTimerState.running,

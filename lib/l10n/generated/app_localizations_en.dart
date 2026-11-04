@@ -1741,4 +1741,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sortWorkoutCount => 'Number of workouts';
+
+  @override
+  String cyclesBeforeLongBreakCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count cycles before the long break',
+      one: '1 cycle before the long break',
+    );
+    return '$_temp0';
+  }
 }

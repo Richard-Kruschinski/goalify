@@ -1,6 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 import '../../../../../l10n/generated/app_localizations.dart';
 import '../../../../../core/theme/app_colors.dart';
+import '../../../../../core/theme/tool_hue.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
 import '../controllers/distraction_blocker_controller.dart';
@@ -14,6 +15,11 @@ class DistractionBlockerScreen extends StatefulWidget {
 }
 
 class _DistractionBlockerScreenState extends State<DistractionBlockerScreen> with WidgetsBindingObserver {
+  // The blocker's own hue, as on its card in the functions list.
+  Color get _hue => ToolHue.blocker.of(context);
+  Color get _hueSoft => ToolHue.blocker.soft(context);
+  Color get _onHue => ToolHue.blocker.onFill(context);
+
   Timer? _updateTimer;
 
   void _showSnack(String message) {
@@ -204,7 +210,7 @@ class _DistractionBlockerScreenState extends State<DistractionBlockerScreen> wit
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
             decoration: BoxDecoration(
-              color: isActive ? AppColors.accentSoft(context) : Colors.transparent,
+              color: isActive ? _hueSoft : Colors.transparent,
               borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
               border: Border(
                 bottom: BorderSide(color: AppColors.border(context)),
@@ -218,15 +224,13 @@ class _DistractionBlockerScreenState extends State<DistractionBlockerScreen> wit
                   width: 80,
                   height: 80,
                   decoration: BoxDecoration(
-                    color: isActive
-                        ? AppColors.accent(context)
-                        : AppColors.chip(context),
+                    color: isActive ? _hue : _hueSoft,
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     isActive ? Icons.shield : Icons.shield_outlined,
                     size: 40,
-                    color: isActive ? Colors.white : AppColors.muted(context),
+                    color: isActive ? _onHue : _hue,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -236,7 +240,7 @@ class _DistractionBlockerScreenState extends State<DistractionBlockerScreen> wit
                       : AppLocalizations.of(context).statusInactive,
                   style: TextStyle(
                     color: isActive
-                        ? AppColors.accent(context)
+                        ? _hue
                         : AppColors.ink(context),
                     fontSize: 22,
                     fontWeight: FontWeight.w600,
@@ -280,16 +284,49 @@ class _DistractionBlockerScreenState extends State<DistractionBlockerScreen> wit
                 if (isActive) ...[
                   Container(
                     width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    decoration: BoxDecoration(
+                      color: _hueSoft,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      children: [
+                        Text(
+                          AppLocalizations.of(context).blockerCurrentSession,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: AppColors.muted(context),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          controller.currentSessionDuration,
+                          style: TextStyle(
+                            fontSize: 42,
+                            fontWeight: FontWeight.w600,
+                            color: _hue,
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                            height: 1.2,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ] else ...[
+                  Container(
+                    width: double.infinity,
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: AppColors.chip(context),
+                      color: _hueSoft,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
                       children: [
                         Icon(
                           Icons.info_outline,
-                          color: AppColors.muted(context),
+                          color: _hue,
                           size: 20,
                         ),
                         const SizedBox(width: 12),
@@ -332,7 +369,7 @@ class _DistractionBlockerScreenState extends State<DistractionBlockerScreen> wit
                         child: Text(
                           AppLocalizations.of(context).toggleOff,
                           style: TextStyle(
-                            color: !isActive ? AppColors.accent(context) : AppColors.faint(context),
+                            color: !isActive ? _hue : AppColors.faint(context),
                             fontWeight: !isActive ? FontWeight.w600 : FontWeight.w500,
                             fontSize: 15,
                           ),
@@ -347,7 +384,7 @@ class _DistractionBlockerScreenState extends State<DistractionBlockerScreen> wit
                           width: 56,
                           height: 32,
                           decoration: BoxDecoration(
-                            color: isActive ? AppColors.accent(context) : AppColors.border(context),
+                            color: isActive ? _hue : AppColors.border(context),
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: AnimatedAlign(
@@ -381,7 +418,7 @@ class _DistractionBlockerScreenState extends State<DistractionBlockerScreen> wit
                         child: Text(
                           AppLocalizations.of(context).toggleOn,
                           style: TextStyle(
-                            color: isActive ? AppColors.accent(context) : AppColors.faint(context),
+                            color: isActive ? _hue : AppColors.faint(context),
                             fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
                             fontSize: 15,
                           ),
@@ -414,12 +451,12 @@ class _DistractionBlockerScreenState extends State<DistractionBlockerScreen> wit
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppColors.chip(context),
+                  color: _hueSoft,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   Icons.analytics,
-                  color: AppColors.inkSoft(context),
+                  color: _hue,
                   size: 24,
                 ),
               ),
@@ -441,7 +478,7 @@ class _DistractionBlockerScreenState extends State<DistractionBlockerScreen> wit
             icon: Icons.timer_outlined,
             label: AppLocalizations.of(context).totalBlockingTime,
             value: controller.todayTotalDuration,
-            color: AppColors.inkSoft(context),
+            color: _hue,
           ),
           
           const SizedBox(height: 16),
@@ -453,7 +490,7 @@ class _DistractionBlockerScreenState extends State<DistractionBlockerScreen> wit
             value: controller.platformService.isIOS
                 ? '${controller.blockedSelectionCount}'
                 : '${AppBlockingConfig.blockedAppsCount}',
-            color: AppColors.inkSoft(context),
+            color: _hue,
           ),
 
           if (!controller.platformService.isIOS) ...[
@@ -462,7 +499,7 @@ class _DistractionBlockerScreenState extends State<DistractionBlockerScreen> wit
               icon: Icons.shield,
               label: AppLocalizations.of(context).attemptsPrevented,
               value: '${controller.blockedAttempts}',
-              color: AppColors.inkSoft(context),
+              color: _hue,
             ),
           ],
         ],
@@ -487,7 +524,7 @@ class _DistractionBlockerScreenState extends State<DistractionBlockerScreen> wit
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppColors.chip(context),
+              color: _hueSoft,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, color: color, size: 20),
@@ -533,12 +570,12 @@ class _DistractionBlockerScreenState extends State<DistractionBlockerScreen> wit
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppColors.chip(context),
+                  color: _hueSoft,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   Icons.info_outline,
-                  color: AppColors.inkSoft(context),
+                  color: _hue,
                   size: 24,
                 ),
               ),
@@ -612,12 +649,12 @@ class _DistractionBlockerScreenState extends State<DistractionBlockerScreen> wit
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppColors.accentSoft(context),
+                  color: _hueSoft,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   Icons.block,
-                  color: AppColors.accent(context),
+                  color: _hue,
                   size: 24,
                 ),
               ),
@@ -634,7 +671,7 @@ class _DistractionBlockerScreenState extends State<DistractionBlockerScreen> wit
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: AppColors.accentSoft(context),
+                  color: _hueSoft,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -642,7 +679,7 @@ class _DistractionBlockerScreenState extends State<DistractionBlockerScreen> wit
                       ? '${controller.blockedSelectionCount}'
                       : '${AppBlockingConfig.blockedAppsCount}',
                   style: TextStyle(
-                    color: AppColors.accent(context),
+                    color: _hue,
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
                   ),
@@ -661,7 +698,7 @@ class _DistractionBlockerScreenState extends State<DistractionBlockerScreen> wit
               children: [
                 Icon(
                   Icons.apps,
-                  color: AppColors.accent(context),
+                  color: _hue,
                   size: 22,
                 ),
                 SizedBox(width: 12),
@@ -689,8 +726,8 @@ class _DistractionBlockerScreenState extends State<DistractionBlockerScreen> wit
                 icon: const Icon(Icons.apps, size: 20),
                 label: Text(AppLocalizations.of(context).chooseAppsToBlock),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.accent(context),
-                  foregroundColor: Colors.white,
+                  backgroundColor: _hue,
+                  foregroundColor: _onHue,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),

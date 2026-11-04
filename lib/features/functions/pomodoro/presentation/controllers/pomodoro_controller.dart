@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../../../../../core/i18n/current_l10n.dart';
 import 'package:flutter/foundation.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../data/models/pomodoro_stats.dart';
@@ -47,11 +48,11 @@ class PomodoroController extends ChangeNotifier {
   String get currentPhaseLabel {
     switch (_currentPhase) {
       case PomodoroPhase.work:
-        return 'Fokus';
+        return CurrentL10n.of.pomodoroFocus;
       case PomodoroPhase.shortBreak:
-        return 'Kurze Pause';
+        return CurrentL10n.of.shortBreak;
       case PomodoroPhase.longBreak:
-        return 'Lange Pause';
+        return CurrentL10n.of.longBreak;
     }
   }
 
@@ -96,7 +97,7 @@ class PomodoroController extends ChangeNotifier {
   TimerLiveState _buildLiveState() => TimerLiveState(
         timerId: 'pomodoro',
         timerType: TimerType.pomodoro,
-        title: 'Pomodoro',
+        title: CurrentL10n.of.pomodoroTimer,
         remainingSeconds: _remainingSeconds,
         totalSeconds: totalSecondsForPhase,
         isRunning: _timerState == PomodoroTimerState.running,

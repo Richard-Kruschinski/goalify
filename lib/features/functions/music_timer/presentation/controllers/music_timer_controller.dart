@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import '../../../../../core/i18n/current_l10n.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import '../../../pomodoro/data/datasources/platform_channel_service.dart';
@@ -47,7 +48,7 @@ class MusicTimerController extends ChangeNotifier {
   TimerLiveState _buildLiveState() => TimerLiveState(
         timerId: 'music',
         timerType: TimerType.music,
-        title: 'Musik Timer',
+        title: CurrentL10n.of.musicTimerTitle,
         remainingSeconds: _remainingSeconds,
         totalSeconds: _remainingSeconds, // no fixed total for music timer
         isRunning: _isRunning && !_isPaused,

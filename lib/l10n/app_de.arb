@@ -522,5 +522,7 @@
   "sortHeaviest": "Höchstes Gewicht",
   "sortByWorkout": "Nach Workout",
   "sortExerciseCount": "Anzahl Übungen",
-  "sortWorkoutCount": "Anzahl Workouts"
+  "sortWorkoutCount": "Anzahl Workouts",
+
+  "cyclesBeforeLongBreakCount": "{count, plural, =1{1 Zyklus bis zur langen Pause} other{{count} Zyklen bis zur langen Pause}}"
 }

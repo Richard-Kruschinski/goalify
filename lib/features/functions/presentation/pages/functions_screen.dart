@@ -13,6 +13,7 @@ import '../../interval_timer/presentation/controllers/interval_timer_controller.
 import '../../interval_timer/data/models/interval_timer_state.dart';
 import '../../settings/presentation/pages/settings_screen.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/tool_hue.dart';
 import '../../../../l10n/generated/app_localizations.dart';
 
 class FunctionsScreen extends StatelessWidget {
@@ -49,7 +50,7 @@ class FunctionsScreen extends StatelessWidget {
                     ? l10n.pomodoroCardRunning(pomodoroController.formattedTime)
                     : l10n.pomodoroCardSubtitle,
                 icon: Icons.timer,
-                hue: _ToolHue.focus.of(context),
+                hue: ToolHue.focus.of(context),
                 isActive: isTimerRunning,
                 onTap: () {
                   Navigator.push(
@@ -72,7 +73,7 @@ class FunctionsScreen extends StatelessWidget {
                     ? l10n.blockerCardActive(distractionBlocker.currentSessionDuration)
                     : l10n.blockerCardSubtitle,
                 icon: Icons.block,
-                hue: _ToolHue.blocker.of(context),
+                hue: ToolHue.blocker.of(context),
                 isActive: isActive,
                 onTap: () {
                   Navigator.push(
@@ -95,7 +96,7 @@ class FunctionsScreen extends StatelessWidget {
                     ? l10n.musicTimerCardRunning(musicTimer.formattedTimeWithHours)
                     : l10n.musicTimerCardSubtitle,
                 icon: Icons.music_note,
-                hue: _ToolHue.music.of(context),
+                hue: ToolHue.music.of(context),
                 isActive: isRunning,
                 onTap: () {
                   Navigator.push(
@@ -119,7 +120,7 @@ class FunctionsScreen extends StatelessWidget {
                         intervalItemLabel(l10n, intervalTimer), intervalTimer.formattedTime)
                     : l10n.intervalCardSubtitle,
                 icon: Icons.sports_martial_arts,
-                hue: _ToolHue.interval.of(context),
+                hue: ToolHue.interval.of(context),
                 isActive: isRunning,
                 onTap: () {
                   Navigator.push(
@@ -287,21 +288,4 @@ class FunctionCard extends StatelessWidget {
       ),
     );
   }
-}
-
-/// Each tool keeps one toned hue so the list reads at a glance and every
-/// tool is recognisable: tomato for Pomodoro, violet for the blocker, amber
-/// for music, green for intervals. Settings stays neutral.
-enum _ToolHue {
-  focus(Color(0xFFE53935), Color(0xFFE5534B)),
-  blocker(Color(0xFF6A4BC4), Color(0xFF9D86E3)),
-  music(Color(0xFFB7791F), Color(0xFFD9A045)),
-  interval(Color(0xFF2E7D4F), Color(0xFF5BB57A));
-
-  const _ToolHue(this.light, this.dark);
-
-  final Color light;
-  final Color dark;
-
-  Color of(BuildContext context) => AppColors.isDark(context) ? dark : light;
 }

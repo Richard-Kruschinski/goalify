@@ -3111,6 +3111,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Number of workouts'**
   String get sortWorkoutCount;
+
+  /// No description provided for @cyclesBeforeLongBreakCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 cycle before the long break} other{{count} cycles before the long break}}'**
+  String cyclesBeforeLongBreakCount(int count);
 }
 
 class _AppLocalizationsDelegate

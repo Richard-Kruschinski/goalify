@@ -1766,4 +1766,17 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get sortWorkoutCount => 'Количество тренировок';
+
+  @override
+  String cyclesBeforeLongBreakCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count цикла до длинного перерыва',
+      many: '$count циклов до длинного перерыва',
+      few: '$count цикла до длинного перерыва',
+      one: '$count цикл до длинного перерыва',
+    );
+    return '$_temp0';
+  }
 }

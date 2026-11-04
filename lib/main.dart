@@ -12,6 +12,7 @@ import 'features/functions/interval_timer/presentation/controllers/interval_time
 import 'core/services/timer_live_presentation_service.dart';
 import 'core/settings/settings_controller.dart';
 import 'core/theme/app_theme.dart';
+import 'core/i18n/current_l10n.dart';
 import 'core/sounds/sound_controller.dart';
 import 'l10n/generated/app_localizations.dart';
 
@@ -63,6 +64,12 @@ class GoalifyApp extends StatelessWidget {
       child: Consumer<SettingsController>(
         builder: (context, settings, _) => MaterialApp(
           onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
+          // Timer controllers fill the live notification without a context;
+          // give them the strings of the active locale.
+          builder: (context, child) {
+            CurrentL10n.update(context);
+            return child ?? const SizedBox.shrink();
+          },
           theme: AppTheme.light(),
           darkTheme: AppTheme.dark(),
           themeMode: settings.themeMode,

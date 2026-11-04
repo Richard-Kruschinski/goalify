@@ -1276,8 +1276,9 @@ class _PhaseIndicator extends StatelessWidget {
       case PomodoroPhase.work:
         return AppColors.accent(context);
       case PomodoroPhase.shortBreak:
-      case PomodoroPhase.longBreak:
         return AppColors.success(context);
+      case PomodoroPhase.longBreak:
+        return AppColors.info(context);
     }
   }
 
@@ -1300,7 +1301,7 @@ class _PhaseIndicator extends StatelessWidget {
                 _localizedPhaseLabel(context, controller.currentPhase),
                 style: TextStyle(
                   fontSize: 24,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w600,
                   color: _getPhaseColor(context),
                 ),
               ),
@@ -1344,73 +1345,87 @@ class _TimerDisplay extends StatelessWidget {
       case PomodoroPhase.work:
         return AppColors.accent(context);
       case PomodoroPhase.shortBreak:
-      case PomodoroPhase.longBreak:
         return AppColors.success(context);
+      case PomodoroPhase.longBreak:
+        return AppColors.info(context);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 280,
-      height: 280,
-      decoration: BoxDecoration(
-        color: AppColors.card(context),
-        shape: BoxShape.circle,
-        boxShadow: AppColors.cardShadow(context),
-      ),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Circular progress indicator
-          SizedBox(
-            width: 240,
-            height: 240,
-            child: CircularProgressIndicator(
-              value: controller.progress,
-              strokeWidth: 12,
-              backgroundColor: AppColors.border(context),
-              valueColor: AlwaysStoppedAnimation<Color>(_getPhaseColor(context)),
-              strokeCap: StrokeCap.round,
+    final phase = _getPhaseColor(context);
+    final dark = AppColors.isDark(context);
+
+    return Column(
+      children: [
+        // The dial takes the phase color: tomato while focusing, green on a
+        // short break, blue on the long one.
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          width: 280,
+          height: 280,
+          decoration: BoxDecoration(
+            color: Color.alphaBlend(
+              phase.withValues(alpha: dark ? 0.10 : 0.06),
+              AppColors.card(context),
             ),
+            shape: BoxShape.circle,
+            border: Border.all(color: phase.withValues(alpha: 0.25)),
+            boxShadow: AppColors.cardShadow(context),
           ),
-          // Time display
-          Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+          child: Stack(
+            alignment: Alignment.center,
             children: [
-              Text(
-                controller.formattedTime,
-                style: TextStyle(
-                  fontSize: 56,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.ink(context),
-                  letterSpacing: 2,
+              SizedBox(
+                width: 240,
+                height: 240,
+                child: CircularProgressIndicator(
+                  value: controller.progress,
+                  strokeWidth: 12,
+                  backgroundColor: phase.withValues(alpha: dark ? 0.18 : 0.14),
+                  valueColor: AlwaysStoppedAnimation<Color>(phase),
+                  strokeCap: StrokeCap.round,
                 ),
               ),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                decoration: BoxDecoration(
-                  color: _getPhaseColor(context).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  controller.timerState == PomodoroTimerState.running
-                      ? AppLocalizations.of(context).running
-                      : controller.timerState == PomodoroTimerState.paused
-                          ? AppLocalizations.of(context).paused
-                          : AppLocalizations.of(context).ready,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: _getPhaseColor(context),
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    controller.formattedTime,
+                    style: TextStyle(
+                      fontSize: 56,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.ink(context),
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: phase.withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      controller.timerState == PomodoroTimerState.running
+                          ? AppLocalizations.of(context).running
+                          : controller.timerState == PomodoroTimerState.paused
+                              ? AppLocalizations.of(context).paused
+                              : AppLocalizations.of(context).ready,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: phase,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -1458,9 +1473,11 @@ class _ControlButtons extends StatelessWidget {
               ? Icons.pause
               : Icons.play_arrow,
           onPressed: () => _handlePlayPause(context),
-          color: controller.currentPhase == PomodoroPhase.work
-              ? AppColors.accent(context)
-              : AppColors.success(context),
+          color: switch (controller.currentPhase) {
+            PomodoroPhase.work => AppColors.accent(context),
+            PomodoroPhase.shortBreak => AppColors.success(context),
+            PomodoroPhase.longBreak => AppColors.info(context),
+          },
           size: 80,
           iconSize: 40,
         ),
@@ -1590,7 +1607,7 @@ class _StatisticsSection extends StatelessWidget {
           AppLocalizations.of(context).todaysProgress,
           style: TextStyle(
             fontSize: 20,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w600,
             color: AppColors.ink(context),
           ),
         ),
@@ -1608,7 +1625,7 @@ class _StatisticsSection extends StatelessWidget {
                 icon: Icons.check_circle_outline,
                 label: AppLocalizations.of(context).sessions,
                 value: '${stats.completedSessionsToday}',
-                color: AppColors.inkSoft(context),
+                color: AppColors.accent(context),
               ),
             ),
             const SizedBox(width: 12),
@@ -1620,7 +1637,7 @@ class _StatisticsSection extends StatelessWidget {
                   AppLocalizations.of(context),
                   stats.totalFocusTimeToday,
                 ),
-                color: AppColors.inkSoft(context),
+                color: AppColors.accent(context),
               ),
             ),
           ],
@@ -1636,7 +1653,7 @@ class _StatisticsSection extends StatelessWidget {
                   AppLocalizations.of(context),
                   stats.totalFocusTimeThisWeek,
                 ),
-                color: AppColors.inkSoft(context),
+                color: AppColors.accent(context),
               ),
             ),
             const SizedBox(width: 12),
@@ -1645,7 +1662,7 @@ class _StatisticsSection extends StatelessWidget {
                 icon: Icons.repeat,
                 label: AppLocalizations.of(context).cycles,
                 value: '${stats.completedCycles}',
-                color: AppColors.inkSoft(context),
+                color: AppColors.accent(context),
               ),
             ),
           ],
@@ -1767,14 +1784,22 @@ class _StatCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: color, size: 28),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
           const SizedBox(height: 12),
           Text(
             value,
             style: TextStyle(
               fontSize: 24,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w600,
               color: AppColors.ink(context),
+              fontFeatures: const [FontFeature.tabularFigures()],
             ),
           ),
           const SizedBox(height: 4),
@@ -1866,7 +1891,7 @@ class _ProfileTile extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    '${profile.cyclesBeforeLongBreak} cycles before long break',
+                    AppLocalizations.of(context).cyclesBeforeLongBreakCount(profile.cyclesBeforeLongBreak),
                     style: TextStyle(
                       fontSize: 11,
                       color: AppColors.faint(context),

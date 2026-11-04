@@ -2,6 +2,7 @@
 import '../theme/app_colors.dart';
 import '../i18n/task_labels.dart';
 import '../utils/day_cycle.dart';
+import '../../l10n/generated/app_localizations.dart';
 
 class ModernDateRangePicker extends StatefulWidget {
   final DateTime? initialStart;
@@ -149,7 +150,7 @@ class _ModernDateRangePickerState extends State<ModernDateRangePicker> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              'Go to month',
+                              AppLocalizations.of(context).goToMonth,
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
@@ -252,9 +253,9 @@ class _ModernDateRangePickerState extends State<ModernDateRangePicker> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
-                            child: const Text(
-                              'Go',
-                              style: TextStyle(fontWeight: FontWeight.w700),
+                            child: Text(
+                              AppLocalizations.of(context).go,
+                              style: const TextStyle(fontWeight: FontWeight.w700),
                             ),
                           ),
                         ],
