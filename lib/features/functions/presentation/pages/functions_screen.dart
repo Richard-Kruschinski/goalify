@@ -49,7 +49,7 @@ class FunctionsScreen extends StatelessWidget {
                     ? l10n.pomodoroCardRunning(pomodoroController.formattedTime)
                     : l10n.pomodoroCardSubtitle,
                 icon: Icons.timer,
-                iconBackgroundColor: AppColors.chip(context),
+                hue: _ToolHue.focus.of(context),
                 isActive: isTimerRunning,
                 onTap: () {
                   Navigator.push(
@@ -72,7 +72,7 @@ class FunctionsScreen extends StatelessWidget {
                     ? l10n.blockerCardActive(distractionBlocker.currentSessionDuration)
                     : l10n.blockerCardSubtitle,
                 icon: Icons.block,
-                iconBackgroundColor: AppColors.chip(context),
+                hue: _ToolHue.blocker.of(context),
                 isActive: isActive,
                 onTap: () {
                   Navigator.push(
@@ -95,7 +95,7 @@ class FunctionsScreen extends StatelessWidget {
                     ? l10n.musicTimerCardRunning(musicTimer.formattedTimeWithHours)
                     : l10n.musicTimerCardSubtitle,
                 icon: Icons.music_note,
-                iconBackgroundColor: AppColors.chip(context),
+                hue: _ToolHue.music.of(context),
                 isActive: isRunning,
                 onTap: () {
                   Navigator.push(
@@ -119,7 +119,7 @@ class FunctionsScreen extends StatelessWidget {
                         intervalItemLabel(l10n, intervalTimer), intervalTimer.formattedTime)
                     : l10n.intervalCardSubtitle,
                 icon: Icons.sports_martial_arts,
-                iconBackgroundColor: AppColors.chip(context),
+                hue: _ToolHue.interval.of(context),
                 isActive: isRunning,
                 onTap: () {
                   Navigator.push(
@@ -137,7 +137,7 @@ class FunctionsScreen extends StatelessWidget {
             title: AppLocalizations.of(context).settingsTitle,
             subtitle: AppLocalizations.of(context).settingsSubtitle,
             icon: Icons.tune,
-            iconBackgroundColor: AppColors.chip(context),
+            
             onTap: () {
               Navigator.push(
                 context,
@@ -157,7 +157,9 @@ class FunctionCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final IconData icon;
-  final Color iconBackgroundColor;
+  /// The tool's own toned hue for its tile and running state; null keeps the
+  /// card neutral (settings).
+  final Color? hue;
   final VoidCallback? onTap;
   final bool isActive;
   final bool isInteractive;
@@ -167,7 +169,7 @@ class FunctionCard extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.icon,
-    required this.iconBackgroundColor,
+    this.hue,
     this.onTap,
     this.isActive = false,
     this.isInteractive = true,
@@ -175,15 +177,23 @@ class FunctionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final dark = AppColors.isDark(context);
+    final tone = hue ?? AppColors.accent(context);
+    final tileColor = hue != null
+        ? hue!.withValues(alpha: dark ? 0.16 : 0.12)
+        : AppColors.chip(context);
+
     return Material(
       color: AppColors.card(context),
-      elevation: AppColors.isDark(context) ? 0 : 1,
+      elevation: dark ? 0 : 1,
       shadowColor: Colors.black.withValues(alpha: 0.08),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: AppColors.isDark(context)
-            ? BorderSide(color: isActive ? AppColors.accent(context).withValues(alpha: 0.4) : AppColors.border(context))
-            : BorderSide.none,
+        side: isActive
+            ? BorderSide(color: tone.withValues(alpha: 0.5))
+            : dark
+                ? BorderSide(color: AppColors.border(context))
+                : BorderSide.none,
       ),
       child: InkWell(
         onTap: isInteractive
@@ -194,96 +204,82 @@ class FunctionCard extends StatelessWidget {
               })
             : null,
         borderRadius: BorderRadius.circular(20),
-        splashColor: isInteractive ? null : Colors.transparent,
-        highlightColor: isInteractive ? null : Colors.transparent,
+        splashColor: isInteractive ? tone.withValues(alpha: 0.08) : Colors.transparent,
+        highlightColor: isInteractive ? tone.withValues(alpha: 0.04) : Colors.transparent,
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: Stack(
+          child: Row(
             children: [
-              Row(
-                children: [
-                  // Leading Icon
-                  Container(
-                    decoration: BoxDecoration(
-                      color: isActive ? AppColors.accentSoft(context) : iconBackgroundColor,
-                      shape: BoxShape.circle,
+              // The tool's tile: its own hue, solid while it runs.
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: isActive ? tone : tileColor,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(
+                  icon,
+                  color: isActive
+                      ? (dark ? AppColors.darkBg : Colors.white)
+                      : (hue ?? AppColors.inkSoft(context)),
+                  size: 26,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.ink(context),
+                      ),
                     ),
-                    padding: const EdgeInsets.all(12),
-                    child: Icon(
-                      icon,
-                      color: isActive ? AppColors.accent(context) : AppColors.inkSoft(context),
-                      size: 28,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  // Title and Subtitle
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    const SizedBox(height: 4),
+                    Row(
                       children: [
-                        Text(
-                          title,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.ink(context),
-                              ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          subtitle,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: isActive
-                                    ? AppColors.accent(context)
-                                    : AppColors.muted(context),
-                                fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
-                              ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+                        if (isActive) ...[
+                          // Live dot: the tool is running right now.
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: tone,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                        ],
+                        Expanded(
+                          child: Text(
+                            subtitle,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 13,
+                              height: 1.3,
+                              color: isActive ? tone : AppColors.muted(context),
+                              fontWeight: isActive ? FontWeight.w500 : FontWeight.w400,
+                              fontFeatures: const [FontFeature.tabularFigures()],
+                            ),
+                          ),
                         ),
                       ],
                     ),
-                  ),
-                  const SizedBox(width: 16),
-                  // Trailing Button
-                  if (isInteractive)
-                    Container(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: isActive
-                              ? AppColors.accent(context)
-                              : AppColors.border(context),
-                          width: 1.5,
-                        ),
-                      ),
-                      padding: const EdgeInsets.all(8),
-                      child: Icon(
-                        Icons.arrow_forward,
-                        size: 20,
-                        color: isActive
-                            ? AppColors.accent(context)
-                            : AppColors.muted(context),
-                      ),
-                    ),
-                ],
+                  ],
+                ),
               ),
-              // Active indicator badge
-              if (isActive)
-                Positioned(
-                  top: 0,
-                  right: 0,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.accent(context),
-                      shape: BoxShape.circle,
-                    ),
-                    padding: const EdgeInsets.all(4),
-                    child: const Icon(
-                      Icons.play_arrow,
-                      color: Colors.white,
-                      size: 16,
-                    ),
-                  ),
+              const SizedBox(width: 12),
+              if (isInteractive)
+                Icon(
+                  Icons.chevron_right,
+                  size: 24,
+                  color: isActive ? tone : AppColors.faint(context),
                 ),
             ],
           ),
@@ -291,4 +287,21 @@ class FunctionCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Each tool keeps one toned hue so the list reads at a glance and every
+/// tool is recognisable: tomato for Pomodoro, violet for the blocker, amber
+/// for music, green for intervals. Settings stays neutral.
+enum _ToolHue {
+  focus(Color(0xFFE53935), Color(0xFFE5534B)),
+  blocker(Color(0xFF6A4BC4), Color(0xFF9D86E3)),
+  music(Color(0xFFB7791F), Color(0xFFD9A045)),
+  interval(Color(0xFF2E7D4F), Color(0xFF5BB57A));
+
+  const _ToolHue(this.light, this.dark);
+
+  final Color light;
+  final Color dark;
+
+  Color of(BuildContext context) => AppColors.isDark(context) ? dark : light;
 }

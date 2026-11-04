@@ -281,7 +281,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get freezeHelp =>
-      'Freeze-токен: защищает серию повторяющейся задачи на СЕГОДНЯ без её выполнения. Удерживайте задачу и выберите «Заморозить на сегодня». Стоит 1 токен. Каждую неделю начисляется новый, максимум 5.';
+      'Freeze-токен: защищает все серии дня, даже если ничего не отмечено. Нажмите на снежинку, чтобы заморозить сегодня. Каждую неделю начисляется новый токен, максимум 5.';
 
   @override
   String get pointsHelp => 'Показывает количество выполненных задач';
@@ -347,13 +347,13 @@ class AppLocalizationsRu extends AppLocalizations {
   String get duplicateSubtitle => 'Скопировать задачу сразу ниже';
 
   @override
-  String get freezeForToday => 'Заморозить на сегодня';
+  String get freezeForToday => 'Заморозить день';
 
   @override
   String get alreadyFrozen => 'Уже заморожено';
 
   @override
-  String get protectYourStreak => 'Защитите свою серию';
+  String get protectYourStreak => 'Защищает все серии сегодня';
 
   @override
   String get noTokensLeft => 'Токенов не осталось';
@@ -1680,4 +1680,49 @@ class AppLocalizationsRu extends AppLocalizations {
   String pastEntriesRecalculated(int count) {
     return 'Пересчитано записей: $count';
   }
+
+  @override
+  String get freezeTodayTitle => 'Заморозить сегодня';
+
+  @override
+  String get freezeSheetBody =>
+      'Один токен защищает все серии дня, даже если ничего не отмечено.';
+
+  @override
+  String freezeTokensLeft(int count, int max) {
+    return 'Осталось $count из $max токенов';
+  }
+
+  @override
+  String freezeTokenRefill(int max) {
+    return 'Каждую неделю начисляется один токен, максимум $max';
+  }
+
+  @override
+  String get freezeConfirmButton => 'Заморозить · 1 токен';
+
+  @override
+  String get dayFrozenTitle => 'День заморожен';
+
+  @override
+  String get dayFrozenTodaySubtitle => 'Все серии сегодня защищены';
+
+  @override
+  String get dayFrozenPastSubtitle =>
+      'В этот день был использован freeze-токен';
+
+  @override
+  String streakProtected(String label) {
+    return '$label · защищено';
+  }
+
+  @override
+  String get retroFreezeTitle => 'Заморозить вчера?';
+
+  @override
+  String get retroFreezeBody =>
+      'Эти серии вчера остались незавершёнными. Один токен сохранит их.';
+
+  @override
+  String get notNow => 'Не сейчас';
 }

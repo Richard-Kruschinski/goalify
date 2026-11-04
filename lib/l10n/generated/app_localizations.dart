@@ -607,7 +607,7 @@ abstract class AppLocalizations {
   /// No description provided for @freezeHelp.
   ///
   /// In en, this message translates to:
-  /// **'Freeze token: protects a keep-task streak for TODAY without checking it off. Long-press a keep-task and choose \"Freeze for today\". Costs 1 token. You earn one per week, up to 5.'**
+  /// **'Freeze token: protects every streak of the day, even if you check nothing off. Tap the snowflake to freeze today. You earn one token per week, up to 5.'**
   String get freezeHelp;
 
   /// No description provided for @pointsHelp.
@@ -733,7 +733,7 @@ abstract class AppLocalizations {
   /// No description provided for @freezeForToday.
   ///
   /// In en, this message translates to:
-  /// **'Freeze for today'**
+  /// **'Freeze day'**
   String get freezeForToday;
 
   /// No description provided for @alreadyFrozen.
@@ -745,7 +745,7 @@ abstract class AppLocalizations {
   /// No description provided for @protectYourStreak.
   ///
   /// In en, this message translates to:
-  /// **'Protect your streak'**
+  /// **'Protects every streak of today'**
   String get protectYourStreak;
 
   /// No description provided for @noTokensLeft.
@@ -2973,6 +2973,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} past entries recalculated'**
   String pastEntriesRecalculated(int count);
+
+  /// No description provided for @freezeTodayTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Freeze today'**
+  String get freezeTodayTitle;
+
+  /// No description provided for @freezeSheetBody.
+  ///
+  /// In en, this message translates to:
+  /// **'One token protects every streak of the day, even if you check nothing off.'**
+  String get freezeSheetBody;
+
+  /// No description provided for @freezeTokensLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} of {max} tokens left'**
+  String freezeTokensLeft(int count, int max);
+
+  /// No description provided for @freezeTokenRefill.
+  ///
+  /// In en, this message translates to:
+  /// **'You earn one token per week, up to {max}'**
+  String freezeTokenRefill(int max);
+
+  /// No description provided for @freezeConfirmButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Freeze · 1 token'**
+  String get freezeConfirmButton;
+
+  /// No description provided for @dayFrozenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Day frozen'**
+  String get dayFrozenTitle;
+
+  /// No description provided for @dayFrozenTodaySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Every streak is protected today'**
+  String get dayFrozenTodaySubtitle;
+
+  /// No description provided for @dayFrozenPastSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A freeze token was used on this day'**
+  String get dayFrozenPastSubtitle;
+
+  /// No description provided for @streakProtected.
+  ///
+  /// In en, this message translates to:
+  /// **'{label} · protected'**
+  String streakProtected(String label);
+
+  /// No description provided for @retroFreezeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Freeze yesterday?'**
+  String get retroFreezeTitle;
+
+  /// No description provided for @retroFreezeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'These streaks stayed open yesterday. One token keeps them alive.'**
+  String get retroFreezeBody;
+
+  /// No description provided for @notNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get notNow;
 }
 
 class _AppLocalizationsDelegate

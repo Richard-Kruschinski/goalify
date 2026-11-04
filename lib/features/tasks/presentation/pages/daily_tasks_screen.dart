@@ -18,6 +18,7 @@ import '../../data/models/daily_task.dart';
 import '../description_preview.dart';
 import '../widgets/create_daily_task_sheet.dart';
 import '../widgets/edit_daily_task_sheet.dart';
+import '../widgets/freeze_widgets.dart';
 import '../../../../core/widgets/modern_date_picker_dialog.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/i18n/task_labels.dart';
@@ -122,11 +123,19 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   bool _sortReversed = false;
 
   // Helpers
-  void _showFreezeHelp() {
-    ScaffoldMessenger.of(context).showSingleSnackBar(
-      SnackBar(
-        duration: const Duration(seconds: 5),
-        content: Text(AppLocalizations.of(context).freezeHelp),
+  Future<void> _openFreezeSheet() async {
+    final todayKey = _todayKey();
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => FreezeSheet(
+        frozen: _isDayFrozen(todayKey),
+        tokens: _freezeTokens,
+        maxTokens: _maxFreezeTokens,
+        onFreeze: () async {
+          await _freezeDay(todayKey);
+          if (ctx.mounted) Navigator.pop(ctx);
+        },
       ),
     );
   }
@@ -666,16 +675,116 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     await _repo.saveLastRollover(_todayKey());
   }
 
+  /// Marker in [_freezeUsageByDate] for a day frozen as a whole. Older saves
+  /// hold task ids instead (one freeze per task), which still count.
+  static const String _kDayFreeze = '*';
+
+  /// Frozen days stay on record this long so past days can show them and a
+  /// long X-task cycle can still see a freeze from its first days.
+  static const int _freezeRecordDays = 90;
+
+  bool _isDayFrozen(String dateKey) =>
+      _freezeUsageByDate[dateKey]?.contains(_kDayFreeze) ?? false;
+
   bool _wasFrozenOn(String dateKey, String taskId) {
     final list = _freezeUsageByDate[dateKey];
-    return list != null && list.contains(taskId);
+    return list != null && (list.contains(_kDayFreeze) || list.contains(taskId));
   }
 
-  void _clearFreezeForDate(String dateKey) {
-    _freezeUsageByDate.remove(dateKey);
+  /// Whether a freeze covered any day of [task]'s cycle that ends before
+  /// [cycleEndKey] (exclusive). Used to protect a repeating X-task streak.
+  bool _wasFrozenInCycle(DailyTask task, String cycleEndKey) {
+    final end = _tryParseDateKey(cycleEndKey);
+    if (end == null) return false;
+    var day = _tryParseDateKey(task.limitedCycleStartKey ?? '') ??
+        end.subtract(Duration(days: task.limitedCycleIntervalDays ?? 1));
+    while (day.isBefore(end)) {
+      if (_wasFrozenOn(_dateKey(day), task.id)) return true;
+      day = day.add(const Duration(days: 1));
+    }
+    return false;
   }
 
-  Future<void> _dailyRolloverIfNeeded() async {
+  void _pruneFreezeRecords() {
+    final cutoff = _dateKey(
+      DayCycle.today().subtract(const Duration(days: _freezeRecordDays)),
+    );
+    _freezeUsageByDate.removeWhere((key, _) => _isPastDate(key, cutoff));
+  }
+
+  /// Streak-bearing tasks: plain recurring ones and repeating X-tasks.
+  bool _hasStreak(DailyTask t) =>
+      t.keep && (!t.isLimited || t.isLimitedRecurring);
+
+  Future<void> _freezeDay(String dateKey) async {
+    if (_freezeTokens <= 0 || _isDayFrozen(dateKey)) return;
+    setState(() {
+      _freezeTokens -= 1;
+      _freezeUsageByDate
+          .putIfAbsent(dateKey, () => <String>[])
+          .add(_kDayFreeze);
+    });
+    _sortCompletedToBottom(dateKey);
+    await _saveFreezeState();
+  }
+
+  /// Streak tasks that would lose their streak when [dayKey] is settled, i.e.
+  /// what a freeze on that day would save. [nextDayKey] is the day after it.
+  List<DailyTask> _streaksAtRiskOn(String dayKey, String nextDayKey) {
+    final next = _tryParseDateKey(nextDayKey);
+    if (next == null) return const [];
+    final result = <DailyTask>[];
+    for (final t in _keepTasks) {
+      if (!_hasStreak(t) || t.streak <= 0 || _wasFrozenOn(dayKey, t.id)) {
+        continue;
+      }
+      if (t.isLimitedRecurring) {
+        // Only a cycle that ended with [dayKey] can still be saved by it.
+        final start = _tryParseDateKey(t.limitedCycleStartKey ?? '');
+        final interval = t.limitedCycleIntervalDays;
+        if (start == null || interval == null) continue;
+        final sinceStart = next.difference(start).inDays;
+        final cycleEnded = sinceStart > 0 && sinceStart % interval == 0;
+        final count = t.completedCount + (t.done ? 1 : 0);
+        if (cycleEnded && count < t.targetCount!) result.add(t);
+      } else if (!t.done && _isTaskDueOnDate(t, dayKey)) {
+        result.add(t);
+      }
+    }
+    return result;
+  }
+
+  /// Asks whether to spend a token on [dayKey] (yesterday) before its streaks
+  /// are settled, when at least one of them would break.
+  Future<void> _maybeOfferRetroFreeze(String dayKey, String nextDayKey) async {
+    if (_freezeTokens <= 0 || _isDayFrozen(dayKey) || !mounted) return;
+    final atRisk = _streaksAtRiskOn(dayKey, nextDayKey);
+    if (atRisk.isEmpty) return;
+
+    await WidgetsBinding.instance.endOfFrame;
+    if (!mounted) return;
+    final freeze = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => RetroFreezeDialog(
+        tasks: atRisk,
+        tokens: _freezeTokens,
+        maxTokens: _maxFreezeTokens,
+      ),
+    );
+    if (freeze == true) await _freezeDay(dayKey);
+  }
+
+  /// Rollover may be triggered from several places (load, resume, timer);
+  /// while one runs - possibly waiting on the retro-freeze dialog - the others
+  /// join it instead of settling the same days twice.
+  Future<void>? _rolloverInFlight;
+
+  Future<void> _dailyRolloverIfNeeded() {
+    return _rolloverInFlight ??=
+        _runDailyRollover().whenComplete(() => _rolloverInFlight = null);
+  }
+
+  Future<void> _runDailyRollover() async {
     final rawLast = await _repo.loadLastRollover();
     final todayKey = _todayKey();
     if (rawLast == todayKey) return;
@@ -686,6 +795,13 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     final parsedLast = _tryParseDateKey(rawLast);
     var cursor = parsedLast ?? today.subtract(const Duration(days: 1));
     cursor = DateTime(cursor.year, cursor.month, cursor.day);
+
+    // Only yesterday can still be frozen after the fact; older missed days
+    // settle as they are.
+    final yesterdayKey = _dateKey(today.subtract(const Duration(days: 1)));
+    if (_dateKey(cursor) == yesterdayKey) {
+      await _maybeOfferRetroFreeze(yesterdayKey, todayKey);
+    }
 
     bool changedKeep = false;
     bool changedOneOff = false;
@@ -717,7 +833,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                 applyFinishedLimitedCycle(
                   t,
                   cycleEndKey: dayKey,
-                  frozen: _wasFrozenOn(dayKey, t.id),
+                  frozen: _wasFrozenInCycle(t, dayKey),
                 );
                 changedKeep = true;
               }
@@ -745,10 +861,13 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
           // not done -> protect only if frozen that day
           if (!_wasFrozenOn(dayKey, t.id)) {
             t.streak = 0;
+          } else if (t.streak > 0) {
+            // The frozen day bridges the streak, so the next completion still
+            // counts as consecutive instead of starting over at 1.
+            t.lastDoneKey = dayKey;
           }
         }
       }
-      _clearFreezeForDate(dayKey);
 
       // --- Day change ---
       // 1) keep tasks: uncheck for the next day
@@ -799,6 +918,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
 
     // --- Cleanup old history (older than 7 days) ---
     await _cleanupOldHistory();
+    _pruneFreezeRecords();
 
     _recalcTodayPoints();
     _recalcTodayDoneCount();
@@ -935,9 +1055,9 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     final all = _orderedTasksFor(todayKey);
     if (all.isEmpty) return;
 
-    final allDone = all.every(
-      (t) => t.done || (t.keep && _wasFrozenOn(todayKey, t.id)),
-    );
+    // A frozen day protects streaks but is not a finished day, so only real
+    // check-offs count here.
+    final allDone = all.every((t) => t.done);
     if (!allDone) return;
 
     final lastShown = await _repo.loadCongratsShown();
@@ -1177,21 +1297,6 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     }
     await _saveOrderCombined();
     if (dateKey == _todayKey()) await _saveProgressToday();
-  }
-
-  Future<void> _freezeToday(DailyTask t) async {
-    final today = _todayKey();
-    if (_freezeTokens <= 0) return;
-    if (_wasFrozenOn(today, t.id)) return;
-
-    setState(() {
-      _freezeTokens -= 1;
-      final list = _freezeUsageByDate.putIfAbsent(today, () => <String>[]);
-      list.add(t.id);
-    });
-    _sortCompletedToBottom(today);
-    await _saveFreezeState();
-    await _checkAndMaybeShowCongrats();
   }
 
   Future<void> _openChecklistNoteEditor(DailyTask task) async {
@@ -1442,7 +1547,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
       return;
     }
     
-    final frozenToday = _wasFrozenOn(_todayKey(), t.id);
+    final frozenToday = _isDayFrozen(_todayKey());
 
     await showModalBottomSheet<void>(
       context: context,
@@ -1723,7 +1828,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                   },
                 ),
                 const SizedBox(height: 10),
-                if (t.keep && !t.isLimited)
+                if (_hasStreak(t))
                   actionTile(
                     icon: Icons.ac_unit,
                     title: AppLocalizations.of(context).freezeForToday,
@@ -1736,7 +1841,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                     enabled: !frozenToday && _freezeTokens > 0,
                     onTap: (!frozenToday && _freezeTokens > 0)
                         ? () async {
-                      await _freezeToday(t);
+                      await _freezeDay(_todayKey());
                       if (mounted) Navigator.pop(ctx);
                     }
                         : null,
@@ -2068,7 +2173,17 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
           children: [
             // Modern Header with Calendar
             _buildModernHeader(context, isToday),
-            
+
+            if (_isDayFrozen(dateKey))
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                child: FrostBanner(
+                  subtitle: _isPastDate(dateKey, _todayKey())
+                      ? AppLocalizations.of(context).dayFrozenPastSubtitle
+                      : AppLocalizations.of(context).dayFrozenTodaySubtitle,
+                ),
+              ),
+
             // Task List
             Expanded(
               child: ordered.isEmpty
@@ -2161,14 +2276,20 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
               Row(
                 children: [
                   // Freeze Tokens
-                  if (_freezeTokens > 0 && isToday) ...[
+                  if (isToday &&
+                      (_freezeTokens > 0 || _isDayFrozen(_todayKey()))) ...[
                     GestureDetector(
-                      onTap: _showFreezeHelp,
+                      onTap: _openFreezeSheet,
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
                           color: AppColors.infoSoft(context),
                           borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: _isDayFrozen(_todayKey())
+                                ? AppColors.info(context).withValues(alpha: 0.5)
+                                : Colors.transparent,
+                          ),
                         ),
                         child: Row(
                           children: [
@@ -2457,7 +2578,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
             },
             child: Container(
               margin: const EdgeInsets.symmetric(horizontal: 2),
-              padding: const EdgeInsets.symmetric(vertical: 10),
+              padding: const EdgeInsets.fromLTRB(0, 8, 0, 4),
               decoration: BoxDecoration(
                 color: isSelected
                     ? AppColors.accent(context)
@@ -2486,6 +2607,22 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                           ? Colors.white
                           : (isToday ? AppColors.accent(context) : AppColors.ink(context)),
                     ),
+                  ),
+                  // Fixed slot so frozen and plain days keep the same height.
+                  SizedBox(
+                    height: 14,
+                    child: _isDayFrozen(_dateKey(date))
+                        ? Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Icon(
+                              Icons.ac_unit,
+                              size: 12,
+                              color: isSelected
+                                  ? Colors.white
+                                  : AppColors.info(context),
+                            ),
+                          )
+                        : null,
                   ),
                 ],
               ),
@@ -2546,7 +2683,8 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   }
 
   Widget _buildModernTaskCard(DailyTask task, int index, String dateKey) {
-    final frozenToday = _wasFrozenOn(_todayKey(), task.id);
+    final dayFrozen = _isDayFrozen(dateKey);
+    final streakFrozen = _hasStreak(task) && _wasFrozenOn(dateKey, task.id);
     final color = _getColorForCategory(task.category);
     final isDone = _isDoneForDate(task, dateKey);
     final isPastDate = _isPastDate(dateKey, _todayKey());
@@ -2557,6 +2695,12 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
       decoration: BoxDecoration(
         color: AppColors.card(context),
         borderRadius: BorderRadius.circular(16),
+        // A frozen day lays the same thin frost edge on every card.
+        border: Border.all(
+          color: dayFrozen
+              ? AppColors.info(context).withValues(alpha: 0.35)
+              : Colors.transparent,
+        ),
         boxShadow: AppColors.cardShadow(context),
       ),
       child: Material(
@@ -2667,7 +2811,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                             color: task.isLimited
                                 ? AppColors.accentSoft(context)
                                 : task.keep
-                                    ? AppColors.infoSoft(context)
+                                    ? AppColors.chip(context)
                                     : AppColors.warningSoft(context),
                             borderRadius: BorderRadius.circular(8),
                           ),
@@ -2682,7 +2826,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                                 color: task.isLimited
                                     ? AppColors.accent(context)
                                     : task.keep
-                                        ? AppColors.info(context)
+                                        ? AppColors.muted(context)
                                         : AppColors.warning(context),
                               ),
                               const SizedBox(width: 4),
@@ -2708,7 +2852,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                                   color: task.isLimited
                                       ? AppColors.accent(context)
                                       : task.keep
-                                          ? AppColors.info(context)
+                                          ? AppColors.muted(context)
                                           : AppColors.warning(context),
                                 ),
                               ),
@@ -2723,44 +2867,39 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                           task.streak > 0)
                         Padding(
                           padding: const EdgeInsets.only(top: 6),
-                          child: Row(
-                            children: [
-                              Icon(Icons.local_fire_department,
-                                  size: 14, color: AppColors.warning(context)),
-                              const SizedBox(width: 4),
-                              Text(
-                                task.isLimitedRecurring
-                                    ? AppLocalizations.of(context)
-                                        .streakCycleCount(task.streak)
-                                    : AppLocalizations.of(context)
-                                        .streakCount(task.streak),
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                  color: AppColors.warning(context),
+                          child: Builder(builder: (context) {
+                            final l10n = AppLocalizations.of(context);
+                            final label = task.isLimitedRecurring
+                                ? l10n.streakCycleCount(task.streak)
+                                : l10n.streakCount(task.streak);
+                            // On a frozen day the flame turns to frost: the
+                            // streak is held, not growing.
+                            final tone = streakFrozen
+                                ? AppColors.info(context)
+                                : AppColors.warning(context);
+                            return Row(
+                              children: [
+                                Icon(
+                                  streakFrozen
+                                      ? Icons.ac_unit
+                                      : Icons.local_fire_department,
+                                  size: 14,
+                                  color: tone,
                                 ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      if (frozenToday)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 6),
-                          child: Row(
-                            children: [
-                              Icon(Icons.ac_unit,
-                                  size: 14, color: AppColors.info(context)),
-                              const SizedBox(width: 4),
-                              Text(
-                                AppLocalizations.of(context).frozenTodayLabel,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                  color: AppColors.info(context),
+                                const SizedBox(width: 4),
+                                Text(
+                                  streakFrozen
+                                      ? l10n.streakProtected(label)
+                                      : label,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    color: tone,
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
+                              ],
+                            );
+                          }),
                         ),
                     ],
                   ),

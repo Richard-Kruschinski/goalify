@@ -277,7 +277,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get freezeHelp =>
-      'Freeze token: protects a keep-task streak for TODAY without checking it off. Long-press a keep-task and choose \"Freeze for today\". Costs 1 token. You earn one per week, up to 5.';
+      'Freeze token: protects every streak of the day, even if you check nothing off. Tap the snowflake to freeze today. You earn one token per week, up to 5.';
 
   @override
   String get pointsHelp => 'Shows how many tasks you have completed';
@@ -342,13 +342,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get duplicateSubtitle => 'Copy this task right below';
 
   @override
-  String get freezeForToday => 'Freeze for today';
+  String get freezeForToday => 'Freeze day';
 
   @override
   String get alreadyFrozen => 'Already frozen';
 
   @override
-  String get protectYourStreak => 'Protect your streak';
+  String get protectYourStreak => 'Protects every streak of today';
 
   @override
   String get noTokensLeft => 'No tokens left';
@@ -1656,4 +1656,48 @@ class AppLocalizationsEn extends AppLocalizations {
   String pastEntriesRecalculated(int count) {
     return '$count past entries recalculated';
   }
+
+  @override
+  String get freezeTodayTitle => 'Freeze today';
+
+  @override
+  String get freezeSheetBody =>
+      'One token protects every streak of the day, even if you check nothing off.';
+
+  @override
+  String freezeTokensLeft(int count, int max) {
+    return '$count of $max tokens left';
+  }
+
+  @override
+  String freezeTokenRefill(int max) {
+    return 'You earn one token per week, up to $max';
+  }
+
+  @override
+  String get freezeConfirmButton => 'Freeze · 1 token';
+
+  @override
+  String get dayFrozenTitle => 'Day frozen';
+
+  @override
+  String get dayFrozenTodaySubtitle => 'Every streak is protected today';
+
+  @override
+  String get dayFrozenPastSubtitle => 'A freeze token was used on this day';
+
+  @override
+  String streakProtected(String label) {
+    return '$label · protected';
+  }
+
+  @override
+  String get retroFreezeTitle => 'Freeze yesterday?';
+
+  @override
+  String get retroFreezeBody =>
+      'These streaks stayed open yesterday. One token keeps them alive.';
+
+  @override
+  String get notNow => 'Not now';
 }
