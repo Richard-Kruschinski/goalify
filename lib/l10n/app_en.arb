@@ -671,5 +671,9 @@
   "sortWorkoutCount": "Number of workouts",
 
   "cyclesBeforeLongBreakCount": "{count, plural, =1{1 cycle before the long break} other{{count} cycles before the long break}}",
-  "@cyclesBeforeLongBreakCount": {"placeholders": {"count": {"type": "int"}}}
+  "@cyclesBeforeLongBreakCount": {"placeholders": {"count": {"type": "int"}}},
+
+  "notifStop": "Stop",
+  "notifSkip": "Skip",
+  "notifDone": "Done"
 }

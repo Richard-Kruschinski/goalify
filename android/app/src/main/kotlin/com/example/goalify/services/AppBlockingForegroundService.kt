@@ -8,6 +8,7 @@ import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.example.goalify.MainActivity
+import com.example.goalify.R
 
 /**
  * ForegroundService to keep the app blocking active during focus sessions
@@ -23,11 +24,26 @@ class AppBlockingForegroundService : Service() {
         const val ACTION_START = "com.example.goalify.ACTION_START_BLOCKING"
         const val ACTION_STOP = "com.example.goalify.ACTION_STOP_BLOCKING"
         const val EXTRA_BLOCKED_APPS = "blocked_apps"
+        private const val EXTRA_TITLE = "notification_title"
+        private const val EXTRA_TEXT = "notification_text"
+        private const val EXTRA_STOP_LABEL = "stop_label"
+
+        /** The blocker's violet from the app. */
+        private const val BLOCKER_COLOR = 0xFF9D86E3.toInt()
         
-        fun startService(context: Context, blockedApps: List<String>) {
+        fun startService(
+            context: Context,
+            blockedApps: List<String>,
+            title: String? = null,
+            text: String? = null,
+            stopLabel: String? = null,
+        ) {
             val intent = Intent(context, AppBlockingForegroundService::class.java).apply {
                 action = ACTION_START
                 putStringArrayListExtra(EXTRA_BLOCKED_APPS, ArrayList(blockedApps))
+                title?.let { putExtra(EXTRA_TITLE, it) }
+                text?.let { putExtra(EXTRA_TEXT, it) }
+                stopLabel?.let { putExtra(EXTRA_STOP_LABEL, it) }
             }
             
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -45,6 +61,11 @@ class AppBlockingForegroundService : Service() {
         }
     }
 
+    // Texts in the app language, sent from Flutter.
+    private var title = "Focus mode active"
+    private var text = "Other apps are blocked"
+    private var stopLabel = "Stop"
+
     override fun onCreate() {
         super.onCreate()
         Log.d(TAG, "Service created")
@@ -55,6 +76,9 @@ class AppBlockingForegroundService : Service() {
         when (intent?.action) {
             ACTION_START -> {
                 val blockedApps = intent.getStringArrayListExtra(EXTRA_BLOCKED_APPS) ?: emptyList()
+                intent.getStringExtra(EXTRA_TITLE)?.let { title = it }
+                intent.getStringExtra(EXTRA_TEXT)?.let { text = it }
+                intent.getStringExtra(EXTRA_STOP_LABEL)?.let { stopLabel = it }
                 startBlocking(blockedApps)
             }
             ACTION_STOP -> {
@@ -129,14 +153,16 @@ class AppBlockingForegroundService : Service() {
         )
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Focus Mode Active")
-            .setContentText("Distracting apps are blocked. Stay focused!")
-            .setSmallIcon(android.R.drawable.ic_lock_idle_lock) // Use system icon, replace with your own
+            .setContentTitle(title)
+            .setContentText(text)
+            .setSmallIcon(R.drawable.ic_notif_shield)
+            .setColor(BLOCKER_COLOR)
+            .setShowWhen(false)
             .setContentIntent(pendingIntent)
             .setOngoing(true)
             .addAction(
                 android.R.drawable.ic_delete,
-                "Stop",
+                stopLabel,
                 stopPendingIntent
             )
             .setPriority(NotificationCompat.PRIORITY_LOW)

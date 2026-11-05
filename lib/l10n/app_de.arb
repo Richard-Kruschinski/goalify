@@ -523,5 +523,9 @@
   "sortExerciseCount": "Anzahl Übungen",
   "sortWorkoutCount": "Anzahl Workouts",
 
-  "cyclesBeforeLongBreakCount": "{count, plural, =1{1 Zyklus bis zur langen Pause} other{{count} Zyklen bis zur langen Pause}}"
+  "cyclesBeforeLongBreakCount": "{count, plural, =1{1 Zyklus bis zur langen Pause} other{{count} Zyklen bis zur langen Pause}}",
+
+  "notifStop": "Stopp",
+  "notifSkip": "Überspringen",
+  "notifDone": "Fertig"
 }

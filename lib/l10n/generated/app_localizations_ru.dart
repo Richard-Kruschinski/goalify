@@ -1776,4 +1776,13 @@ class AppLocalizationsRu extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get notifStop => 'Стоп';
+
+  @override
+  String get notifSkip => 'Пропустить';
+
+  @override
+  String get notifDone => 'Готово';
 }

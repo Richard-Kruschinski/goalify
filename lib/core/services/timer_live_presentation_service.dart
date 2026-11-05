@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import '../models/timer_live_state.dart';
+import '../i18n/current_l10n.dart';
 
 /// Callbacks for a specific timer type registered by its controller.
 class _TimerCallbacks {
@@ -68,7 +69,20 @@ class TimerLivePresentationService {
 
   Future<void> startLiveTimer(TimerLiveState state) async {
     _activeTimerId = state.timerId;
-    await _invoke('startTimer', state.toMap());
+    await _invoke('startTimer', {...state.toMap(), 'labels': _labels()});
+  }
+
+  /// Button and status texts for the notification, in the app language.
+  Map<String, String> _labels() {
+    final l10n = CurrentL10n.of;
+    return {
+      'pause': l10n.pause,
+      'resume': l10n.resume,
+      'stop': l10n.notifStop,
+      'skip': l10n.notifSkip,
+      'paused': l10n.paused,
+      'done': l10n.notifDone,
+    };
   }
 
   Future<void> pauseLiveTimer() async {

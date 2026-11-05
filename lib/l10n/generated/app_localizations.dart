@@ -3111,6 +3111,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 cycle before the long break} other{{count} cycles before the long break}}'**
   String cyclesBeforeLongBreakCount(int count);
+
+  /// No description provided for @notifStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get notifStop;
+
+  /// No description provided for @notifSkip.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get notifSkip;
+
+  /// No description provided for @notifDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get notifDone;
 }
 
 class _AppLocalizationsDelegate

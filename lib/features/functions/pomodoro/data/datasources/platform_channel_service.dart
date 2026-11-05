@@ -1,4 +1,5 @@
 import 'dart:io';
+import '../../../../../core/i18n/current_l10n.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'app_blocking_config.dart';
@@ -32,6 +33,9 @@ class PlatformChannelService {
     try {
       final result = await _channel.invokeMethod('startAppBlocking', {
         if (isAndroid) 'blockedApps': AppBlockingConfig.blockedApps,
+        if (isAndroid) 'notificationTitle': CurrentL10n.of.focusModeActive,
+        if (isAndroid) 'notificationText': CurrentL10n.of.otherAppsBlocked,
+        if (isAndroid) 'stopLabel': CurrentL10n.of.notifStop,
       });
 
       _isBlockingActive = result == true;

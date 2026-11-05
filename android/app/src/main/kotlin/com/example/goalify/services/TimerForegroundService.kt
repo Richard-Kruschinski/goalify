@@ -7,6 +7,7 @@ import android.os.*
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.example.goalify.MainActivity
+import com.example.goalify.R
 import com.example.goalify.receivers.TimerActionReceiver
 
 /**
@@ -48,6 +49,17 @@ class TimerForegroundService : Service() {
         private const val EXTRA_ADDITIONAL_ACTIONS = "additionalActions"
         private const val EXTRA_FINISH_MESSAGE = "message"
 
+        // Button and status texts sent from Flutter in the app language.
+        private val LABEL_KEYS = listOf("pause", "resume", "stop", "skip", "paused", "done")
+        private fun labelExtra(key: String) = "label_$key"
+
+        // Android 16 "Live Updates": promoted ongoing notifications show as a
+        // live chip in the status bar and on the lock screen (Samsung Now Bar).
+        // Extras written directly so this works without a newer androidx.core.
+        private const val EXTRA_REQUEST_PROMOTED_ONGOING = "android.requestPromotedOngoing"
+        private const val EXTRA_SHORT_CRITICAL_TEXT = "android.shortCriticalText"
+        private const val API_BAKLAVA = 36
+
         // PendingIntent request codes
         private const val RC_TAP = 100
         private const val RC_PAUSE = 101
@@ -72,6 +84,10 @@ class TimerForegroundService : Service() {
                     else -> ArrayList()
                 }
                 putStringArrayListExtra(EXTRA_ADDITIONAL_ACTIONS, actions)
+                val labels = data["labels"] as? Map<*, *>
+                for (key in LABEL_KEYS) {
+                    (labels?.get(key) as? String)?.let { putExtra(labelExtra(key), it) }
+                }
             }
             startFg(context, intent)
         }
@@ -131,6 +147,14 @@ class TimerForegroundService : Service() {
     private var currentRound = 0
     private var totalRounds = 0
     private var additionalActions: List<String> = emptyList()
+    private val labels = mutableMapOf(
+        "pause" to "Pause",
+        "resume" to "Resume",
+        "stop" to "Stop",
+        "skip" to "Skip",
+        "paused" to "Paused",
+        "done" to "Done",
+    )
 
     // Countdown tracking
     private var remainingAtStart = 0
@@ -191,6 +215,9 @@ class TimerForegroundService : Service() {
         currentRound = intent.getIntExtra(EXTRA_CURRENT_ROUND, 0)
         totalRounds = intent.getIntExtra(EXTRA_TOTAL_ROUNDS, 0)
         additionalActions = intent.getStringArrayListExtra(EXTRA_ADDITIONAL_ACTIONS) ?: emptyList()
+        for (key in LABEL_KEYS) {
+            intent.getStringExtra(labelExtra(key))?.let { labels[key] = it }
+        }
         remainingAtStart = intent.getIntExtra(EXTRA_REMAINING_SECONDS, 0)
         startEpochMs = System.currentTimeMillis()
         isPaused = false
@@ -241,7 +268,7 @@ class TimerForegroundService : Service() {
 
     private fun handleFinish(intent: Intent?) {
         handler.removeCallbacks(tickRunnable)
-        val message = intent?.getStringExtra(EXTRA_FINISH_MESSAGE) ?: "Timer abgeschlossen"
+        val message = intent?.getStringExtra(EXTRA_FINISH_MESSAGE) ?: ""
         val notification = buildCompletionNotification(message)
         notificationManager.notify(NOTIFICATION_ID, notification)
         // Auto-dismiss after 6 seconds
@@ -276,6 +303,11 @@ class TimerForegroundService : Service() {
     // Notification building
     // ------------------------------------------------------------------
 
+    /**
+     * Built like the system stopwatch: the time is the title, phase and round
+     * sit quietly below it, the timer's name goes into the header next to the
+     * app name, and the small icon carries the tool's color.
+     */
     private fun buildNotification(): Notification {
         val tapIntent = PendingIntent.getActivity(
             this, RC_TAP,
@@ -286,27 +318,44 @@ class TimerForegroundService : Service() {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
-        val contentTitle = buildTitle()
-        val contentText = if (isPaused) {
-            "⏸  ${formatTime(remainingSeconds)} · Pausiert"
-        } else {
-            "▶  ${formatTime(remainingSeconds)} verbleibend"
-        }
-
+        val time = formatTime(remainingSeconds)
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle(contentTitle)
-            .setContentText(contentText)
+            .setContentTitle(time)
+            .setContentText(buildSubtitle())
+            .setSubText(title)
             .setSmallIcon(timerSmallIcon())
+            .setColor(timerColor())
+            .setColorized(false)
             .setContentIntent(tapIntent)
             .setOngoing(true)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setCategory(
+                if (Build.VERSION.SDK_INT >= API_BAKLAVA) "stopwatch"
+                else NotificationCompat.CATEGORY_ALARM
+            )
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setShowWhen(false)
             .setOnlyAlertOnce(true)
 
+        if (Build.VERSION.SDK_INT >= API_BAKLAVA) {
+            builder.extras.putBoolean(EXTRA_REQUEST_PROMOTED_ONGOING, true)
+            builder.extras.putCharSequence(
+                EXTRA_SHORT_CRITICAL_TEXT,
+                if (isPaused) labels["paused"] else time
+            )
+        }
+
         addActionButtons(builder)
         return builder.build()
+    }
+
+    /** "Focus · 1/2", or "Paused · Focus · 1/2" while paused. */
+    private fun buildSubtitle(): String {
+        val parts = mutableListOf<String>()
+        if (isPaused) parts.add(labels["paused"] ?: "")
+        if (currentPhase.isNotEmpty()) parts.add(currentPhase)
+        if (totalRounds > 1 && currentRound > 0) parts.add("$currentRound/$totalRounds")
+        return parts.filter { it.isNotEmpty() }.joinToString(" · ")
     }
 
     private fun buildCompletionNotification(message: String): Notification {
@@ -318,9 +367,11 @@ class TimerForegroundService : Service() {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("✓ $title abgeschlossen")
+            .setContentTitle(labels["done"])
             .setContentText(message)
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setSubText(title)
+            .setSmallIcon(timerSmallIcon())
+            .setColor(timerColor())
             .setContentIntent(tapIntent)
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
@@ -328,32 +379,25 @@ class TimerForegroundService : Service() {
             .build()
     }
 
-    private fun buildTitle(): String {
-        val sb = StringBuilder(title)
-        if (currentPhase.isNotEmpty()) sb.append(" · $currentPhase")
-        if (totalRounds > 1 && currentRound > 0) sb.append(" ($currentRound/$totalRounds)")
-        return sb.toString()
-    }
-
     private fun addActionButtons(builder: NotificationCompat.Builder) {
         if (isPaused) {
             builder.addAction(
-                android.R.drawable.ic_media_play, "Fortsetzen",
+                android.R.drawable.ic_media_play, labels["resume"],
                 actionPendingIntent("resume", RC_RESUME)
             )
         } else {
             builder.addAction(
-                android.R.drawable.ic_media_pause, "Pause",
+                android.R.drawable.ic_media_pause, labels["pause"],
                 actionPendingIntent("pause", RC_PAUSE)
             )
         }
         builder.addAction(
-            android.R.drawable.ic_menu_close_clear_cancel, "Stop",
+            android.R.drawable.ic_menu_close_clear_cancel, labels["stop"],
             actionPendingIntent("stop", RC_STOP)
         )
         if (additionalActions.contains("skip")) {
             builder.addAction(
-                android.R.drawable.ic_media_next, "Überspringen",
+                android.R.drawable.ic_media_next, labels["skip"],
                 actionPendingIntent("skip", RC_SKIP)
             )
         }
@@ -369,9 +413,16 @@ class TimerForegroundService : Service() {
         )
 
     private fun timerSmallIcon(): Int = when (timerType) {
-        "music" -> android.R.drawable.ic_media_play
-        "pomodoro" -> android.R.drawable.ic_lock_idle_alarm
-        else -> android.R.drawable.ic_dialog_info
+        "music" -> R.drawable.ic_notif_music
+        "interval" -> R.drawable.ic_notif_interval
+        else -> R.drawable.ic_notif_timer
+    }
+
+    /** The tool hues from the app: tomato, amber, green. */
+    private fun timerColor(): Int = when (timerType) {
+        "music" -> 0xFFD9A045.toInt()
+        "interval" -> 0xFF5BB57A.toInt()
+        else -> 0xFFE5534B.toInt()
     }
 
     private fun formatTime(seconds: Int): String {

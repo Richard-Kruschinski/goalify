@@ -523,5 +523,9 @@
   "sortExerciseCount": "Количество упражнений",
   "sortWorkoutCount": "Количество тренировок",
 
-  "cyclesBeforeLongBreakCount": "{count, plural, one{{count} цикл до длинного перерыва} few{{count} цикла до длинного перерыва} many{{count} циклов до длинного перерыва} other{{count} цикла до длинного перерыва}}"
+  "cyclesBeforeLongBreakCount": "{count, plural, one{{count} цикл до длинного перерыва} few{{count} цикла до длинного перерыва} many{{count} циклов до длинного перерыва} other{{count} цикла до длинного перерыва}}",
+
+  "notifStop": "Стоп",
+  "notifSkip": "Пропустить",
+  "notifDone": "Готово"
 }

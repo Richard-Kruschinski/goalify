@@ -1770,4 +1770,13 @@ class AppLocalizationsDe extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get notifStop => 'Stopp';
+
+  @override
+  String get notifSkip => 'Überspringen';
+
+  @override
+  String get notifDone => 'Fertig';
 }

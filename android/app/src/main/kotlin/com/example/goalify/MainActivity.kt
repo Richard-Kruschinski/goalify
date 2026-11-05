@@ -73,7 +73,13 @@ class MainActivity : FlutterActivity() {
                                     return@setMethodCallHandler
                                 }
                             }
-                            AppBlockingForegroundService.startService(this, blockedApps)
+                            AppBlockingForegroundService.startService(
+                                this,
+                                blockedApps,
+                                title = call.argument<String>("notificationTitle"),
+                                text = call.argument<String>("notificationText"),
+                                stopLabel = call.argument<String>("stopLabel"),
+                            )
                             result.success(true)
                         } catch (e: Exception) {
                             result.error("START_ERROR", e.message, null)
