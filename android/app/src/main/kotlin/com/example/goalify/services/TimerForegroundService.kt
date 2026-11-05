@@ -55,9 +55,8 @@ class TimerForegroundService : Service() {
 
         // Android 16 "Live Updates": promoted ongoing notifications show as a
         // live chip in the status bar and on the lock screen (Samsung Now Bar).
-        // Extras written directly so this works without a newer androidx.core.
+        // Requested in promoteToLiveUpdate().
         private const val EXTRA_REQUEST_PROMOTED_ONGOING = "android.requestPromotedOngoing"
-        private const val EXTRA_SHORT_CRITICAL_TEXT = "android.shortCriticalText"
         private const val API_BAKLAVA = 36
 
         // PendingIntent request codes
@@ -337,17 +336,40 @@ class TimerForegroundService : Service() {
             .setShowWhen(false)
             .setOnlyAlertOnce(true)
 
-        if (Build.VERSION.SDK_INT >= API_BAKLAVA) {
-            builder.extras.putBoolean(EXTRA_REQUEST_PROMOTED_ONGOING, true)
-            builder.extras.putCharSequence(
-                EXTRA_SHORT_CRITICAL_TEXT,
-                if (isPaused) labels["paused"] else time
+        addActionButtons(builder)
+        val notification = builder.build()
+        if (Build.VERSION.SDK_INT < API_BAKLAVA) return notification
+        return promoteToLiveUpdate(notification, if (isPaused) labels["paused"] ?: time else time)
+    }
+
+    /**
+     * Android 16 Live Update: the system shows a promoted ongoing notification
+     * as a live chip in the status bar and on the lock screen (Samsung's Now
+     * Bar on One UI 8). Uses the platform builder, since this androidx.core
+     * version has no setters for it.
+     *
+     * The request flag is the extra behind Notification.Builder
+     * .setRequestPromotedOngoing(); that setter only exists from API 36.1,
+     * while the project compiles against 36, so the extra is set directly.
+     */
+    @androidx.annotation.RequiresApi(API_BAKLAVA)
+    private fun promoteToLiveUpdate(notification: Notification, chipText: String): Notification {
+        val builder = Notification.Builder.recoverBuilder(this, notification)
+            .setShortCriticalText(chipText)
+        builder.extras.putBoolean(EXTRA_REQUEST_PROMOTED_ONGOING, true)
+        val promoted = builder.build()
+        if (!loggedPromotionState) {
+            loggedPromotionState = true
+            Log.d(
+                TAG,
+                "Live Update: canPost=${notificationManager.canPostPromotedNotifications()} " +
+                    "promotable=${promoted.hasPromotableCharacteristics()}"
             )
         }
-
-        addActionButtons(builder)
-        return builder.build()
+        return promoted
     }
+
+    private var loggedPromotionState = false
 
     /** "Focus · 1/2", or "Paused · Focus · 1/2" while paused. */
     private fun buildSubtitle(): String {
