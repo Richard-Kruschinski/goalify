@@ -515,7 +515,6 @@
 
   "checklistShowDone": "Выполнено: {count}",
   "checklistMore": "Ещё {count}",
-  "checklistCollapse": "Свернуть",
 
   "sortList": "Сортировка",
   "sortRecent": "Последняя тренировка",

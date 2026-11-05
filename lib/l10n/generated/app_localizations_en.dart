@@ -1722,9 +1722,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get checklistCollapse => 'Collapse';
-
-  @override
   String get sortList => 'Sort';
 
   @override

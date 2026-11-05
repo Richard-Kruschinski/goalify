@@ -662,7 +662,6 @@
   "@checklistShowDone": {"placeholders":{"count":{"type":"int"}}},
   "checklistMore": "{count} more",
   "@checklistMore": {"placeholders":{"count":{"type":"int"}}},
-  "checklistCollapse": "Collapse",
 
   "sortList": "Sort",
   "sortRecent": "Last trained",

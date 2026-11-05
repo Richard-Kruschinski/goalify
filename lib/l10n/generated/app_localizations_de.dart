@@ -1743,9 +1743,6 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get checklistCollapse => 'Zuklappen';
-
-  @override
   String get sortList => 'Sortieren';
 
   @override

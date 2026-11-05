@@ -1747,9 +1747,6 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get checklistCollapse => 'Свернуть';
-
-  @override
   String get sortList => 'Сортировка';
 
   @override

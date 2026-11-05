@@ -3070,12 +3070,6 @@ abstract class AppLocalizations {
   /// **'{count} more'**
   String checklistMore(int count);
 
-  /// No description provided for @checklistCollapse.
-  ///
-  /// In en, this message translates to:
-  /// **'Collapse'**
-  String get checklistCollapse;
-
   /// No description provided for @sortList.
   ///
   /// In en, this message translates to:

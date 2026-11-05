@@ -2700,7 +2700,6 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
             ),
           ),
         ),
-        if (expanded) ..._buildChecklistRows(task, dateKey),
       ],
     );
   }
@@ -2755,29 +2754,25 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
       for (final item in visibleOpen) _buildChecklistRow(task, item, dateKey),
       if (showDone)
         for (final item in done) _buildChecklistRow(task, item, dateKey),
-      Row(
-        children: [
-          if (hiddenOpen > 0)
-            footerLink(
-              l10n.checklistMore(hiddenOpen),
-              Icons.expand_more,
-              () => toggle(_checklistShowAll),
-            ),
-          if (hiddenOpen > 0 && done.isNotEmpty) const SizedBox(width: 16),
-          if (done.isNotEmpty)
-            footerLink(
-              l10n.checklistShowDone(done.length),
-              showDone ? Icons.expand_less : Icons.expand_more,
-              () => toggle(_checklistShowDone),
-            ),
-          const Spacer(),
-          footerLink(
-            l10n.checklistCollapse,
-            Icons.expand_less,
-            () => setState(() => _expandedChecklists.remove(task.id)),
-          ),
-        ],
-      ),
+      // Collapsing happens with the arrow on the progress strip above.
+      if (hiddenOpen > 0 || done.isNotEmpty)
+        Row(
+          children: [
+            if (hiddenOpen > 0)
+              footerLink(
+                l10n.checklistMore(hiddenOpen),
+                Icons.expand_more,
+                () => toggle(_checklistShowAll),
+              ),
+            if (hiddenOpen > 0 && done.isNotEmpty) const SizedBox(width: 16),
+            if (done.isNotEmpty)
+              footerLink(
+                l10n.checklistShowDone(done.length),
+                showDone ? Icons.expand_less : Icons.expand_more,
+                () => toggle(_checklistShowDone),
+              ),
+          ],
+        ),
     ];
   }
 
@@ -2791,12 +2786,16 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
       key: ObjectKey(item),
       behavior: HitTestBehavior.opaque,
       onTap: () => _toggleChecklistItem(task, item, dateKey),
-      child: SizedBox(
-        height: 32,
+      // Long steps wrap instead of being cut off; the circle stays on the
+      // first line.
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             AnimatedContainer(
               duration: const Duration(milliseconds: 150),
+              margin: const EdgeInsets.only(top: 1),
               width: 18,
               height: 18,
               decoration: BoxDecoration(
@@ -2815,10 +2814,9 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
             Expanded(
               child: Text(
                 item.text,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontSize: 14,
+                  height: 1.4,
                   color: item.done
                       ? AppColors.faint(context)
                       : AppColors.ink(context),
@@ -2861,7 +2859,10 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
           onLongPress: () => _openTaskActions(task, index, dateKey),
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+            Row(
               children: [
                 // Drag Handle (only for today/future dates and manual sort)
                 if (!isPastDate && _sortMode == TaskSortMode.manual) ...[
@@ -3051,6 +3052,18 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                       ? const Icon(Icons.check, size: 18, color: Colors.white)
                       : null,
                 ),
+              ],
+            ),
+            // Unfolded steps use the full card width so long ones stay
+            // readable instead of being squeezed beside the icon.
+            if (task.hasChecklist && _expandedChecklists.contains(task.id))
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: _buildChecklistRows(task, dateKey),
+                ),
+              ),
               ],
             ),
           ),

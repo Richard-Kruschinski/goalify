@@ -150,9 +150,10 @@ class _ChecklistEditorState extends State<ChecklistEditor> {
   }
 
   Widget _row(BuildContext context, TaskChecklistItem item, int index) {
+    // Long steps wrap over several lines instead of being cut off.
     return Container(
       key: ObjectKey(item),
-      height: 44,
+      constraints: const BoxConstraints(minHeight: 44),
       decoration: BoxDecoration(
         border: index == 0
             ? null
@@ -169,11 +170,16 @@ class _ChecklistEditorState extends State<ChecklistEditor> {
             ),
           ),
           Expanded(
-            child: Text(
-              item.text,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 15, color: AppColors.ink(context)),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Text(
+                item.text,
+                style: TextStyle(
+                  fontSize: 15,
+                  height: 1.4,
+                  color: AppColors.ink(context),
+                ),
+              ),
             ),
           ),
           IconButton(
