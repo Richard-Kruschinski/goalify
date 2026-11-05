@@ -219,13 +219,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get workoutsLabel => 'Workouts';
 
   @override
-  String get congratsTitle => 'CONGRATS!';
+  String get congratsTitle => 'Day done';
 
   @override
   String get congratsSubtitle => 'You finished all tasks for today';
 
   @override
-  String get congratsMessage => 'Well done — keep up the streaks!';
+  String get congratsMessage => 'Nicely done, your streaks keep going';
 
   @override
   String get showProgress => 'Show progress';

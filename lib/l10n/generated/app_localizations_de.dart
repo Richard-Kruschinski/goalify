@@ -222,13 +222,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get workoutsLabel => 'Workouts';
 
   @override
-  String get congratsTitle => 'GLÜCKWUNSCH!';
+  String get congratsTitle => 'Tag geschafft';
 
   @override
   String get congratsSubtitle => 'Du hast alle Aufgaben für heute erledigt';
 
   @override
-  String get congratsMessage => 'Stark – halte deine Streaks am Laufen!';
+  String get congratsMessage => 'Stark gemacht, deine Streaks laufen weiter';
 
   @override
   String get showProgress => 'Fortschritt anzeigen';

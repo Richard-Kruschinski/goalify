@@ -75,9 +75,9 @@
   "tasksDone": "Выполнено задач",
   "workoutsLabel": "Тренировки",
 
-  "congratsTitle": "ПОЗДРАВЛЯЕМ!",
+  "congratsTitle": "День завершён",
   "congratsSubtitle": "Вы выполнили все задачи на сегодня",
-  "congratsMessage": "Отлично — продолжайте в том же духе!",
+  "congratsMessage": "Отлично, ваши серии продолжаются",
   "showProgress": "Показать прогресс",
 
   "todayTitle": "Сегодня",

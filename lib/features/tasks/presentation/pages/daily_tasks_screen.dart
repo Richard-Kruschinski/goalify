@@ -1087,8 +1087,10 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
       PageRouteBuilder(
         opaque: false,
         barrierDismissible: true,
-        barrierColor: AppColors.muted(context),
+        // The screen dims the page itself; a grey barrier would wash out the colors.
+        barrierColor: Colors.transparent,
         pageBuilder: (_, _, _) => CongratsScreen(
+          tasksDone: all.length,
           onSeeProgress: () {
             widget.onNavigateToTab?.call(0);
           },

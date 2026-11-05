@@ -493,7 +493,7 @@ abstract class AppLocalizations {
   /// No description provided for @congratsTitle.
   ///
   /// In en, this message translates to:
-  /// **'CONGRATS!'**
+  /// **'Day done'**
   String get congratsTitle;
 
   /// No description provided for @congratsSubtitle.
@@ -505,7 +505,7 @@ abstract class AppLocalizations {
   /// No description provided for @congratsMessage.
   ///
   /// In en, this message translates to:
-  /// **'Well done — keep up the streaks!'**
+  /// **'Nicely done, your streaks keep going'**
   String get congratsMessage;
 
   /// No description provided for @showProgress.

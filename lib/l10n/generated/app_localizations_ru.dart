@@ -223,13 +223,13 @@ class AppLocalizationsRu extends AppLocalizations {
   String get workoutsLabel => 'Тренировки';
 
   @override
-  String get congratsTitle => 'ПОЗДРАВЛЯЕМ!';
+  String get congratsTitle => 'День завершён';
 
   @override
   String get congratsSubtitle => 'Вы выполнили все задачи на сегодня';
 
   @override
-  String get congratsMessage => 'Отлично — продолжайте в том же духе!';
+  String get congratsMessage => 'Отлично, ваши серии продолжаются';
 
   @override
   String get showProgress => 'Показать прогресс';

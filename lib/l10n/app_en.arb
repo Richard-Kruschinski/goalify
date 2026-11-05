@@ -106,9 +106,9 @@
   "tasksDone": "Tasks done",
   "workoutsLabel": "Workouts",
 
-  "congratsTitle": "CONGRATS!",
+  "congratsTitle": "Day done",
   "congratsSubtitle": "You finished all tasks for today",
-  "congratsMessage": "Well done — keep up the streaks!",
+  "congratsMessage": "Nicely done, your streaks keep going",
   "showProgress": "Show progress",
 
   "todayTitle": "Today",

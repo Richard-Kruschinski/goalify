@@ -75,9 +75,9 @@
   "tasksDone": "Erledigte Aufgaben",
   "workoutsLabel": "Workouts",
 
-  "congratsTitle": "GLÜCKWUNSCH!",
+  "congratsTitle": "Tag geschafft",
   "congratsSubtitle": "Du hast alle Aufgaben für heute erledigt",
-  "congratsMessage": "Stark – halte deine Streaks am Laufen!",
+  "congratsMessage": "Stark gemacht, deine Streaks laufen weiter",
   "showProgress": "Fortschritt anzeigen",
 
   "todayTitle": "Heute",
