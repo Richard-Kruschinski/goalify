@@ -1,6 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 import '../../../../../l10n/generated/app_localizations.dart';
 import '../../../../../core/theme/app_colors.dart';
+import '../../../../../core/theme/tool_hue.dart';
 import 'package:provider/provider.dart';
 import '../controllers/music_timer_controller.dart';
 
@@ -68,7 +69,7 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
   Widget _buildTimerCard(MusicTimerController controller) {
     final isRunning = controller.isRunning;
     final l10n = AppLocalizations.of(context);
-    final accent = AppColors.accent(context);
+    final accent = ToolHue.music.of(context);
 
     return Container(
       decoration: _cardDecoration(
@@ -81,13 +82,13 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
             width: 72,
             height: 72,
             decoration: BoxDecoration(
-              color: isRunning ? AppColors.accentSoft(context) : AppColors.chip(context),
+              color: isRunning ? accent : ToolHue.music.soft(context),
               shape: BoxShape.circle,
             ),
             child: Icon(
               isRunning ? Icons.music_note : Icons.music_note_outlined,
               size: 36,
-              color: isRunning ? accent : AppColors.inkSoft(context),
+              color: isRunning ? ToolHue.music.onFill(context) : accent,
             ),
           ),
           const SizedBox(height: 16),
@@ -111,7 +112,7 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
               width: double.infinity,
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: AppColors.chip(context),
+                color: ToolHue.music.soft(context),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Column(
@@ -175,7 +176,7 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
               decoration: BoxDecoration(
-                color: AppColors.chip(context),
+                color: ToolHue.music.soft(context),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Column(
@@ -185,7 +186,7 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
                     style: TextStyle(
                       fontSize: 72,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.ink(context),
+                      color: accent,
                       fontFeatures: const [FontFeature.tabularFigures()],
                       height: 1,
                     ),
@@ -226,7 +227,7 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: accent,
-                  foregroundColor: Colors.white,
+                  foregroundColor: ToolHue.music.onFill(context),
                   elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
@@ -273,10 +274,10 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: AppColors.chip(context),
+            color: ToolHue.music.soft(context),
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(icon, color: AppColors.inkSoft(context), size: 18),
+          child: Icon(icon, color: ToolHue.music.of(context), size: 18),
         ),
         const SizedBox(width: 12),
         Text(
@@ -292,7 +293,7 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
   }
 
   Widget _buildPresetsCard() {
-    final accent = AppColors.accent(context);
+    final accent = ToolHue.music.of(context);
     return Container(
       decoration: _cardDecoration(),
       padding: const EdgeInsets.all(20),
@@ -316,7 +317,7 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
                   duration: const Duration(milliseconds: 150),
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   decoration: BoxDecoration(
-                    color: isSelected ? AppColors.accentSoft(context) : AppColors.chip(context),
+                    color: isSelected ? ToolHue.music.soft(context) : AppColors.chip(context),
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
                       color: isSelected ? accent.withValues(alpha: 0.5) : Colors.transparent,
@@ -366,7 +367,7 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
             ),
             child: Row(
               children: [
-                Icon(Icons.music_note, color: AppColors.muted(context), size: 18),
+                Icon(Icons.music_note, color: ToolHue.music.of(context), size: 18),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
