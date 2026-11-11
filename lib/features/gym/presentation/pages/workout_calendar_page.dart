@@ -12,6 +12,7 @@ class WorkoutCalendarPage extends StatefulWidget {
   final Map<String, Set<String>> calendarByDate;
   final Map<String, int> dayColors;
   final Widget Function(String day, Color color) dayIconBuilder;
+  final void Function(String day) onOpenDay;
   final bool Function(DateTime date) isCreatineTaken;
   final Future<void> Function(DateTime date, bool value) onToggleCreatine;
   const WorkoutCalendarPage({
@@ -19,6 +20,7 @@ class WorkoutCalendarPage extends StatefulWidget {
     required this.calendarByDate,
     required this.dayColors,
     required this.dayIconBuilder,
+    required this.onOpenDay,
     required this.isCreatineTaken,
     required this.onToggleCreatine,
   });
@@ -387,7 +389,7 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (_) {
+      builder: (sheetContext) {
         final dateLabel = MaterialLocalizations.of(context).formatFullDate(date);
         bool tookCreatine = widget.isCreatineTaken(date);
 
@@ -468,24 +470,34 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
                                   borderRadius: BorderRadius.circular(12),
                                   boxShadow: AppColors.cardShadow(context),
                                 ),
-                                child: ListTile(
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                                  leading: Container(
-                                    width: 44,
-                                    height: 44,
-                                    decoration: BoxDecoration(
-                                      color: (widget.dayColors[n] != null)
-                                          ? Color(widget.dayColors[n]!)
-                                          : _fallbackColor(n),
-                                      borderRadius: BorderRadius.circular(10),
+                                child: Material(
+                                  type: MaterialType.transparency,
+                                  child: ListTile(
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
                                     ),
-                                    child: widget.dayIconBuilder(n, Colors.white),
-                                  ),
-                                  title: Text(
-                                    n,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 15,
+                                    onTap: () {
+                                      Navigator.of(sheetContext).pop();
+                                      widget.onOpenDay(n);
+                                    },
+                                    leading: Container(
+                                      width: 44,
+                                      height: 44,
+                                      decoration: BoxDecoration(
+                                        color: (widget.dayColors[n] != null)
+                                            ? Color(widget.dayColors[n]!)
+                                            : _fallbackColor(n),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: widget.dayIconBuilder(n, Colors.white),
+                                    ),
+                                    title: Text(
+                                      n,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 15,
+                                      ),
                                     ),
                                   ),
                                 ),

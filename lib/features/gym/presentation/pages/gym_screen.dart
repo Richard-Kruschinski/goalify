@@ -3779,6 +3779,7 @@ class _GymScreenState extends State<GymScreen> {
                               _IconOwner.day,
                               color: color,
                             ),
+                            onOpenDay: _openDayDetail,
                             isCreatineTaken: _isCreatineTakenOn,
                             onToggleCreatine: _setCreatineTaken,
                           ),
