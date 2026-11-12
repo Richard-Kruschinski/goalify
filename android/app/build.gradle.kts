@@ -8,7 +8,8 @@ plugins {
 
 android {
     namespace = "com.example.goalify"
-    compileSdk = flutter.compileSdkVersion
+    // permission_handler 13 verlangt mindestens 37, Flutter gibt noch 36 vor
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
