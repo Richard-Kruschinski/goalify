@@ -4,6 +4,7 @@ import '../../../../core/i18n/task_labels.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/models/gym_models.dart';
 import '../widgets/weight_settings_tile.dart';
+import '../widgets/exercise_icon.dart';
 
 // ===============================================================
 // DayDetailScreen mit Checkbox oben rechts („heute erledigt“)
@@ -346,10 +347,7 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
                   child: w.iconPath != null
                       ? Padding( // Exercise Icon as Image
                           padding: const EdgeInsets.all(5.0),
-                          child: Image.asset(
-                            w.iconPath!,
-                            fit: BoxFit.contain,
-                          ),
+                          child: ExerciseIcon(w.iconPath!, fit: BoxFit.contain),
                         )
                       : Icon(w.icon ?? Icons.fitness_center, color: AppColors.accent(context), size: 24),
                 ),

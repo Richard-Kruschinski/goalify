@@ -174,6 +174,10 @@
       "name": "Beinpresse",
       "description": "Unterkörper-Übung, bei der du eine gewichtete Plattform mit den Beinen wegdrückst. Vorteil: bietet Stabilität und erlaubt kontrolliertes Beintraining. Wichtig: die Knie nicht nach innen fallen lassen und oben nicht komplett durchstrecken, um Spannung auf der Muskulatur zu halten und die Gelenke zu schonen."
     },
+    "low_to_high_cable_fly": {
+      "name": "Low-to-High Cable Fly",
+      "description": "Fly am Kabelturm mit beiden Rollen ganz unten. Greife die D-Griffe und ziehe sie in einem weiten Bogen von der Hüfte schräg nach oben vor die Brust. Trainiert primär die obere Brustmuskulatur."
+    },
     "neck_curls": {
       "name": "Nacken-Curls",
       "description": "Halsbeugung gegen Widerstand. Bewegung kontrolliert halten, nicht ruckartig arbeiten."

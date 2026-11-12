@@ -30,6 +30,7 @@ import '../widgets/color_picker_grid.dart';
 import '../widgets/weight_settings_tile.dart';
 import '../gym_sort.dart';
 import '../../../../core/widgets/sort_menu_button.dart';
+import '../widgets/exercise_icon.dart';
 
 enum ViewMode { byExercise, byDay, bySplit }
 
@@ -4125,10 +4126,7 @@ class _GymScreenState extends State<GymScreen> {
                       : w.iconPath != null
                           ? ClipRRect(
                               borderRadius: BorderRadius.circular(8),
-                              child: Image.asset(
-                                w.iconPath!,
-                                fit: BoxFit.cover,
-                              ),
+                              child: ExerciseIcon(w.iconPath!, fit: BoxFit.cover),
                             )
                           : Icon(
                               Icons.fitness_center,

@@ -3,7 +3,7 @@
         "id":  "adduction_machine",
         "name":  "Adduction Machine",
         "description":  "Hip adduction machine focusing on inner thigh (adductors).",
-        "icon":  "assets/images/exercises/adduction_machine.png",
+        "icon":  "assets/images/exercises/adduction_machine.svg",
         "muscles":  [
                         "Adductors"
                     ]
@@ -13,7 +13,7 @@
         "barWeightKg":  20,
         "name":  "Bench Press",
         "description":  "Classic barbell chest exercise. Focus on chest, triceps, and front shoulders.",
-        "icon":  "assets/images/exercises/benchpress.png",
+        "icon":  "assets/images/exercises/benchpress.svg",
         "muscles":  [
                         "Chest",
                         "Triceps",
@@ -24,7 +24,7 @@
         "id":  "bench_press_dumbbell",
         "name":  "Bench Press (Dumbbell)",
         "description":  "Bench press using dumbbells. Promotes balanced chest activation and stability.",
-        "icon":  "assets/images/exercises/bench_press_dumbbell.png",
+        "icon":  "assets/images/exercises/bench_press_dumbbell.svg",
         "muscles":  [
                         "Chest",
                         "Triceps",
@@ -36,7 +36,7 @@
         "barWeightKg":  20,
         "name":  "Bench Press (Smith Machine)",
         "description":  "Smith machine bench press with a guided bar path for chest, triceps, and shoulders.",
-        "icon":  "assets/images/exercises/bench_press_smith_machine.png",
+        "icon":  "assets/images/exercises/bench_press_smith_machine.svg",
         "muscles":  [
                         "Chest",
                         "Triceps",
@@ -47,7 +47,7 @@
         "id":  "biceps_curl_cable",
         "name":  "Biceps Curl (Cable)",
         "description":  "Standing cable curl for constant tension on the biceps throughout the range of motion.",
-        "icon":  "assets/images/exercises/biceps_curl_cable.png",
+        "icon":  "assets/images/exercises/biceps_curl_cable.svg",
         "muscles":  [
                         "Biceps"
                     ]
@@ -56,7 +56,7 @@
         "id":  "biceps_curl_dumbbell",
         "name":  "Biceps Curl (Dumbbell)",
         "description":  "Classic dumbbell curl for biceps development.",
-        "icon":  "assets/images/exercises/biceps_curl_dumbbell.png",
+        "icon":  "assets/images/exercises/biceps_curl_dumbbell.svg",
         "muscles":  [
                         "Biceps"
                     ]
@@ -65,7 +65,7 @@
         "id":  "box_jumps",
         "name":  "Box Jumps",
         "description":  "It is a lower body plyometric exercise in which you explosively jump onto an elevated platform. The advantage is that it improves power, speed, and coordination. Important: land softly with bent knees and control the movement, rather than jumping down recklessly, to reduce impact and risk of injury.",
-        "icon":  "assets/images/exercises/box_jumps.png",
+        "icon":  "assets/images/exercises/box_jumps.svg",
         "muscles":  [
                         "Quads",
                         "Glutes",
@@ -76,7 +76,7 @@
         "id":  "bulgarian_split_squat",
         "name":  "Bulgarian Split Squat",
         "description":  "It is a lower body exercise in which you perform a squat with one leg elevated behind you. The advantage is that each leg works independently, improving balance and correcting muscle imbalances. Important: keep your front knee stable and track it over your toes, while lowering yourself straight down to effectively target the glutes and quadriceps.",
-        "icon":  "assets/images/exercises/bulgarian_split_squat.png",
+        "icon":  "assets/images/exercises/bulgarian_split_squat.svg",
         "muscles":  [
                         "Quads",
                         "Glutes"
@@ -86,7 +86,7 @@
         "id":  "butterfly_cables",
         "name":  "Butterfly (Cables)",
         "description":  "Cable fly (standing or lying) for chest isolation.",
-        "icon":  "assets/images/exercises/butterfly_cables.png",
+        "icon":  "assets/images/exercises/butterfly_cables.svg",
         "muscles":  [
                         "Chest"
                     ]
@@ -95,7 +95,7 @@
         "id":  "butterfly_machine",
         "name":  "Butterfly (Machine)",
         "description":  "Pec deck machine fly for chest isolation.",
-        "icon":  "assets/images/exercises/butterfly_machine.png",
+        "icon":  "assets/images/exercises/butterfly_machine.svg",
         "muscles":  [
                         "Chest"
                     ]
@@ -104,7 +104,7 @@
         "id":  "cable_cross",
         "name":  "Cable Cross",
         "description":  "Cable exercise for chest definition. Adjustable angles for variation.",
-        "icon":  "assets/images/exercises/cabel_cross.png",
+        "icon":  "assets/images/exercises/cabel_cross.svg",
         "muscles":  [
                         "Chest"
                     ]
@@ -113,7 +113,7 @@
         "id":  "cable_rotation",
         "name":  "Cable Rotation",
         "description":  "Standing cable trunk rotation. Focus on obliques and overall core control.",
-        "icon":  "assets/images/exercises/cable_rotation.png",
+        "icon":  "assets/images/exercises/cable_rotation.svg",
         "muscles":  [
                         "Obliques",
                         "Core"
@@ -123,7 +123,7 @@
         "id":  "calf_raise_seated",
         "name":  "Calf Raises (Seated)",
         "description":  "Seated calf raise. Focus on the soleus muscle.",
-        "icon":  "assets/images/exercises/calf_raise_seated.png",
+        "icon":  "assets/images/exercises/calf_raise_seated.svg",
         "muscles":  [
                         "Calves (Soleus)"
                     ]
@@ -132,7 +132,7 @@
         "id":  "calf_raise_machine",
         "name":  "Calf Raises (Standing Machine)",
         "description":  "Standing calf raises at the machine. Focus on the gastrocnemius.",
-        "icon":  "assets/images/exercises/calf_raise_machine.png",
+        "icon":  "assets/images/exercises/calf_raise_machine.svg",
         "muscles":  [
                         "Calves (Gastrocnemius)"
                     ]
@@ -142,7 +142,7 @@
         "barWeightKg":  20,
         "name":  "Close-Grip Bench Press",
         "description":  "Narrow-grip barbell bench press variation that shifts more load to the triceps while still training chest and front shoulders.",
-        "icon":  "assets/images/exercises/benchpress.png",
+        "icon":  "assets/images/exercises/benchpress.svg",
         "muscles":  [
                         "Triceps",
                         "Chest",
@@ -153,7 +153,7 @@
         "id":  "concentration_curls",
         "name":  "Concentration Curls",
         "description":  "One-arm biceps curl. Focuses on peak contraction and isolation.",
-        "icon":  "assets/images/exercises/concentration_curls.png",
+        "icon":  "assets/images/exercises/concentration_curls.svg",
         "muscles":  [
                         "Biceps"
                     ]
@@ -162,7 +162,7 @@
         "id":  "crunches_cable",
         "name":  "Crunches (Cable)",
         "description":  "Kneeling cable crunch for weighted ab work.",
-        "icon":  "assets/images/exercises/crunches_cable.png",
+        "icon":  "assets/images/exercises/crunches_cable.svg",
         "muscles":  [
                         "Abs"
                     ]
@@ -181,7 +181,7 @@
         "barWeightKg":  20,
         "name":  "Deadlift",
         "description":  "Fundamental back and leg exercise. Keep bar close and spine neutral.",
-        "icon":  "assets/images/exercises/deadlift.png",
+        "icon":  "assets/images/exercises/deadlift.svg",
         "muscles":  [
                         "Hamstrings",
                         "Glutes",
@@ -193,7 +193,7 @@
         "id":  "dips",
         "name":  "Dips",
         "description":  "Bodyweight or assisted dips for chest and triceps.",
-        "icon":  "assets/images/exercises/dips.png",
+        "icon":  "assets/images/exercises/dips.svg",
         "muscles":  [
                         "Triceps",
                         "Chest",
@@ -214,7 +214,7 @@
         "id":  "hammer_curls",
         "name":  "Hammer Curls",
         "description":  "Biceps exercise with neutral grip. Targets the brachialis.",
-        "icon":  "assets/images/exercises/hammer_curls.png",
+        "icon":  "assets/images/exercises/hammer_curls.svg",
         "muscles":  [
                         "Biceps",
                         "Forearms"
@@ -224,7 +224,7 @@
         "id":  "hex_squat",
         "name":  "Hex Squat",
         "description":  "Machine-guided squat variation. Focuses on quadriceps activation.",
-        "icon":  "assets/images/exercises/hex_squat.png",
+        "icon":  "assets/images/exercises/hex_squat.svg",
         "muscles":  [
                         "Quads",
                         "Glutes"
@@ -235,7 +235,7 @@
         "barWeightKg":  20,
         "name":  "Incline Bench Press",
         "description":  "Performed on an incline bench. Emphasizes upper chest and shoulders.",
-        "icon":  "assets/images/exercises/incline_bench_press.png",
+        "icon":  "assets/images/exercises/incline_bench_press.svg",
         "muscles":  [
                         "Upper Chest",
                         "Shoulders",
@@ -246,7 +246,7 @@
         "id":  "incline_bench_press_dumbbell",
         "name":  "Incline Bench Press (Dumbbell)",
         "description":  "Variation with dumbbells for greater range of motion and stabilization.",
-        "icon":  "assets/images/exercises/incline_bench_press_dumbbell.png",
+        "icon":  "assets/images/exercises/incline_bench_press_dumbbell.svg",
         "muscles":  [
                         "Upper Chest",
                         "Shoulders",
@@ -258,7 +258,7 @@
         "barWeightKg":  20,
         "name":  "Incline Bench Press (Smith Machine)",
         "description":  "Smith machine incline bench press emphasizing upper chest and shoulders.",
-        "icon":  "assets/images/exercises/incline_bench_press_smith_machine.png",
+        "icon":  "assets/images/exercises/incline_bench_press_smith_machine.svg",
         "muscles":  [
                         "Upper Chest",
                         "Shoulders",
@@ -269,7 +269,7 @@
         "id":  "lat_pulldown",
         "name":  "Lat Pulldown",
         "description":  "Pull-down movement targeting the lats. Grip variations shift muscle focus.",
-        "icon":  "assets/images/exercises/lat_pulldown.png",
+        "icon":  "assets/images/exercises/lat_pulldown.svg",
         "muscles":  [
                         "Back",
                         "Lats",
@@ -280,7 +280,7 @@
         "id":  "lat_pulldown_reverse_grip",
         "name":  "Lat Pulldown (Reverse Grip)",
         "description":  "It is an upper body back exercise in which you pull a bar downward using an underhand (reverse) grip. The advantage is that this grip increases biceps involvement and can allow a stronger, more controlled pull. Important: the bar is not pulled behind the neck, but down toward the upper chest while keeping the torso stable to optimally activate the latissimus.",
-        "icon":  "assets/images/exercises/lat_pulldown_reverse_grip.png",
+        "icon":  "assets/images/exercises/lat_pulldown_reverse_grip.svg",
         "muscles":  [
                         "Back",
                         "Lats",
@@ -291,7 +291,7 @@
         "id":  "lateral_neck_flexion",
         "name":  "Lateral Neck Flexion",
         "description":  "Side-to-side neck flexion. Use light resistance and slow tempo.",
-        "icon":  "assets/images/exercises/lateral_neck_flexion.png",
+        "icon":  "assets/images/exercises/lateral_neck_flexion.svg",
         "muscles":  [
                         "Neck (Lateral Flexors: SCM, Scalenes)"
                     ]
@@ -300,7 +300,7 @@
         "id":  "lateral_raise_dumbbell",
         "name":  "Lateral Raise (Dumbbell)",
         "description":  "Classic shoulder exercise with dumbbells for lateral delts.",
-        "icon":  "assets/images/exercises/lateral_raise_dumbbell.png",
+        "icon":  "assets/images/exercises/lateral_raise_dumbbell.svg",
         "muscles":  [
                         "Shoulders (Lateral)"
                     ]
@@ -309,7 +309,7 @@
         "id":  "lateral_raise_machine",
         "name":  "Lateral Raise (Machine)",
         "description":  "Isolation exercise for side delts using a machine.",
-        "icon":  "assets/images/exercises/lateral_raise_machine.png",
+        "icon":  "assets/images/exercises/lateral_raise_machine.svg",
         "muscles":  [
                         "Shoulders (Lateral)"
                     ]
@@ -318,7 +318,7 @@
         "id":  "lateral_raises_cables",
         "name":  "Lateral Raises (Cables)",
         "description":  "Cable lateral raises for constant tension on lateral delts.",
-        "icon":  "assets/images/exercises/lateral_raises_cables.png",
+        "icon":  "assets/images/exercises/lateral_raises_cables.svg",
         "muscles":  [
                         "Shoulders (Lateral)"
                     ]
@@ -327,7 +327,7 @@
         "id":  "leg_curl",
         "name":  "Leg Curls (Lying)",
         "description":  "Lying machine hamstring curl. Isolates the hamstrings.",
-        "icon":  "assets/images/exercises/leg_curl_lying.png",
+        "icon":  "assets/images/exercises/leg_curl_lying.svg",
         "muscles":  [
                         "Hamstrings"
                     ]
@@ -336,7 +336,7 @@
         "id":  "leg_curl_seated",
         "name":  "Leg Curls (Seated)",
         "description":  "Seated machine hamstring curl. Isolates the hamstrings with the hips flexed.",
-        "icon":  "assets/images/exercises/leg_curl_seated.png",
+        "icon":  "assets/images/exercises/leg_curl_seated.svg",
         "muscles":  [
                         "Hamstrings"
                     ]
@@ -345,7 +345,7 @@
         "id":  "leg_extension",
         "name":  "Leg Extension",
         "description":  "Machine quad extension. Isolates the quadriceps.",
-        "icon":  "assets/images/exercises/leg_extension.png",
+        "icon":  "assets/images/exercises/leg_extension.svg",
         "muscles":  [
                         "Quads"
                     ]
@@ -354,7 +354,7 @@
         "id":  "leg_press",
         "name":  "Leg Press",
         "description":  "It is a lower body exercise in which you push a weighted platform away from your body using your legs. The advantage is that it provides stability and allows you to train the legs with controlled movement. Important: do not let your knees collapse inward and avoid locking them out at the top to keep tension on the muscles and reduce joint stress.",
-        "icon":  "assets/images/exercises/leg_press.png",
+        "icon":  "assets/images/exercises/leg_press.svg",
         "muscles":  [
                         "Quads",
                         "Glutes",
@@ -362,10 +362,19 @@
                     ]
     },
     {
+        "id":  "low_to_high_cable_fly",
+        "name":  "Low-to-High Cable Fly",
+        "description":  "Cable fly with both pulleys set to the lowest position. Grab the D-handles and pull them in a wide arc from the hips diagonally upward in front of the chest. Primarily targets the upper chest.",
+        "icon":  "assets/images/exercises/cabel_cross.svg",
+        "muscles":  [
+                        "Upper Chest"
+                    ]
+    },
+    {
         "id":  "neck_curls",
         "name":  "Neck Curls",
         "description":  "Neck flexion against resistance. Keep range controlled and avoid jerking.",
-        "icon":  "assets/images/exercises/neck_curls.png",
+        "icon":  "assets/images/exercises/neck_curls.svg",
         "muscles":  [
                         "Neck Flexors (SCM, Longus Colli)"
                     ]
@@ -374,7 +383,7 @@
         "id":  "neck_extension",
         "name":  "Neck Extension",
         "description":  "Neck extension against resistance to strengthen posterior neck.",
-        "icon":  "assets/images/exercises/neck_extension.png",
+        "icon":  "assets/images/exercises/neck_extension.svg",
         "muscles":  [
                         "Neck Extensors (Upper Traps, Splenius, Erector Cervicis)"
                     ]
@@ -383,7 +392,7 @@
         "id":  "one_arm_row_dumbbell",
         "name":  "One-arm Row (Dumbbell)",
         "description":  "It is an upper body back exercise in which you pull a dumbbell with one arm. The advantage is that each side works independently. Important: the dumbbell is not pulled toward the chest, but specifically toward the hip to optimally activate the latissimus.",
-        "icon":  "assets/images/exercises/one_arm_row_dumbbell.png",
+        "icon":  "assets/images/exercises/one_arm_row_dumbbell.svg",
         "muscles":  [
                         "Back",
                         "Lats",
@@ -394,7 +403,7 @@
         "id":  "overhead_press",
         "name":  "Overhead Press",
         "description":  "Press barbell overhead. Focus on shoulder strength and core stability.",
-        "icon":  "assets/images/exercises/overhead_press.png",
+        "icon":  "assets/images/exercises/overhead_press.svg",
         "muscles":  [
                         "Shoulders",
                         "Triceps",
@@ -406,7 +415,7 @@
         "barWeightKg":  20,
         "name":  "Bench Press (Pause Rep)",
         "description":  "Bench press variation where you pause for about 1 second just above the chest on every rep. Keep a small gap between the bar and your chest, and do not rest the bar on the chest.",
-        "icon":  "assets/images/exercises/benchpress.png",
+        "icon":  "assets/images/exercises/benchpress.svg",
         "muscles":  [
                         "Chest",
                         "Triceps",
@@ -417,7 +426,7 @@
         "id":  "preacher_curls_machine",
         "name":  "Preacher Curls (Machine)",
         "description":  "Machine-supported preacher curl emphasizing controlled biceps isolation.",
-        "icon":  "assets/images/exercises/preacher_curls_machine.png",
+        "icon":  "assets/images/exercises/preacher_curls_machine.svg",
         "muscles":  [
                         "Biceps"
                     ]
@@ -426,7 +435,7 @@
         "id":  "pull_ups",
         "name":  "Pull-Ups",
         "description":  "Bodyweight pull-ups targeting lats and biceps.",
-        "icon":  "assets/images/exercises/pull_ups.png",
+        "icon":  "assets/images/exercises/pull_ups.svg",
         "muscles":  [
                         "Back",
                         "Lats",
@@ -437,7 +446,7 @@
         "id":  "pull_ups_machine",
         "name":  "Pull-Ups (Machine)",
         "description":  "Assisted pull-ups targeting back and biceps.",
-        "icon":  "assets/images/exercises/pull_ups_machine.png",
+        "icon":  "assets/images/exercises/pull_ups_machine.svg",
         "muscles":  [
                         "Back",
                         "Lats",
@@ -448,7 +457,7 @@
         "id":  "reverse_fly",
         "name":  "Reverse Fly",
         "description":  "Reverse fly motion. Focus on rear delts and upper back.",
-        "icon":  "assets/images/exercises/reverse_fly.png",
+        "icon":  "assets/images/exercises/reverse_fly.svg",
         "muscles":  [
                         "Rear Delts",
                         "Upper Back"
@@ -458,7 +467,7 @@
         "id":  "reverse_wrist_curls_dumbbell",
         "name":  "Reverse Wrist Curls (Dumbbell)",
         "description":  "Seated reverse wrist curls with dumbbells to target forearm extensors.",
-        "icon":  "assets/images/exercises/wrist_curls_dumbbell.png",
+        "icon":  "assets/images/exercises/wrist_curls_dumbbell.svg",
         "muscles":  [
                         "Forearms (Extensors)"
                     ]
@@ -467,7 +476,7 @@
         "id":  "rope_skipping",
         "name":  "Rope Skipping",
         "description":  "Jump-rope cardio to build endurance and coordination; keep a steady rhythm and soft landings.",
-        "icon":  "assets/images/exercises/rope_skipping.png",
+        "icon":  "assets/images/exercises/rope_skipping.svg",
         "muscles":  [
                         "Cardio",
                         "Calves",
@@ -479,7 +488,7 @@
         "id":  "seated_cable_row_close_grip",
         "name":  "Seated Cable Row (Close Grip)",
         "description":  "While seated at the cable machine, pull the close-grip handle toward your upper abdomen, keeping your elbows close to your body and squeezing your shoulder blades together. Keep your back straight and the movement controlled.",
-        "icon":  "assets/images/exercises/seated_cable_row_close_grip.png",
+        "icon":  "assets/images/exercises/seated_cable_row_close_grip.svg",
         "muscles":  [
                         "Back",
                         "Lats",
@@ -501,7 +510,7 @@
         "id":  "shoulder_press_dumbbell",
         "name":  "Shoulder Press (Dumbbell)",
         "description":  "The dumbbell shoulder press is a shoulder exercise in which you press two dumbbells from shoulder height overhead in a controlled motion. It primarily targets the front deltoid (anterior shoulder muscle).",
-        "icon":  "assets/images/exercises/shoulder_press_dumbbell.png",
+        "icon":  "assets/images/exercises/shoulder_press_dumbbell.svg",
         "muscles":  [
                         "Shoulders",
                         "Triceps"
@@ -511,7 +520,7 @@
         "id":  "shoulder_press_machine",
         "name":  "Shoulder Press (Machine)",
         "description":  "Machine-guided pressing movement for front and side delts.",
-        "icon":  "assets/images/exercises/shoulder_press_machine.png",
+        "icon":  "assets/images/exercises/shoulder_press_machine.svg",
         "muscles":  [
                         "Shoulders",
                         "Triceps"
@@ -521,7 +530,7 @@
         "id":  "shrugs_dumbbell",
         "name":  "Shrugs (Dumbbell)",
         "description":  "Dumbbell shrugs targeting the upper trapezius.",
-        "icon":  "assets/images/exercises/shrugs_dumbbell.png",
+        "icon":  "assets/images/exercises/shrugs_dumbbell.svg",
         "muscles":  [
                         "Traps"
                     ]
@@ -530,7 +539,7 @@
         "id":  "shrugs_machine",
         "name":  "Shrugs (Machine)",
         "description":  "Machine-assisted shrugs for upper traps.",
-        "icon":  "assets/images/exercises/shrugs_machine.png",
+        "icon":  "assets/images/exercises/shrugs_machine.svg",
         "muscles":  [
                         "Traps"
                     ]
@@ -540,7 +549,7 @@
         "barWeightKg":  20,
         "name":  "Squat",
         "description":  "Fundamental leg and glute exercise. Keep depth and neutral spine.",
-        "icon":  "assets/images/exercises/squat.png",
+        "icon":  "assets/images/exercises/squat.svg",
         "muscles":  [
                         "Quads",
                         "Glutes",
@@ -552,7 +561,7 @@
         "id":  "tbar_row",
         "name":  "T-Bar Row",
         "description":  "Row variation with T-bar. Targets upper back and rear delts.",
-        "icon":  "assets/images/exercises/tbar_row.png",
+        "icon":  "assets/images/exercises/tbar_row.svg",
         "muscles":  [
                         "Back",
                         "Rear Delts"
@@ -571,7 +580,7 @@
         "id":  "tricep_pushdown_cabel_isolated",
         "name":  "Tricep Pushdown (Cabel, Isolated)",
         "description":  "One-arm cable triceps pushdown with strict form and end-range flare for isolation.",
-        "icon":  "assets/images/exercises/tricep_pushdown_cabel_isolated.png",
+        "icon":  "assets/images/exercises/tricep_pushdown_cabel_isolated.svg",
         "muscles":  [
                         "Triceps"
                     ]
@@ -580,7 +589,7 @@
         "id":  "triceps_pushdown",
         "name":  "Triceps Pushdown",
         "description":  "Triceps exercise at the cable machine. Can use bar or rope.",
-        "icon":  "assets/images/exercises/triceps_pushdown.png",
+        "icon":  "assets/images/exercises/triceps_pushdown.svg",
         "muscles":  [
                         "Triceps"
                     ]
@@ -589,7 +598,7 @@
         "id":  "wrist_curls_dumbbell",
         "name":  "Wrist Curls (Dumbbell)",
         "description":  "Seated wrist curls with dumbbells to target forearm flexors.",
-        "icon":  "assets/images/exercises/wrist_curls_dumbbell.png",
+        "icon":  "assets/images/exercises/wrist_curls_dumbbell.svg",
         "muscles":  [
                         "Forearms (Flexors)"
                     ]

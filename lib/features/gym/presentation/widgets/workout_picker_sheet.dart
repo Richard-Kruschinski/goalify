@@ -4,6 +4,7 @@ import '../../../../core/i18n/task_labels.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/models/gym_models.dart';
 import 'workout_search_field.dart';
+import 'exercise_icon.dart';
 
 /// ===============================================================
 /// Bottom Sheet: Suche + Liste + Beschreibung
@@ -76,10 +77,7 @@ class _WorkoutPickerSheetState extends State<WorkoutPickerSheet> {
           child: workout.iconPath != null
               ? Padding( // Exercise Icon as Image
                   padding: const EdgeInsets.all(5.0),
-                  child: Image.asset(
-                    workout.iconPath!,
-                    fit: BoxFit.contain,
-                  ),
+                  child: ExerciseIcon(workout.iconPath!, fit: BoxFit.contain),
                 )
               : Icon(workout.icon ?? Icons.fitness_center, color: AppColors.accent(context)),
         ),
