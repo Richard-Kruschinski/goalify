@@ -13,6 +13,33 @@ int taskTypeRank(DailyTask t) {
   return 1; // recurring (weekly, biweekly, custom, ...)
 }
 
+/// Parses a `yyyy-mm-dd` day key; null when it is malformed.
+DateTime? parseTaskDateKey(String dateKey) {
+  final parts = dateKey.split('-').map(int.tryParse).toList();
+  if (parts.length != 3 || parts.contains(null)) return null;
+  return DateTime(parts[0]!, parts[1]!, parts[2]!);
+}
+
+/// Whether a repeating X-task begins a new cycle on [dayKey] (a full interval
+/// after its cycle anchor).
+bool startsNewLimitedCycle(DailyTask task, String dayKey) {
+  if (!task.isLimitedRecurring) return false;
+  final cycleStart = parseTaskDateKey(task.limitedCycleStartKey ?? '');
+  final day = parseTaskDateKey(dayKey);
+  if (cycleStart == null || day == null) return false;
+  final daysSince = day.difference(cycleStart).inDays;
+  return daysSince > 0 && daysSince % task.limitedCycleIntervalDays! == 0;
+}
+
+/// Whether the task's checklist starts over when the day before [nextDayKey]
+/// ends. Call it before the task's `done` is cleared for the new day.
+///
+/// Plain recurring tasks start every day fresh. An X-time task keeps its
+/// progress across days until it is checked off, or until its next cycle
+/// begins.
+bool clearsChecklistAtDayEnd(DailyTask task, {required String nextDayKey}) =>
+    !task.isLimited || task.done || startsNewLimitedCycle(task, nextDayKey);
+
 /// Settles the streak of a repeating X-task whose cycle just ended.
 ///
 /// Unlike a plain recurring task - whose streak counts days - an X-times task

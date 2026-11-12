@@ -28,6 +28,53 @@ DailyTask _task({
 }
 
 void main() {
+  group('clearsChecklistAtDayEnd', () {
+    // Ending the day 2026-11-12, the next day is 2026-11-13.
+    const nextDay = '2026-11-13';
+
+    test('a plain recurring task starts every day with a fresh checklist', () {
+      expect(clearsChecklistAtDayEnd(_task(), nextDayKey: nextDay), isTrue);
+    });
+
+    test('an X-time task keeps its checklist while it is not checked off', () {
+      final t = _task(targetCount: 2);
+      expect(clearsChecklistAtDayEnd(t, nextDayKey: nextDay), isFalse);
+    });
+
+    test('an X-time task gets a fresh checklist after the day it was checked off', () {
+      final t = _task(targetCount: 2)..done = true;
+      expect(clearsChecklistAtDayEnd(t, nextDayKey: nextDay), isTrue);
+    });
+
+    test('a repeating X-time task keeps it within the cycle', () {
+      final t = _task(targetCount: 3, cycleDays: 7, cycleStart: '2026-11-10');
+      expect(clearsChecklistAtDayEnd(t, nextDayKey: nextDay), isFalse);
+    });
+
+    test('a repeating X-time task gets a fresh checklist when a new cycle starts', () {
+      final t = _task(targetCount: 3, cycleDays: 7, cycleStart: '2026-11-06');
+      expect(clearsChecklistAtDayEnd(t, nextDayKey: nextDay), isTrue);
+    });
+  });
+
+  group('startsNewLimitedCycle', () {
+    final t = _task(targetCount: 3, cycleDays: 7, cycleStart: '2026-11-06');
+
+    test('on every full interval after the anchor', () {
+      expect(startsNewLimitedCycle(t, '2026-11-13'), isTrue);
+      expect(startsNewLimitedCycle(t, '2026-11-20'), isTrue);
+    });
+
+    test('not on the anchor itself or within the cycle', () {
+      expect(startsNewLimitedCycle(t, '2026-11-06'), isFalse);
+      expect(startsNewLimitedCycle(t, '2026-11-12'), isFalse);
+    });
+
+    test('never for a one-shot X-time task', () {
+      expect(startsNewLimitedCycle(_task(targetCount: 2), '2026-11-13'), isFalse);
+    });
+  });
+
   group('taskTypeRank', () {
     test('groups in the order recurring, X-repeating, X-once, one-off', () {
       final daily = _task(id: 'daily');

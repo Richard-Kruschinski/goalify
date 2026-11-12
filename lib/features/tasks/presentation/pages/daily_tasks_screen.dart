@@ -606,14 +606,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     }
   }
 
-  DateTime? _tryParseDateKey(String dateKey) {
-    try {
-      final parts = dateKey.split('-').map(int.parse).toList();
-      return DateTime(parts[0], parts[1], parts[2]);
-    } catch (_) {
-      return null;
-    }
-  }
+  DateTime? _tryParseDateKey(String dateKey) => parseTaskDateKey(dateKey);
 
   bool _isTaskDueOnDate(DailyTask task, String dateKey) {
     if (!task.keep) return false;
@@ -834,20 +827,13 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
         // completed *cycles*, not days, so it is only evaluated when one ends.
         if (t.isLimited) {
           // Check if a new cycle starts on this day
-          if (t.limitedCycleIntervalDays != null) {
-            final cycleStart = _tryParseDateKey(t.limitedCycleStartKey ?? '');
-            final dayDate = _tryParseDateKey(dayKey);
-            if (cycleStart != null && dayDate != null) {
-              final daysSince = dayDate.difference(cycleStart).inDays;
-              if (daysSince > 0 && daysSince % t.limitedCycleIntervalDays! == 0) {
-                applyFinishedLimitedCycle(
-                  t,
-                  cycleEndKey: dayKey,
-                  frozen: _wasFrozenInCycle(t, dayKey),
-                );
-                changedKeep = true;
-              }
-            }
+          if (startsNewLimitedCycle(t, dayKey)) {
+            applyFinishedLimitedCycle(
+              t,
+              cycleEndKey: dayKey,
+              frozen: _wasFrozenInCycle(t, dayKey),
+            );
+            changedKeep = true;
           }
           if (t.done) {
             t.completedCount += 1;
@@ -882,13 +868,16 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
       // --- Day change ---
       // 1) keep tasks: uncheck for the next day
       for (final t in _keepTasks) {
+        // Decided before `done` is cleared below, since it depends on it.
+        final clearChecklist = clearsChecklistAtDayEnd(t, nextDayKey: nextDayKey);
         if (t.keep && t.done) {
           t.done = false;
           changedKeep = true;
         }
-        // Steps start fresh with the task; the history snapshot above keeps
-        // what was checked on the day.
-        if (t.keep && t.checklist.any((c) => c.done)) {
+        // Steps start fresh with the task (X-time tasks only once checked off
+        // or when a new cycle starts); the history snapshot above keeps what
+        // was checked on the day.
+        if (t.keep && clearChecklist && t.checklist.any((c) => c.done)) {
           for (final c in t.checklist) {
             c.done = false;
           }
