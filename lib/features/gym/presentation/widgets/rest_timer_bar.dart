@@ -3,8 +3,9 @@ import 'package:provider/provider.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../l10n/generated/app_localizations.dart';
-import '../controllers/rest_timer_controller.dart';
 import '../../../../core/utils/duration_format.dart';
+import '../controllers/rest_timer_controller.dart';
+import 'rest_clock_icon.dart';
 
 /// Bottom bar with the running rest: "1:23 / 1:30" (green once the target rest
 /// is reached), what comes next and a stop button. Hidden while no rest runs.
@@ -13,6 +14,9 @@ class RestTimerBar extends StatelessWidget {
   const RestTimerBar({this.onOpenExercise, super.key});
 
   final void Function(String workoutId)? onOpenExercise;
+
+  /// Without a target rest the clock turns like a second hand.
+  static const _secondsPerTurnWithoutTarget = 60;
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +41,11 @@ class RestTimerBar extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(20, 10, 8, 10),
             child: Row(
               children: [
-                Icon(Icons.timer_outlined, color: timeColor),
+                RestClockIcon(
+                  elapsed: () => timer.elapsed,
+                  revolution: Duration(seconds: target ?? _secondsPerTurnWithoutTarget),
+                  color: timeColor,
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(

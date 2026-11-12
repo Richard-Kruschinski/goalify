@@ -12,7 +12,8 @@ Nach jedem gespeicherten Satz läuft eine Stoppuhr, die zeigt, wie lange die Pau
 | Übung hat eine Satzanzahl (z. B. 3) | Anzeige „Satz 2 von 3“; beim 3. Speichern „Bankdrücken fertig · Als Nächstes: …“ |
 | Mehr Speichern als Sätze geplant | Timer startet trotzdem (so gewünscht); Text bleibt „fertig“ |
 | Übung ohne Satzanzahl | Timer startet immer, Anzeige „Satz 4“ ohne „von“ |
-| Zielpause erreicht | Zeit im Balken wird grün; Handy vibriert über die Benachrichtigung (auch gesperrt) |
+| Timer läuft | Uhr links im Balken: der Zeiger dreht sich flüssig, eine volle Umdrehung = Zielpause (ohne Zielpause 60 s). Nach der Zielpause dreht er weiter. Bei „Bewegung reduzieren“ springt er nur jede Sekunde |
+| Zielpause erreicht | Zeit und Uhr im Balken werden grün; Handy vibriert über die Benachrichtigung (auch gesperrt) |
 | Auto-Aus erreicht (Standard 15 min, 1–60) | Timer endet, die nächste Pause wird nicht gezählt |
 | ■ im Balken oder „Stopp“ in der Benachrichtigung | Timer endet sofort |
 | Balken antippen | öffnet die Eingabe der Übung für den nächsten Satz |
@@ -48,7 +49,8 @@ RestTimerController
 |---|---|
 | `lib/features/gym/domain/usecases/rest_tracking.dart` | reine Logik: Sätze pro Tag, fertig?, nächste offene Übung, Pausen je Log |
 | `lib/features/gym/presentation/controllers/rest_timer_controller.dart` | `RestTimerController` (App-weit in `main.dart`), `RestSession`, `describeRest()` (Text für Balken **und** Sperrbildschirm) |
-| `lib/features/gym/presentation/widgets/rest_timer_bar.dart` | Balken unten mit Zeit, Ziel, Stopp |
+| `lib/features/gym/presentation/widgets/rest_timer_bar.dart` | Balken unten mit Uhr, Zeit, Ziel, Stopp |
+| `lib/features/gym/presentation/widgets/rest_clock_icon.dart` | animierte Uhr (`CustomPainter` + `Ticker`, Zeigerstellung über `turnFraction`) |
 | `lib/features/gym/presentation/widgets/set_progress_widgets.dart` | `SetProgressDots`, `ExerciseCardTitle` (Haken) |
 | `lib/features/gym/presentation/widgets/rest_settings_dialog.dart` / `rest_settings_tile.dart` | Einstellungen je Übung und Menüzeile |
 | `lib/features/gym/presentation/widgets/options_menu_tile.dart` | gemeinsame Menüzeile (auch für `WeightSettingsTile`) |
@@ -83,6 +85,7 @@ Satz-Ereignisse werden mitgelöscht: „Nur diesen Tag löschen“ entfernt die 
 - `test/rest_tracking_test.dart` – Zählen pro logischem Tag, fertig?, nächste Übung, Pausen je Log, JSON-Rundreise
 - `test/rest_timer_controller_test.dart` – Neustart, Zielpause, Auto-Aus, Schalter aus, Texte von `describeRest`
 - `test/duration_format_test.dart` – Zeitformat
+- `test/rest_clock_icon_test.dart` – Zeigerstellung (eine Umdrehung = Zielpause), Ticker endet beim Entfernen
 
 ## Von Hand prüfen
 
