@@ -65,6 +65,28 @@ class TimerNotificationManager {
         scheduleCompletion(title: title, after: remainingSeconds)
     }
 
+    /// Stopwatch-style timer (gym rest). A normal notification cannot tick, so
+    /// it shows when the rest started; a sound/vibration alert is scheduled for
+    /// the target rest. Auto-stop happens in the app when it is opened again.
+    func startCountUp(title: String, currentPhase: String, alertAfter seconds: Int?, alertTitle: String) {
+        cancelAll()
+
+        let infoContent = UNMutableNotificationContent()
+        infoContent.title = buildTitle(title: title, phase: currentPhase, round: 0, total: 0)
+        infoContent.body  = "⏱ \(timeString(from: Date()))"
+        infoContent.sound = .none
+        infoContent.categoryIdentifier = "TIMER_RUNNING"
+        center.add(UNNotificationRequest(identifier: timerInfoId, content: infoContent, trigger: nil))
+
+        guard let seconds = seconds, seconds > 0 else { return }
+        let alertContent = UNMutableNotificationContent()
+        alertContent.title = alertTitle
+        alertContent.body  = currentPhase
+        alertContent.sound = .default
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: TimeInterval(seconds), repeats: false)
+        center.add(UNNotificationRequest(identifier: timerDoneId, content: alertContent, trigger: trigger))
+    }
+
     /// Update the running notification after a phase change.
     func updatePhase(
         title: String,

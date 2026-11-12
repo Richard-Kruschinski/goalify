@@ -527,5 +527,31 @@
 
   "notifStop": "Stopp",
   "notifSkip": "Überspringen",
-  "notifDone": "Fertig"
+  "notifDone": "Fertig",
+
+  "restTimerTitle": "Pause",
+  "restSetProgress": "Satz {current} von {total}",
+  "restSetNumber": "Satz {current}",
+  "restExerciseDone": "{name} fertig",
+  "restNextExercise": "Als Nächstes: {name}",
+  "restWorkoutDone": "Workout geschafft",
+  "restStopTimer": "Pausen-Timer stoppen",
+  "restTargetReachedAlert": "Pause vorbei. Nächster Satz!",
+  "restSettings": "Sätze & Pause",
+  "restSettingsSubtitle": "Satzanzahl und Pausen-Timer",
+  "restSettingsFor": "Sätze & Pause – {name}",
+  "restTargetSets": "Sätze",
+  "restTargetRest": "Zielpause",
+  "restTargetValue": "Pause {time}",
+  "restOff": "Aus",
+  "restSettingsExplain": "Jedes Speichern startet den Pausen-Timer bei 0:00. Bei der Zielpause vibriert das Handy.",
+  "restHistory": "Pausen: {times}",
+  "restSetsDone": "{done} von {total} Sätzen erledigt",
+  "restSection": "Pausen-Timer",
+  "restAutoOffTitle": "Automatisch aus",
+  "restAutoOffDescription": "Stoppt den Pausen-Timer, wenn so lange kein neuer Satz kommt.",
+  "decrease": "Verringern",
+  "increase": "Erhöhen",
+  "restTimerEnabledTitle": "Pausen-Timer",
+  "restTimerEnabledDescription": "Startet nach jedem gespeicherten Satz eine Stoppuhr"
 }

@@ -66,6 +66,19 @@ import UserNotifications
             lastTimerRound      = round
             lastTimerTotalRounds = totalRounds
 
+            // Gym rest timer: counts up, alerts once at the target rest.
+            if args["countUp"] as? Bool ?? false {
+                let labels = args["labels"] as? [String: String] ?? [:]
+                TimerNotificationManager.shared.startCountUp(
+                    title: title,
+                    currentPhase: phase,
+                    alertAfter: args["alertAtSeconds"] as? Int,
+                    alertTitle: labels["restAlert"] ?? title
+                )
+                result(nil)
+                return
+            }
+
             TimerNotificationManager.shared.startTimer(
                 timerId: timerId,
                 timerType: timerType,

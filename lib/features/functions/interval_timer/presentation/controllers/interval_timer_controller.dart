@@ -90,6 +90,8 @@ class IntervalTimerController extends ChangeNotifier {
       onResume: resume,
       onStop: reset,
       onSkip: _skipCurrentPhase,
+      currentLiveState: () =>
+          _timerState == IntervalTimerState.idle ? null : _buildLiveState(),
     );
   }
 
@@ -310,7 +312,7 @@ class IntervalTimerController extends ChangeNotifier {
     if (_timerState != IntervalTimerState.running) return;
     _timer?.cancel();
     _timerState = IntervalTimerState.paused;
-    _liveService.pauseLiveTimer();
+    _liveService.pauseLiveTimer(timerId: 'interval');
     notifyListeners();
   }
 
@@ -330,7 +332,7 @@ class IntervalTimerController extends ChangeNotifier {
     _currentPauseSeconds = 0;
     _currentTaskIndex = 0;
     _remainingSeconds = _tasks.isEmpty ? 0 : _tasks.first.durationSeconds;
-    _liveService.stopLiveTimer();
+    _liveService.stopLiveTimer(timerId: 'interval');
     notifyListeners();
   }
 
@@ -369,7 +371,7 @@ class IntervalTimerController extends ChangeNotifier {
       _pendingTaskIndex = 0;
       _currentPauseSeconds = 0;
       _remainingSeconds = _tasks.first.durationSeconds;
-      _liveService.finishLiveTimer('Alle Aufgaben abgeschlossen! Gut gemacht!');
+      _liveService.finishLiveTimer('Alle Aufgaben abgeschlossen! Gut gemacht!', timerId: 'interval');
       notifyListeners();
       return;
     }

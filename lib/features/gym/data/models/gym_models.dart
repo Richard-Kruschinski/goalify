@@ -368,6 +368,54 @@ class LogOutcome {
   const LogOutcome({this.log, this.assignDay, this.trackedIncludesBar});
 }
 
+/// Satz- und Pausen-Einstellungen einer Übung. null = nicht eingestellt.
+class ExerciseRestSettings {
+  /// Wie viele Sätze geplant sind (Haken, "Satz 2 von 3").
+  final int? targetSets;
+
+  /// Nach wie vielen Sekunden Pause das Handy vibriert.
+  final int? targetRestSeconds;
+
+  const ExerciseRestSettings({this.targetSets, this.targetRestSeconds});
+
+  Map<String, dynamic> toMap() => {
+        if (targetSets != null) 'targetSets': targetSets,
+        if (targetRestSeconds != null) 'targetRestSeconds': targetRestSeconds,
+      };
+
+  factory ExerciseRestSettings.fromMap(Map<String, dynamic> m) =>
+      ExerciseRestSettings(
+        targetSets: (m['targetSets'] as num?)?.toInt(),
+        targetRestSeconds: (m['targetRestSeconds'] as num?)?.toInt(),
+      );
+}
+
+/// Ein Tippen auf "Aktualisieren"/"Hinzufügen" bei einer Übung.
+/// Daraus entstehen die Haken und die Pausen-Statistik.
+class SetEvent {
+  final DateTime at;
+
+  /// Trainingstag (z. B. "Pull"), damit "Nur diesen Tag löschen" passt.
+  final String day;
+
+  /// Wie lange der Pausen-Timer davor lief; null, wenn er nicht lief.
+  final int? restBeforeSeconds;
+
+  const SetEvent({required this.at, required this.day, this.restBeforeSeconds});
+
+  Map<String, dynamic> toMap() => {
+        'at': at.toIso8601String(),
+        'day': day,
+        if (restBeforeSeconds != null) 'restBeforeSeconds': restBeforeSeconds,
+      };
+
+  factory SetEvent.fromMap(Map<String, dynamic> m) => SetEvent(
+        at: DateTime.parse(m['at'] as String),
+        day: m['day'] as String? ?? '',
+        restBeforeSeconds: (m['restBeforeSeconds'] as num?)?.toInt(),
+      );
+}
+
 class SplitEditorResult {
   final String name;
   final List<String> days;

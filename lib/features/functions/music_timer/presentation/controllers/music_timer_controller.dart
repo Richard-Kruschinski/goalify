@@ -42,6 +42,7 @@ class MusicTimerController extends ChangeNotifier {
       onPause: pauseTimer,
       onResume: resumeTimer,
       onStop: stopTimer,
+      currentLiveState: () => _isRunning ? _buildLiveState() : null,
     );
   }
 
@@ -78,7 +79,7 @@ class MusicTimerController extends ChangeNotifier {
     _timer = null;
     _isPaused = true;
     await _saveState();
-    await _liveService.pauseLiveTimer();
+    await _liveService.pauseLiveTimer(timerId: 'music');
     notifyListeners();
   }
 
@@ -100,7 +101,7 @@ class MusicTimerController extends ChangeNotifier {
     _isPaused = false;
     _remainingSeconds = 0;
     await _saveState();
-    await _liveService.stopLiveTimer();
+    await _liveService.stopLiveTimer(timerId: 'music');
     notifyListeners();
   }
 
@@ -138,7 +139,7 @@ class MusicTimerController extends ChangeNotifier {
     }
 
     await _saveState();
-    await _liveService.finishLiveTimer('Musik wurde gestoppt.');
+    await _liveService.finishLiveTimer('Musik wurde gestoppt.', timerId: 'music');
     notifyListeners();
   }
 

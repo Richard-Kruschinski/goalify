@@ -1,9 +1,10 @@
-enum TimerType { pomodoro, music, interval }
+enum TimerType { pomodoro, music, interval, rest }
 
 class TimerLiveState {
   final String timerId;
   final TimerType timerType;
   final String title;
+  /// Countdown: seconds left. Count-up ([countUp]): seconds already elapsed.
   final int remainingSeconds;
   final int totalSeconds;
   final bool isRunning;
@@ -13,6 +14,13 @@ class TimerLiveState {
   final int totalRounds;
   // Additional optional actions beyond pause+stop, e.g. ['skip']
   final List<String> additionalActions;
+  /// Counts up like a stopwatch instead of down; only a stop button is shown.
+  final bool countUp;
+  /// Count-up only: vibrating alert once this many seconds have elapsed.
+  final int? alertAtSeconds;
+  /// Count-up only: the native side ends the timer after this many seconds,
+  /// even while the app is in the background.
+  final int? autoStopSeconds;
 
   const TimerLiveState({
     required this.timerId,
@@ -26,6 +34,9 @@ class TimerLiveState {
     this.currentRound = 0,
     this.totalRounds = 0,
     this.additionalActions = const [],
+    this.countUp = false,
+    this.alertAtSeconds,
+    this.autoStopSeconds,
   });
 
   Map<String, dynamic> toMap() => {
@@ -40,6 +51,9 @@ class TimerLiveState {
         'currentRound': currentRound,
         'totalRounds': totalRounds,
         'additionalActions': additionalActions,
+        'countUp': countUp,
+        'alertAtSeconds': alertAtSeconds,
+        'autoStopSeconds': autoStopSeconds,
       };
 
   TimerLiveState copyWith({
@@ -64,5 +78,8 @@ class TimerLiveState {
         currentRound: currentRound ?? this.currentRound,
         totalRounds: totalRounds ?? this.totalRounds,
         additionalActions: additionalActions ?? this.additionalActions,
+        countUp: countUp,
+        alertAtSeconds: alertAtSeconds,
+        autoStopSeconds: autoStopSeconds,
       );
 }

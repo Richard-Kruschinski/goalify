@@ -41,6 +41,14 @@ abstract class GymRepository {
   Future<Map<String, ExerciseWeightSettings>> loadWeightSettings();
   Future<void> saveWeightSettings(Map<String, ExerciseWeightSettings> settings);
 
+  // Set count / rest settings per exercise id.
+  Future<Map<String, ExerciseRestSettings>> loadRestSettings();
+  Future<void> saveRestSettings(Map<String, ExerciseRestSettings> settings);
+
+  // Tracked sets per exercise id (checkmarks, rest statistics).
+  Future<Map<String, List<SetEvent>>> loadSetEvents();
+  Future<void> saveSetEvents(Map<String, List<SetEvent>> events);
+
   // Day colors / icons.
   Future<Map<String, int>> loadDayColors();
   Future<void> saveDayColors(Map<String, int> colors);

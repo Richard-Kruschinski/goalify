@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../l10n/generated/app_localizations.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../data/models/gym_models.dart';
+import 'options_menu_tile.dart';
 
 /// "Weight settings" row of the exercise options bottom sheet.
 ///
@@ -25,63 +25,14 @@ class WeightSettingsTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final subtitle = settings.hasBar
-        ? l.barWeightCurrent(formatKg(settings.barWeightKg))
-        : l.weightSettingsSubtitle;
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: borderRadius,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppColors.chip(context),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  Icons.straighten_rounded,
-                  color: AppColors.inkSoft(context),
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      l.weightSettings,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.ink(context),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: AppColors.muted(context),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                Icons.chevron_right,
-                color: AppColors.border(context),
-              ),
-            ],
-          ),
-        ),
-      ),
+    return OptionsMenuTile(
+      icon: Icons.straighten_rounded,
+      title: l.weightSettings,
+      subtitle: settings.hasBar
+          ? l.barWeightCurrent(formatKg(settings.barWeightKg))
+          : l.weightSettingsSubtitle,
+      onTap: onTap,
+      borderRadius: borderRadius,
     );
   }
 }

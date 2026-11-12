@@ -39,6 +39,12 @@ class SettingsController extends ChangeNotifier {
   static const _dayStartMinuteKey = 'settings_day_start_minute_v1';
   // Superseded by the minute-precise key above; still read for migration.
   static const _legacyDayStartHourKey = 'settings_day_start_hour_v1';
+  static const _restAutoOffMinutesKey = 'settings_rest_auto_off_minutes_v1';
+  static const _restTimerEnabledKey = 'settings_rest_timer_enabled_v1';
+
+  static const defaultRestAutoOffMinutes = 15;
+  static const minRestAutoOffMinutes = 1;
+  static const maxRestAutoOffMinutes = 60;
 
   static const List<AppLanguage> supportedLanguages = [
     AppLanguage(code: 'de', nativeName: 'Deutsch', flagCountryCode: 'DE', materialLocale: Locale('de', 'DE')),
@@ -49,8 +55,17 @@ class SettingsController extends ChangeNotifier {
   ThemeMode _themeMode = ThemeMode.system;
   String? _languageCode; // null = follow system
   int _dayStartMinuteOfDay = DayCycle.defaultStartMinuteOfDay;
+  int _restAutoOffMinutes = defaultRestAutoOffMinutes;
+  bool _restTimerEnabled = true;
 
   ThemeMode get themeMode => _themeMode;
+
+  /// The gym rest timer stops after this many minutes without a new set.
+  int get restAutoOffMinutes => _restAutoOffMinutes;
+
+  /// Whether saving a set starts the gym rest timer. Set checkmarks are
+  /// recorded either way.
+  bool get restTimerEnabled => _restTimerEnabled;
 
   /// Time (as minutes since midnight) at which a new day starts for everything
   /// tracked per day. The single source of truth at runtime is [DayCycle];
@@ -103,7 +118,30 @@ class SettingsController extends ChangeNotifier {
       }
     }
     DayCycle.setStartMinuteOfDay(_dayStartMinuteOfDay);
+    final autoOff = prefs.getInt(_restAutoOffMinutesKey);
+    if (autoOff != null) _restAutoOffMinutes = _clampAutoOff(autoOff);
+    _restTimerEnabled = prefs.getBool(_restTimerEnabledKey) ?? true;
   }
+
+  Future<void> setRestTimerEnabled(bool enabled) async {
+    if (_restTimerEnabled == enabled) return;
+    _restTimerEnabled = enabled;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_restTimerEnabledKey, enabled);
+  }
+
+  Future<void> setRestAutoOffMinutes(int minutes) async {
+    final clamped = _clampAutoOff(minutes);
+    if (_restAutoOffMinutes == clamped) return;
+    _restAutoOffMinutes = clamped;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_restAutoOffMinutesKey, clamped);
+  }
+
+  static int _clampAutoOff(int minutes) =>
+      minutes.clamp(minRestAutoOffMinutes, maxRestAutoOffMinutes);
 
   Future<void> setThemeMode(ThemeMode mode) async {
     if (_themeMode == mode) return;

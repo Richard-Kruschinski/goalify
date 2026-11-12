@@ -1758,4 +1758,98 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get notifDone => 'Done';
+
+  @override
+  String get restTimerTitle => 'Rest';
+
+  @override
+  String restSetProgress(int current, int total) {
+    return 'Set $current of $total';
+  }
+
+  @override
+  String restSetNumber(int current) {
+    return 'Set $current';
+  }
+
+  @override
+  String restExerciseDone(String name) {
+    return '$name done';
+  }
+
+  @override
+  String restNextExercise(String name) {
+    return 'Up next: $name';
+  }
+
+  @override
+  String get restWorkoutDone => 'Workout complete';
+
+  @override
+  String get restStopTimer => 'Stop rest timer';
+
+  @override
+  String get restTargetReachedAlert => 'Rest is over. Next set!';
+
+  @override
+  String get restSettings => 'Sets & rest';
+
+  @override
+  String get restSettingsSubtitle => 'Number of sets and rest timer';
+
+  @override
+  String restSettingsFor(String name) {
+    return 'Sets & rest — $name';
+  }
+
+  @override
+  String get restTargetSets => 'Sets';
+
+  @override
+  String get restTargetRest => 'Target rest';
+
+  @override
+  String restTargetValue(String time) {
+    return 'Rest $time';
+  }
+
+  @override
+  String get restOff => 'Off';
+
+  @override
+  String get restSettingsExplain =>
+      'Every save starts the rest timer from 0:00. At the target rest the phone vibrates.';
+
+  @override
+  String restHistory(String times) {
+    return 'Rests: $times';
+  }
+
+  @override
+  String restSetsDone(int done, int total) {
+    return '$done of $total sets done';
+  }
+
+  @override
+  String get restSection => 'Rest timer';
+
+  @override
+  String get restAutoOffTitle => 'Stop automatically';
+
+  @override
+  String get restAutoOffDescription =>
+      'Stops the rest timer when no new set is tracked for this long.';
+
+  @override
+  String get decrease => 'Decrease';
+
+  @override
+  String get increase => 'Increase';
+
+  @override
+  String get restTimerEnabledTitle => 'Rest timer';
+
+  @override
+  String get restTimerEnabledDescription =>
+      'Starts a stopwatch after every saved set';
 }

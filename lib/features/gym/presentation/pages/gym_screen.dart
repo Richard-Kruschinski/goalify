@@ -19,6 +19,10 @@ import '../../data/models/gym_models.dart';
 import '../../data/repositories/gym_repository_impl.dart';
 import '../../domain/repositories/gym_repository.dart';
 import '../../domain/usecases/best_set_cache.dart';
+import '../../domain/usecases/rest_tracking.dart';
+import '../controllers/rest_timer_controller.dart';
+import '../../../../core/utils/duration_format.dart';
+import 'package:provider/provider.dart';
 import 'day_detail_screen.dart';
 import 'full_screen_chart_page.dart';
 import 'workout_calendar_page.dart';
@@ -28,6 +32,10 @@ import '../widgets/workout_search_field.dart';
 import '../widgets/log_input_dialog.dart';
 import '../widgets/color_picker_grid.dart';
 import '../widgets/weight_settings_tile.dart';
+import '../widgets/rest_settings_tile.dart';
+import '../widgets/rest_settings_dialog.dart';
+import '../widgets/rest_timer_bar.dart';
+import '../widgets/set_progress_widgets.dart';
 import '../gym_sort.dart';
 import '../../../../core/widgets/sort_menu_button.dart';
 import '../widgets/exercise_icon.dart';
@@ -302,6 +310,11 @@ class _GymScreenState extends State<GymScreen> {
   final Map<String, ExerciseWeightSettings> _weightSettingsByWorkoutId =
       <String, ExerciseWeightSettings>{};
   final Map<String, Set<String>> _alternativeWorkoutIdsByDay = <String, Set<String>>{};
+  // Satzanzahl + Zielpause je Übung
+  final Map<String, ExerciseRestSettings> _restSettingsByWorkoutId =
+      <String, ExerciseRestSettings>{};
+  // Jedes Speichern einer Übung (Haken, Pausen-Statistik)
+  final Map<String, List<SetEvent>> _setEventsByWorkoutId = <String, List<SetEvent>>{};
 
   // Reihenfolge der Workout-Days
   List<String> _orderDays = <String>[];
@@ -443,6 +456,13 @@ class _GymScreenState extends State<GymScreen> {
     _weightSettingsByWorkoutId
       ..clear()
       ..addAll(await _repo.loadWeightSettings());
+
+    _restSettingsByWorkoutId
+      ..clear()
+      ..addAll(await _repo.loadRestSettings());
+    _setEventsByWorkoutId
+      ..clear()
+      ..addAll(await _repo.loadSetEvents());
 
     // Day colors
     _dayColors
@@ -931,7 +951,80 @@ class _GymScreenState extends State<GymScreen> {
     // Mark gym task as done in daily screen if logged today
     if (isToday) {
       DailyTasksHelper.markGymTaskDoneForToday();
+      _startRestAfterSet(workoutId, result.day);
     }
+  }
+
+  // ----------------------------- Rest timer -----------------------------
+  ExerciseRestSettings _restSettingsFor(String workoutId) =>
+      _restSettingsByWorkoutId[workoutId] ?? const ExerciseRestSettings();
+
+  int _setsDoneToday(String workoutId) => RestTracking.setsDoneOn(
+      _setEventsByWorkoutId[workoutId] ?? const <SetEvent>[], DayCycle.today());
+
+  bool _isExerciseDoneToday(String workoutId) => RestTracking.isComplete(
+      _setsDoneToday(workoutId), _restSettingsFor(workoutId).targetSets);
+
+  Workout? _workoutById(String id) {
+    for (final w in _workouts) {
+      if (w.id == id) return w;
+    }
+    return null;
+  }
+
+  /// Every save of today's sets starts the rest timer at 0:00 and is recorded
+  /// for the checkmarks and the rest statistics.
+  void _startRestAfterSet(String workoutId, String day) {
+    final settings = _restSettingsFor(workoutId);
+    final setNumber = _setsDoneToday(workoutId) + 1;
+    final nextId = RestTracking.isComplete(setNumber, settings.targetSets)
+        ? _nextOpenExerciseOn(day, workoutId)
+        : null;
+
+    final restBefore = context.read<RestTimerController>().startRest(
+          workoutId: workoutId,
+          workoutName: _workoutById(workoutId)?.name ?? '',
+          setNumber: setNumber,
+          targetSets: settings.targetSets,
+          targetRestSeconds: settings.targetRestSeconds,
+          nextExerciseName: nextId == null ? null : _workoutById(nextId)?.name,
+        );
+
+    setState(() {
+      _setEventsByWorkoutId.putIfAbsent(workoutId, () => <SetEvent>[]).add(
+            SetEvent(at: DateTime.now(), day: day, restBeforeSeconds: restBefore),
+          );
+    });
+    _repo.saveSetEvents(_setEventsByWorkoutId);
+  }
+
+  /// Next main (non-alternative) exercise of [day] that still has sets open.
+  String? _nextOpenExerciseOn(String day, String currentId) {
+    final alternatives = _alternativeWorkoutIdsByDay[day] ?? const <String>{};
+    final ids = _getAssignedWorkoutsForDayOrdered(day)
+        .map((w) => w.id)
+        .where((id) => !alternatives.contains(id))
+        .toList();
+    return RestTracking.nextOpenExercise(ids, currentId, _isExerciseDoneToday);
+  }
+
+  Future<void> _openRestSettingsDialog(BuildContext host, Workout workout) async {
+    final result = await RestSettingsDialog.show(
+      host,
+      workoutName: workout.name,
+      initial: _restSettingsFor(workout.id),
+    );
+    if (result == null || !mounted) return;
+    setState(() => _restSettingsByWorkoutId[workout.id] = result);
+    await _repo.saveRestSettings(_restSettingsByWorkoutId);
+  }
+
+  void _removeSetEvents(String workoutId, bool Function(SetEvent e) test) {
+    final events = _setEventsByWorkoutId[workoutId];
+    if (events == null) return;
+    events.removeWhere(test);
+    if (events.isEmpty) _setEventsByWorkoutId.remove(workoutId);
+    _repo.saveSetEvents(_setEventsByWorkoutId);
   }
 
   WorkoutLog? _latestForDay(String workoutId, String day) {
@@ -1112,6 +1205,7 @@ class _GymScreenState extends State<GymScreen> {
     setState(() {
       _logs.remove(workoutId);
       _bestSetCache.updateBest(workoutId, null); // Lösche Best-Set aus Cache
+      _removeSetEvents(workoutId, (_) => true);
     });
     _saveLogs();
     _saveBestSetCache();
@@ -1826,6 +1920,17 @@ class _GymScreenState extends State<GymScreen> {
                     height: 1,
                     color: AppColors.chip(context),
                   ),
+                  RestSettingsTile(
+                    settings: _restSettingsFor(w.id),
+                    onTap: () async {
+                      Navigator.pop(ctx);
+                      await _openRestSettingsDialog(context, w);
+                    },
+                  ),
+                  Container(
+                    height: 1,
+                    color: AppColors.chip(context),
+                  ),
                   Material(
                     color: Colors.transparent,
                     child: InkWell(
@@ -1955,6 +2060,7 @@ class _GymScreenState extends State<GymScreen> {
     if (list == null) return;
     setState(() {
       list.removeWhere((log) => log.day == day);
+      _removeSetEvents(workoutId, (e) => e.day == day);
       if (list.isEmpty) {
         _logs.remove(workoutId);
         _bestSetCache.updateBest(workoutId, null); // Lösche Best-Set aus Cache
@@ -3618,7 +3724,26 @@ class _GymScreenState extends State<GymScreen> {
       ),
       floatingActionButton: _buildModernFAB(),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      bottomNavigationBar: RestTimerBar(onOpenExercise: _trackWorkoutById),
     );
+  }
+
+  void _trackWorkoutById(String workoutId) {
+    final workout = _workoutById(workoutId);
+    if (workout != null) _trackWorkout(workout, _getLatestLogFor(workoutId));
+  }
+
+  Future<void> _trackWorkout(Workout w, WorkoutLog? latest) async {
+    final days = _daysForWorkout(w.id).toList()..sort();
+    final outcome = await _openLogDialog(
+      w,
+      latest: latest,
+      contextDay: null,
+      availableDays: days,
+      creationMode: false,
+    );
+    if (outcome == null) return;
+    if (outcome.log != null) _addLog(w.id, outcome.log!);
   }
 
   // ----------------------------- Sorting -----------------------------
@@ -4080,18 +4205,7 @@ class _GymScreenState extends State<GymScreen> {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: () async {
-            final days = _daysForWorkout(w.id).toList()..sort();
-            final outcome = await _openLogDialog(
-              w,
-              latest: latest,
-              contextDay: null,
-              availableDays: days,
-              creationMode: false,
-            );
-            if (outcome == null) return;
-            if (outcome.log != null) _addLog(w.id, outcome.log!);
-          },
+          onTap: () => _trackWorkout(w, latest),
           onLongPress: () => _openWorkoutLongPressMenu(w),
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -4139,13 +4253,9 @@ class _GymScreenState extends State<GymScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        w.name,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.ink(context),
-                        ),
+                      ExerciseCardTitle(
+                        name: w.name,
+                        complete: _isExerciseDoneToday(w.id),
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -4154,6 +4264,10 @@ class _GymScreenState extends State<GymScreen> {
                           fontSize: 13,
                           color: AppColors.muted(context),
                         ),
+                      ),
+                      SetProgressDots(
+                        setsDone: _setsDoneToday(w.id),
+                        targetSets: _restSettingsFor(w.id).targetSets,
                       ),
                     ],
                   ),
@@ -4903,6 +5017,9 @@ class _GymScreenState extends State<GymScreen> {
           onEditNote: _openExerciseNoteDialog,
           onEditWeightSettings: _openWeightSettingsDialog,
           weightSettingsFor: _weightSettingsFor,
+          onEditRestSettings: _openRestSettingsDialog,
+          restSettingsFor: _restSettingsFor,
+          setsDoneToday: _setsDoneToday,
           onReorder: (ids) => _reorderDay(day, ids),
           stripeColor: stripe,
           // Checkbox oben rechts
@@ -4993,6 +5110,10 @@ class _GymScreenState extends State<GymScreen> {
 
     final history = List<WorkoutLog>.from(list)
       ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
+    final events = _setEventsByWorkoutId[w.id] ?? const <SetEvent>[];
+    final restsByLog = {
+      for (final log in history) log: RestTracking.restsFor(events, log),
+    };
     final bestSet = _bestSetCache.getBest(w.id) ?? _bestSetCache.findBest(list);
 
     bool isBestWorkout(WorkoutLog log) {
@@ -5118,6 +5239,15 @@ class _GymScreenState extends State<GymScreen> {
                               fontWeight: FontWeight.w600,
                             ),
                           ),
+                          if (restsByLog[log]!.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              AppLocalizations.of(context).restHistory(
+                                restsByLog[log]!.map(formatClockDuration).join(' · '),
+                              ),
+                              style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                            ),
+                          ],
                           const SizedBox(height: 10),
                           Wrap(
                             spacing: 8,

@@ -9,6 +9,7 @@ import 'features/functions/pomodoro/presentation/controllers/pomodoro_controller
 import 'features/functions/distraction_blocker/presentation/controllers/distraction_blocker_controller.dart';
 import 'features/functions/music_timer/presentation/controllers/music_timer_controller.dart';
 import 'features/functions/interval_timer/presentation/controllers/interval_timer_controller.dart';
+import 'features/gym/presentation/controllers/rest_timer_controller.dart';
 import 'core/services/timer_live_presentation_service.dart';
 import 'core/settings/settings_controller.dart';
 import 'core/theme/app_theme.dart';
@@ -59,6 +60,14 @@ class GoalifyApp extends StatelessWidget {
         // Global IntervalTimerController - persists across navigation
         ChangeNotifierProvider(
           create: (_) => IntervalTimerController(),
+        ),
+        // Gym rest timer - app-wide, because the Gym tab is rebuilt on every
+        // tab switch
+        ChangeNotifierProvider(
+          create: (_) => RestTimerController(
+            autoOffMinutes: () => settings.restAutoOffMinutes,
+            isEnabled: () => settings.restTimerEnabled,
+          ),
         ),
       ],
       child: Consumer<SettingsController>(

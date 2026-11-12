@@ -23,6 +23,10 @@ import com.example.goalify.receivers.TimerActionReceiver
  *   stopTimer(null)   – remove the notification, stop the service
  *   finishTimer(map)  – show a brief "completed" notification, then auto-dismiss
  *   updatePhase(map)  – update phase label/round/time for mid-run phase changes
+ *
+ * Count-up mode (gym rest timer, `countUp = true`): the time runs up from
+ * `remainingSeconds`, a vibrating alert fires at `alertAtSeconds` and the
+ * service stops itself at `autoStopSeconds`, even with the app in background.
  */
 class TimerForegroundService : Service() {
 
@@ -30,6 +34,10 @@ class TimerForegroundService : Service() {
         private const val TAG = "TimerFgService"
         const val CHANNEL_ID = "timer_channel"
         const val NOTIFICATION_ID = 2001
+        // The ongoing channel is silent; the rest alert needs its own channel
+        // with vibration (channel settings cannot change after creation).
+        const val ALERT_CHANNEL_ID = "timer_alert_channel"
+        const val ALERT_NOTIFICATION_ID = 2002
 
         const val ACTION_START = "com.example.goalify.TIMER_START"
         const val ACTION_PAUSE = "com.example.goalify.TIMER_PAUSE"
@@ -48,9 +56,13 @@ class TimerForegroundService : Service() {
         private const val EXTRA_TOTAL_ROUNDS = "totalRounds"
         private const val EXTRA_ADDITIONAL_ACTIONS = "additionalActions"
         private const val EXTRA_FINISH_MESSAGE = "message"
+        private const val EXTRA_COUNT_UP = "countUp"
+        private const val EXTRA_ALERT_AT_SECONDS = "alertAtSeconds"
+        private const val EXTRA_AUTO_STOP_SECONDS = "autoStopSeconds"
+        private const val NONE = -1
 
         // Button and status texts sent from Flutter in the app language.
-        private val LABEL_KEYS = listOf("pause", "resume", "stop", "skip", "paused", "done")
+        private val LABEL_KEYS = listOf("pause", "resume", "stop", "skip", "paused", "done", "restAlert")
         private fun labelExtra(key: String) = "label_$key"
 
         // Android 16 "Live Updates": promoted ongoing notifications show as a
@@ -65,6 +77,8 @@ class TimerForegroundService : Service() {
         private const val RC_RESUME = 102
         private const val RC_STOP = 103
         private const val RC_SKIP = 104
+
+        private val ALERT_VIBRATION = longArrayOf(0, 400, 200, 400)
 
         fun startTimer(context: Context, data: Map<String, Any?>) {
             val intent = Intent(context, TimerForegroundService::class.java).apply {
@@ -83,6 +97,9 @@ class TimerForegroundService : Service() {
                     else -> ArrayList()
                 }
                 putStringArrayListExtra(EXTRA_ADDITIONAL_ACTIONS, actions)
+                putExtra(EXTRA_COUNT_UP, data[EXTRA_COUNT_UP] as? Boolean ?: false)
+                putExtra(EXTRA_ALERT_AT_SECONDS, (data[EXTRA_ALERT_AT_SECONDS] as? Number)?.toInt() ?: NONE)
+                putExtra(EXTRA_AUTO_STOP_SECONDS, (data[EXTRA_AUTO_STOP_SECONDS] as? Number)?.toInt() ?: NONE)
                 val labels = data["labels"] as? Map<*, *>
                 for (key in LABEL_KEYS) {
                     (labels?.get(key) as? String)?.let { putExtra(labelExtra(key), it) }
@@ -153,26 +170,38 @@ class TimerForegroundService : Service() {
         "skip" to "Skip",
         "paused" to "Paused",
         "done" to "Done",
+        "restAlert" to "Rest is over",
     )
+
+    // Count-up mode (rest timer)
+    private var countUp = false
+    private var alertAtSeconds = NONE
+    private var autoStopSeconds = NONE
+    private var alertSent = false
 
     // Countdown tracking
     private var remainingAtStart = 0
     private var startEpochMs = 0L
     private var isPaused = false
 
-    // Current displayed remaining seconds
+    // Current displayed seconds: left for a countdown, elapsed when counting up
     private val remainingSeconds: Int
         get() = if (isPaused) {
             remainingAtStart
         } else {
             val elapsed = ((System.currentTimeMillis() - startEpochMs) / 1000).toInt()
-            (remainingAtStart - elapsed).coerceAtLeast(0)
+            if (countUp) remainingAtStart + elapsed
+            else (remainingAtStart - elapsed).coerceAtLeast(0)
         }
 
     private val handler = Handler(Looper.getMainLooper())
     private val tickRunnable = object : Runnable {
         override fun run() {
             if (isPaused) return
+            if (countUp) {
+                tickCountUp()
+                return
+            }
             val remaining = remainingSeconds
             updateNotification()
             if (remaining > 0) {
@@ -183,6 +212,22 @@ class TimerForegroundService : Service() {
                 stopSelf()
             }
         }
+    }
+
+    private fun tickCountUp() {
+        val elapsed = remainingSeconds
+        if (autoStopSeconds > 0 && elapsed >= autoStopSeconds) {
+            Log.d(TAG, "Rest timer auto-stopped after ${elapsed}s")
+            MainActivity.invokeTimerAction("onTimerAction", "stop")
+            handleStop()
+            return
+        }
+        if (alertAtSeconds > 0 && !alertSent && elapsed >= alertAtSeconds) {
+            alertSent = true
+            notificationManager.notify(ALERT_NOTIFICATION_ID, buildAlertNotification())
+        }
+        updateNotification()
+        handler.postDelayed(tickRunnable, 500)
     }
 
     private lateinit var notificationManager: NotificationManager
@@ -220,6 +265,11 @@ class TimerForegroundService : Service() {
         remainingAtStart = intent.getIntExtra(EXTRA_REMAINING_SECONDS, 0)
         startEpochMs = System.currentTimeMillis()
         isPaused = false
+        countUp = intent.getBooleanExtra(EXTRA_COUNT_UP, false)
+        alertAtSeconds = intent.getIntExtra(EXTRA_ALERT_AT_SECONDS, NONE)
+        autoStopSeconds = intent.getIntExtra(EXTRA_AUTO_STOP_SECONDS, NONE)
+        alertSent = false
+        notificationManager.cancel(ALERT_NOTIFICATION_ID)
 
         try {
             startForeground(NOTIFICATION_ID, buildNotification())
@@ -255,6 +305,7 @@ class TimerForegroundService : Service() {
 
     private fun handleStop() {
         handler.removeCallbacks(tickRunnable)
+        notificationManager.cancel(ALERT_NOTIFICATION_ID)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             stopForeground(STOP_FOREGROUND_REMOVE)
         } else {
@@ -401,7 +452,40 @@ class TimerForegroundService : Service() {
             .build()
     }
 
+    /** Vibrating heads-up once the target rest is reached. */
+    private fun buildAlertNotification(): Notification {
+        val tapIntent = PendingIntent.getActivity(
+            this, RC_TAP,
+            Intent(this, MainActivity::class.java).apply {
+                putExtra("timer_type", timerType)
+                flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            },
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+        return NotificationCompat.Builder(this, ALERT_CHANNEL_ID)
+            .setContentTitle(labels["restAlert"])
+            .setContentText(currentPhase)
+            .setSubText(title)
+            .setSmallIcon(timerSmallIcon())
+            .setColor(timerColor())
+            .setContentIntent(tapIntent)
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setVibrate(ALERT_VIBRATION)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .build()
+    }
+
     private fun addActionButtons(builder: NotificationCompat.Builder) {
+        // A stopwatch-style rest has nothing to pause, only to end.
+        if (countUp) {
+            builder.addAction(
+                android.R.drawable.ic_menu_close_clear_cancel, labels["stop"],
+                actionPendingIntent("stop", RC_STOP)
+            )
+            return
+        }
         if (isPaused) {
             builder.addAction(
                 android.R.drawable.ic_media_play, labels["resume"],
@@ -471,6 +555,16 @@ class TimerForegroundService : Service() {
                 setSound(null, null)
             }
             notificationManager.createNotificationChannel(channel)
+            val alertChannel = NotificationChannel(
+                ALERT_CHANNEL_ID,
+                "Timer alerts",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Vibriert, wenn die Zielpause erreicht ist"
+                enableVibration(true)
+                vibrationPattern = ALERT_VIBRATION
+            }
+            notificationManager.createNotificationChannel(alertChannel)
         }
     }
 

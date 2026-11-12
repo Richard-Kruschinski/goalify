@@ -1779,4 +1779,98 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get notifDone => 'Fertig';
+
+  @override
+  String get restTimerTitle => 'Pause';
+
+  @override
+  String restSetProgress(int current, int total) {
+    return 'Satz $current von $total';
+  }
+
+  @override
+  String restSetNumber(int current) {
+    return 'Satz $current';
+  }
+
+  @override
+  String restExerciseDone(String name) {
+    return '$name fertig';
+  }
+
+  @override
+  String restNextExercise(String name) {
+    return 'Als Nächstes: $name';
+  }
+
+  @override
+  String get restWorkoutDone => 'Workout geschafft';
+
+  @override
+  String get restStopTimer => 'Pausen-Timer stoppen';
+
+  @override
+  String get restTargetReachedAlert => 'Pause vorbei. Nächster Satz!';
+
+  @override
+  String get restSettings => 'Sätze & Pause';
+
+  @override
+  String get restSettingsSubtitle => 'Satzanzahl und Pausen-Timer';
+
+  @override
+  String restSettingsFor(String name) {
+    return 'Sätze & Pause – $name';
+  }
+
+  @override
+  String get restTargetSets => 'Sätze';
+
+  @override
+  String get restTargetRest => 'Zielpause';
+
+  @override
+  String restTargetValue(String time) {
+    return 'Pause $time';
+  }
+
+  @override
+  String get restOff => 'Aus';
+
+  @override
+  String get restSettingsExplain =>
+      'Jedes Speichern startet den Pausen-Timer bei 0:00. Bei der Zielpause vibriert das Handy.';
+
+  @override
+  String restHistory(String times) {
+    return 'Pausen: $times';
+  }
+
+  @override
+  String restSetsDone(int done, int total) {
+    return '$done von $total Sätzen erledigt';
+  }
+
+  @override
+  String get restSection => 'Pausen-Timer';
+
+  @override
+  String get restAutoOffTitle => 'Automatisch aus';
+
+  @override
+  String get restAutoOffDescription =>
+      'Stoppt den Pausen-Timer, wenn so lange kein neuer Satz kommt.';
+
+  @override
+  String get decrease => 'Verringern';
+
+  @override
+  String get increase => 'Erhöhen';
+
+  @override
+  String get restTimerEnabledTitle => 'Pausen-Timer';
+
+  @override
+  String get restTimerEnabledDescription =>
+      'Startet nach jedem gespeicherten Satz eine Stoppuhr';
 }

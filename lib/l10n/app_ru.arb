@@ -527,5 +527,31 @@
 
   "notifStop": "Стоп",
   "notifSkip": "Пропустить",
-  "notifDone": "Готово"
+  "notifDone": "Готово",
+
+  "restTimerTitle": "Отдых",
+  "restSetProgress": "Подход {current} из {total}",
+  "restSetNumber": "Подход {current}",
+  "restExerciseDone": "{name}: готово",
+  "restNextExercise": "Далее: {name}",
+  "restWorkoutDone": "Тренировка завершена",
+  "restStopTimer": "Остановить таймер отдыха",
+  "restTargetReachedAlert": "Отдых окончен. Следующий подход!",
+  "restSettings": "Подходы и отдых",
+  "restSettingsSubtitle": "Число подходов и таймер отдыха",
+  "restSettingsFor": "Подходы и отдых — {name}",
+  "restTargetSets": "Подходы",
+  "restTargetRest": "Целевой отдых",
+  "restTargetValue": "Отдых {time}",
+  "restOff": "Выкл.",
+  "restSettingsExplain": "Каждое сохранение запускает таймер отдыха с 0:00. По достижении целевого отдыха телефон вибрирует.",
+  "restHistory": "Отдых: {times}",
+  "restSetsDone": "Выполнено подходов: {done} из {total}",
+  "restSection": "Таймер отдыха",
+  "restAutoOffTitle": "Автоматически выключать",
+  "restAutoOffDescription": "Останавливает таймер отдыха, если новый подход не записан за это время.",
+  "decrease": "Уменьшить",
+  "increase": "Увеличить",
+  "restTimerEnabledTitle": "Таймер отдыха",
+  "restTimerEnabledDescription": "Запускает секундомер после каждого сохранённого подхода"
 }

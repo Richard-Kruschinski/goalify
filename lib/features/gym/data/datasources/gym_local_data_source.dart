@@ -18,6 +18,8 @@ class GymLocalDataSource {
   static const _kOrderDaysKey = 'gym_order_days_v1';
   static const _kExerciseNotesKey = 'gym_exercise_notes_v1';
   static const _kWeightSettingsKey = 'gym_exercise_weight_settings_v1';
+  static const _kRestSettingsKey = 'gym_exercise_rest_settings_v1';
+  static const _kSetEventsKey = 'gym_set_events_v1';
   static const _kSplitsKey = 'gym_splits_v1';
   static const _kSplitOrderKey = 'gym_split_order_v1';
   static const _kCalendarKey = 'gym_calendar_v1';
@@ -144,19 +146,11 @@ class GymLocalDataSource {
       LocalStorage.saveJson(_kExerciseNotesKey, notes);
 
   // --- Weight settings (bar weight / tracking mode) per exercise id ---
-  Future<Map<String, ExerciseWeightSettings>> loadWeightSettings() async {
-    final raw = await LocalStorage.loadJson(_kWeightSettingsKey, fallback: {});
-    final result = <String, ExerciseWeightSettings>{};
-    if (raw is Map) {
-      raw.forEach((k, v) {
-        if (v is Map) {
-          result[k.toString()] =
-              ExerciseWeightSettings.fromMap(Map<String, dynamic>.from(v));
-        }
-      });
-    }
-    return result;
-  }
+  Future<Map<String, ExerciseWeightSettings>> loadWeightSettings() async =>
+      _decodeObjectMap(
+        await LocalStorage.loadJson(_kWeightSettingsKey, fallback: {}),
+        ExerciseWeightSettings.fromMap,
+      );
 
   Future<void> saveWeightSettings(
           Map<String, ExerciseWeightSettings> settings) =>
@@ -164,6 +158,53 @@ class GymLocalDataSource {
         _kWeightSettingsKey,
         settings.map((k, v) => MapEntry(k, v.toMap())),
       );
+
+  // --- Set count / rest settings per exercise id ---
+  Future<Map<String, ExerciseRestSettings>> loadRestSettings() async =>
+      _decodeObjectMap(
+        await LocalStorage.loadJson(_kRestSettingsKey, fallback: {}),
+        ExerciseRestSettings.fromMap,
+      );
+
+  Future<void> saveRestSettings(Map<String, ExerciseRestSettings> settings) =>
+      LocalStorage.saveJson(
+        _kRestSettingsKey,
+        settings.map((k, v) => MapEntry(k, v.toMap())),
+      );
+
+  // --- Tracked sets per exercise id ---
+  Future<Map<String, List<SetEvent>>> loadSetEvents() async {
+    final raw = await LocalStorage.loadJson(_kSetEventsKey, fallback: {});
+    final result = <String, List<SetEvent>>{};
+    if (raw is! Map) return result;
+    raw.forEach((k, v) {
+      if (v is! List) return;
+      result[k.toString()] = v
+          .whereType<Map>()
+          .map((e) => SetEvent.fromMap(Map<String, dynamic>.from(e)))
+          .toList();
+    });
+    return result;
+  }
+
+  Future<void> saveSetEvents(Map<String, List<SetEvent>> events) =>
+      LocalStorage.saveJson(
+        _kSetEventsKey,
+        events.map((k, v) => MapEntry(k, v.map((e) => e.toMap()).toList())),
+      );
+
+  /// Decodes `{id: {...}}` JSON into model objects, skipping malformed entries.
+  static Map<String, T> _decodeObjectMap<T>(
+    Object? raw,
+    T Function(Map<String, dynamic>) fromMap,
+  ) {
+    final result = <String, T>{};
+    if (raw is! Map) return result;
+    raw.forEach((k, v) {
+      if (v is Map) result[k.toString()] = fromMap(Map<String, dynamic>.from(v));
+    });
+    return result;
+  }
 
   // --- Day colors / icons ---
   Future<Map<String, int>> loadDayColors() async =>

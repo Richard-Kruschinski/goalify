@@ -3129,6 +3129,156 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Done'**
   String get notifDone;
+
+  /// No description provided for @restTimerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rest'**
+  String get restTimerTitle;
+
+  /// No description provided for @restSetProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Set {current} of {total}'**
+  String restSetProgress(int current, int total);
+
+  /// No description provided for @restSetNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Set {current}'**
+  String restSetNumber(int current);
+
+  /// No description provided for @restExerciseDone.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} done'**
+  String restExerciseDone(String name);
+
+  /// No description provided for @restNextExercise.
+  ///
+  /// In en, this message translates to:
+  /// **'Up next: {name}'**
+  String restNextExercise(String name);
+
+  /// No description provided for @restWorkoutDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Workout complete'**
+  String get restWorkoutDone;
+
+  /// No description provided for @restStopTimer.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop rest timer'**
+  String get restStopTimer;
+
+  /// No description provided for @restTargetReachedAlert.
+  ///
+  /// In en, this message translates to:
+  /// **'Rest is over. Next set!'**
+  String get restTargetReachedAlert;
+
+  /// No description provided for @restSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Sets & rest'**
+  String get restSettings;
+
+  /// No description provided for @restSettingsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Number of sets and rest timer'**
+  String get restSettingsSubtitle;
+
+  /// No description provided for @restSettingsFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Sets & rest — {name}'**
+  String restSettingsFor(String name);
+
+  /// No description provided for @restTargetSets.
+  ///
+  /// In en, this message translates to:
+  /// **'Sets'**
+  String get restTargetSets;
+
+  /// No description provided for @restTargetRest.
+  ///
+  /// In en, this message translates to:
+  /// **'Target rest'**
+  String get restTargetRest;
+
+  /// No description provided for @restTargetValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Rest {time}'**
+  String restTargetValue(String time);
+
+  /// No description provided for @restOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get restOff;
+
+  /// No description provided for @restSettingsExplain.
+  ///
+  /// In en, this message translates to:
+  /// **'Every save starts the rest timer from 0:00. At the target rest the phone vibrates.'**
+  String get restSettingsExplain;
+
+  /// No description provided for @restHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Rests: {times}'**
+  String restHistory(String times);
+
+  /// No description provided for @restSetsDone.
+  ///
+  /// In en, this message translates to:
+  /// **'{done} of {total} sets done'**
+  String restSetsDone(int done, int total);
+
+  /// No description provided for @restSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Rest timer'**
+  String get restSection;
+
+  /// No description provided for @restAutoOffTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop automatically'**
+  String get restAutoOffTitle;
+
+  /// No description provided for @restAutoOffDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Stops the rest timer when no new set is tracked for this long.'**
+  String get restAutoOffDescription;
+
+  /// No description provided for @decrease.
+  ///
+  /// In en, this message translates to:
+  /// **'Decrease'**
+  String get decrease;
+
+  /// No description provided for @increase.
+  ///
+  /// In en, this message translates to:
+  /// **'Increase'**
+  String get increase;
+
+  /// No description provided for @restTimerEnabledTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rest timer'**
+  String get restTimerEnabledTitle;
+
+  /// No description provided for @restTimerEnabledDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Starts a stopwatch after every saved set'**
+  String get restTimerEnabledDescription;
 }
 
 class _AppLocalizationsDelegate

@@ -1785,4 +1785,98 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get notifDone => 'Готово';
+
+  @override
+  String get restTimerTitle => 'Отдых';
+
+  @override
+  String restSetProgress(int current, int total) {
+    return 'Подход $current из $total';
+  }
+
+  @override
+  String restSetNumber(int current) {
+    return 'Подход $current';
+  }
+
+  @override
+  String restExerciseDone(String name) {
+    return '$name: готово';
+  }
+
+  @override
+  String restNextExercise(String name) {
+    return 'Далее: $name';
+  }
+
+  @override
+  String get restWorkoutDone => 'Тренировка завершена';
+
+  @override
+  String get restStopTimer => 'Остановить таймер отдыха';
+
+  @override
+  String get restTargetReachedAlert => 'Отдых окончен. Следующий подход!';
+
+  @override
+  String get restSettings => 'Подходы и отдых';
+
+  @override
+  String get restSettingsSubtitle => 'Число подходов и таймер отдыха';
+
+  @override
+  String restSettingsFor(String name) {
+    return 'Подходы и отдых — $name';
+  }
+
+  @override
+  String get restTargetSets => 'Подходы';
+
+  @override
+  String get restTargetRest => 'Целевой отдых';
+
+  @override
+  String restTargetValue(String time) {
+    return 'Отдых $time';
+  }
+
+  @override
+  String get restOff => 'Выкл.';
+
+  @override
+  String get restSettingsExplain =>
+      'Каждое сохранение запускает таймер отдыха с 0:00. По достижении целевого отдыха телефон вибрирует.';
+
+  @override
+  String restHistory(String times) {
+    return 'Отдых: $times';
+  }
+
+  @override
+  String restSetsDone(int done, int total) {
+    return 'Выполнено подходов: $done из $total';
+  }
+
+  @override
+  String get restSection => 'Таймер отдыха';
+
+  @override
+  String get restAutoOffTitle => 'Автоматически выключать';
+
+  @override
+  String get restAutoOffDescription =>
+      'Останавливает таймер отдыха, если новый подход не записан за это время.';
+
+  @override
+  String get decrease => 'Уменьшить';
+
+  @override
+  String get increase => 'Увеличить';
+
+  @override
+  String get restTimerEnabledTitle => 'Таймер отдыха';
+
+  @override
+  String get restTimerEnabledDescription =>
+      'Запускает секундомер после каждого сохранённого подхода';
 }

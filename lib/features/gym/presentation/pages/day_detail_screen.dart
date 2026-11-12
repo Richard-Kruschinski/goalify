@@ -3,7 +3,11 @@ import '../../../../l10n/generated/app_localizations.dart';
 import '../../../../core/i18n/task_labels.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/models/gym_models.dart';
+import '../../domain/usecases/rest_tracking.dart';
 import '../widgets/weight_settings_tile.dart';
+import '../widgets/rest_settings_tile.dart';
+import '../widgets/rest_timer_bar.dart';
+import '../widgets/set_progress_widgets.dart';
 import '../widgets/exercise_icon.dart';
 
 // ===============================================================
@@ -27,6 +31,12 @@ class DayDetailScreen extends StatefulWidget {
       onEditWeightSettings;
   /// Bar weight / tracking mode currently stored for an exercise.
   final ExerciseWeightSettings Function(Workout workout) weightSettingsFor;
+  /// Opens the sets & rest dialog, hosted on the given context like above.
+  final Future<void> Function(BuildContext context, Workout workout)
+      onEditRestSettings;
+  final ExerciseRestSettings Function(String workoutId) restSettingsFor;
+  /// Sets tracked today for an exercise (checkmarks).
+  final int Function(String workoutId) setsDoneToday;
   final void Function(List<String> newOrder) onReorder;
   final Color stripeColor;
   final VoidCallback? onRefresh;
@@ -52,6 +62,9 @@ class DayDetailScreen extends StatefulWidget {
     required this.onEditNote,
     required this.onEditWeightSettings,
     required this.weightSettingsFor,
+    required this.onEditRestSettings,
+    required this.restSettingsFor,
+    required this.setsDoneToday,
     required this.onReorder,
     required this.stripeColor,
     this.onRefresh,
@@ -122,6 +135,23 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
         ..addAll(altWorkouts);
     });
     widget.onReorder(_list.map((w) => w.id).toList());
+  }
+
+  Future<void> _trackExercise(Workout w) async {
+    await widget.onEdit(w, widget.latestForDay(w.id, widget.day));
+    if (widget.onRefresh != null) {
+      widget.onRefresh!();
+      if (mounted) setState(() {});
+    }
+  }
+
+  void _trackExerciseById(String workoutId) {
+    for (final w in _list) {
+      if (w.id == workoutId) {
+        _trackExercise(w);
+        return;
+      }
+    }
   }
 
   Widget _buildAlternativesDivider() {
@@ -202,6 +232,7 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
           ],
         ),
       ),
+      bottomNavigationBar: RestTimerBar(onOpenExercise: _trackExerciseById),
     );
   }
 
@@ -316,13 +347,7 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: () async {
-            await widget.onEdit(w, latest);
-            if (widget.onRefresh != null) {
-              widget.onRefresh!();
-              setState(() {}); // Refresh UI
-            }
-          },
+          onTap: () => _trackExercise(w),
           onLongPress: () => widget.onShowChart(w),
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -356,18 +381,21 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        w.name,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.ink(context),
+                      ExerciseCardTitle(
+                        name: w.name,
+                        complete: RestTracking.isComplete(
+                          widget.setsDoneToday(w.id),
+                          widget.restSettingsFor(w.id).targetSets,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         latestSummaryText(w, latest, workoutUnitsOf(AppLocalizations.of(context))),
                         style: TextStyle(fontSize: 13, color: AppColors.muted(context)),
+                      ),
+                      SetProgressDots(
+                        setsDone: widget.setsDoneToday(w.id),
+                        targetSets: widget.restSettingsFor(w.id).targetSets,
                       ),
                     ],
                   ),
@@ -558,6 +586,18 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
                       },
                     ),
                   ],
+                  Container(
+                    height: 1,
+                    color: AppColors.chip(context),
+                  ),
+                  RestSettingsTile(
+                    settings: widget.restSettingsFor(w.id),
+                    onTap: () async {
+                      Navigator.pop(ctx);
+                      await widget.onEditRestSettings(context, w);
+                      if (mounted) setState(() {});
+                    },
+                  ),
                   Container(
                     height: 1,
                     color: AppColors.chip(context),

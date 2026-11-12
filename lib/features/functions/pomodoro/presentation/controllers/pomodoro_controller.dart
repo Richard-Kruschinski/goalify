@@ -91,6 +91,8 @@ class PomodoroController extends ChangeNotifier {
       onResume: () => start(),
       onStop: reset,
       onSkip: skipToNextPhase,
+      currentLiveState: () =>
+          _timerState == PomodoroTimerState.idle ? null : _buildLiveState(),
     );
   }
 
@@ -325,7 +327,7 @@ class PomodoroController extends ChangeNotifier {
     _phaseEndsAt = null;
 
     await _platformService.stopAppBlocking();
-    await _liveService.pauseLiveTimer();
+    await _liveService.pauseLiveTimer(timerId: 'pomodoro');
 
     notifyListeners();
   }
@@ -338,7 +340,7 @@ class PomodoroController extends ChangeNotifier {
     _phaseEndsAt = null;
 
     await _platformService.stopAppBlocking();
-    await _liveService.stopLiveTimer();
+    await _liveService.stopLiveTimer(timerId: 'pomodoro');
 
     notifyListeners();
   }
@@ -378,7 +380,7 @@ class PomodoroController extends ChangeNotifier {
     _timerState = PomodoroTimerState.idle;
 
     // Notify live service: phase completed, timer goes idle
-    await _liveService.finishLiveTimer('Phase abgeschlossen! Nächste Phase bereit.');
+    await _liveService.finishLiveTimer('Phase abgeschlossen! Nächste Phase bereit.', timerId: 'pomodoro');
 
     notifyListeners();
   }
@@ -404,7 +406,7 @@ class PomodoroController extends ChangeNotifier {
     _remainingSeconds = totalSecondsForPhase;
     _timerState = PomodoroTimerState.idle;
 
-    await _liveService.stopLiveTimer();
+    await _liveService.stopLiveTimer(timerId: 'pomodoro');
     notifyListeners();
   }
 
