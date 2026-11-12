@@ -46,6 +46,7 @@ test/                  Unit- und Widget-Tests
 - **Texte** nur über `AppLocalizations` (de, en, ru pflegen). Ohne Context: `CurrentL10n.of`.
 - **Fachlogik** gehört in `domain/usecases` als reine Klasse und bekommt Unit-Tests (Beispiele: `RestTracking`, `BestSetCache`).
 - **Wiederverwenden statt kopieren:** Für Menüzeilen `OptionsMenuTile`, für "− Wert +" `ValueStepper`, für Zeitformate `core/utils/duration_format.dart`.
+- **Verschiebbare Kartenlisten** (`ReorderableListView` mit Karten und Abstand darunter) bekommen `proxyDecorator: cardDragProxy(...)` aus `core/widgets/card_drag_proxy.dart`. Ohne ihn zeichnet Flutter den Zieh-Schatten um Karte **plus** Abstand.
 - **Commits:** englisch, Präfix im Stil `Feat(gym): ...`, `Fix(gym): ...`, `Chore(deps): ...`. Keine Co-Authored-By-Zeile.
 
 ## Stolperfallen

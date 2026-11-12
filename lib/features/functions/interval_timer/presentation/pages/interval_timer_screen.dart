@@ -5,6 +5,7 @@ import '../../../../../core/utils/snackbar_utils.dart';
 import 'package:provider/provider.dart';
 import '../controllers/interval_timer_controller.dart';
 import '../../data/models/interval_timer_state.dart';
+import '../../../../../core/widgets/card_drag_proxy.dart';
 
 /// Localized version of IntervalTimerController.currentItemLabel.
 /// The controller keeps a context-free English/German fallback for native
@@ -914,6 +915,10 @@ class _IntervalTimerScreenContentState extends State<_IntervalTimerScreenContent
             physics: const NeverScrollableScrollPhysics(),
             itemCount: controller.tasks.length,
             buildDefaultDragHandles: false,
+            proxyDecorator: cardDragProxy(
+              borderRadius: BorderRadius.circular(14),
+              margin: const EdgeInsets.only(bottom: 10),
+            ),
             onReorder: controller.reorderTasks,
             itemBuilder: (context, index) {
               final task = controller.tasks[index];

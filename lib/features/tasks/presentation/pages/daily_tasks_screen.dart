@@ -26,6 +26,7 @@ import '../../../../core/i18n/task_labels.dart';
 import '../../../../l10n/generated/app_localizations.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/widgets/card_drag_proxy.dart';
 /// View modes
 enum DailyViewMode { today, byDate }
 
@@ -2145,6 +2146,7 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                       itemCount: ordered.length,
                       onReorder: (old, newI) => _onReorder(old, newI, dateKey: dateKey),
                       buildDefaultDragHandles: false,
+                      proxyDecorator: cardDragProxy(),
                       itemBuilder: (ctx, i) {
                         final task = ordered[i];
                         return _buildModernTaskCard(task, i, dateKey);

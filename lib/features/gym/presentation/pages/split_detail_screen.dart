@@ -2,6 +2,7 @@
 import '../../../../l10n/generated/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 
+import '../../../../core/widgets/card_drag_proxy.dart';
 class SplitDetailScreen extends StatefulWidget {
   final String splitName;
   final List<String> days;
@@ -88,6 +89,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
                       itemCount: _days.length,
                       onReorder: _onReorder,
                       buildDefaultDragHandles: false,
+                      proxyDecorator: cardDragProxy(),
                       itemBuilder: (_, i) {
                         final day = _days[i];
                         final count = widget.dayExerciseCount(day);

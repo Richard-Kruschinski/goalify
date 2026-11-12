@@ -40,6 +40,7 @@ import '../gym_sort.dart';
 import '../../../../core/widgets/sort_menu_button.dart';
 import '../widgets/exercise_icon.dart';
 
+import '../../../../core/widgets/card_drag_proxy.dart';
 enum ViewMode { byExercise, byDay, bySplit }
 
 /// What an icon belongs to. Workout days and splits keep their icons in
@@ -4176,6 +4177,7 @@ class _GymScreenState extends State<GymScreen> {
       itemCount: filtered.length,
       onReorder: _reorderMainOnly,
       buildDefaultDragHandles: false,
+      proxyDecorator: cardDragProxy(),
       itemBuilder: (_, i) {
         final w = filtered[i];
         final latest = _getLatestLogFor(w.id);
@@ -4339,6 +4341,7 @@ class _GymScreenState extends State<GymScreen> {
       itemCount: days.length,
       onReorder: _reorderDays,
       buildDefaultDragHandles: false,
+      proxyDecorator: cardDragProxy(),
       itemBuilder: (_, i) {
         final day = days[i];
         return _buildModernDayCard(day, dayDrag ? i : null, _mainExerciseCount(day));
@@ -4483,6 +4486,7 @@ class _GymScreenState extends State<GymScreen> {
       itemCount: splits.length,
       onReorder: _reorderSplits,
       buildDefaultDragHandles: false,
+      proxyDecorator: cardDragProxy(),
       itemBuilder: (_, i) {
         final splitName = splits[i];
         final count = _splitsByName[splitName]?.length ?? 0;
