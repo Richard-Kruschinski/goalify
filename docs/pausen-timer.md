@@ -22,6 +22,8 @@ Nach jedem gespeicherten Satz läuft eine Stoppuhr, die zeigt, wie lange die Pau
 
 Haken: Unter jeder Übungskarte ein Kreis pro geplantem Satz, grün für erledigte. Sind alle geschafft, steht ein grüner Haken neben dem Namen. Gezählt wird pro logischem Tag (`DayCycle`), egal unter welchem Trainingstag gespeichert wurde.
 
+Neu hinzukommende Haken zeichnen sich an ihrer Stelle selbst (`AnimatedCheck`, 1,1 s): das Symbol ploppt auf, der Kreis wird gezogen, dann der Haken. Das ist eine Flutter-Übersetzung des SVG/CSS-Snippets „Animated Success Checkmark“ (stroke-dashoffset + Pop-in, gleiche Zeiten und Kurve `cubic-bezier(0.34, 1.56, 0.64, 1)`). Haken, die beim Aufbau der Karte schon da sind, bleiben still. Bei „Bewegung reduzieren“ gibt es keine Animation.
+
 ## Wo man es einstellt
 
 - **Je Übung:** Drei-Punkte-Menü der Übung → „Sätze & Pause“ (`RestSettingsDialog`). Satzanzahl 0–20, Zielpause 0–10 min in 15-s-Schritten. 0 heißt „Aus“ und wird als `null` gespeichert.
@@ -51,7 +53,8 @@ RestTimerController
 | `lib/features/gym/presentation/controllers/rest_timer_controller.dart` | `RestTimerController` (App-weit in `main.dart`), `RestSession`, `describeRest()` (Text für Balken **und** Sperrbildschirm) |
 | `lib/features/gym/presentation/widgets/rest_timer_bar.dart` | Balken unten mit Uhr, Zeit, Ziel, Stopp |
 | `lib/features/gym/presentation/widgets/rest_clock_icon.dart` | animierte Uhr (`CustomPainter` + `Ticker`, Zeigerstellung über `turnFraction`) |
-| `lib/features/gym/presentation/widgets/set_progress_widgets.dart` | `SetProgressDots`, `ExerciseCardTitle` (Haken) |
+| `lib/features/gym/presentation/widgets/set_progress_widgets.dart` | `SetProgressDots`, `ExerciseCardTitle` (Haken; merken sich, welche Haken neu sind) |
+| `lib/features/gym/presentation/widgets/animated_check.dart` | `AnimatedCheck`: Haken im Kreis, der sich einzeichnet (`CustomPainter`, `PathMetric.extractPath`) |
 | `lib/features/gym/presentation/widgets/rest_settings_dialog.dart` / `rest_settings_tile.dart` | Einstellungen je Übung und Menüzeile |
 | `lib/features/gym/presentation/widgets/options_menu_tile.dart` | gemeinsame Menüzeile (auch für `WeightSettingsTile`) |
 | `lib/features/gym/data/models/gym_models.dart` | `ExerciseRestSettings`, `SetEvent` |
@@ -86,6 +89,7 @@ Satz-Ereignisse werden mitgelöscht: „Nur diesen Tag löschen“ entfernt die 
 - `test/rest_timer_controller_test.dart` – Neustart, Zielpause, Auto-Aus, Schalter aus, Texte von `describeRest`
 - `test/duration_format_test.dart` – Zeitformat
 - `test/rest_clock_icon_test.dart` – Zeigerstellung (eine Umdrehung = Zielpause), Ticker endet beim Entfernen
+- `test/animated_check_test.dart` – nur neue Haken animieren, Animation endet, Bewegung reduzieren
 
 ## Von Hand prüfen
 
