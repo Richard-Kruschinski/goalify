@@ -2,6 +2,7 @@
 import '../../../../../l10n/generated/app_localizations.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/theme/tool_hue.dart';
+import '../../../../../core/widgets/equal_height_swap.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
 import '../controllers/distraction_blocker_controller.dart';
@@ -280,9 +281,11 @@ class _DistractionBlockerScreenState extends State<DistractionBlockerScreen> wit
             padding: const EdgeInsets.all(24),
             child: Column(
               children: [
-                // Session duration
-                if (isActive) ...[
-                  Container(
+                // Session duration (on) or hint (off), equally tall so the
+                // switch below stays in place when toggled
+                EqualHeightSwap(
+                  showFirst: isActive,
+                  first: Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(vertical: 20),
                     decoration: BoxDecoration(
@@ -290,6 +293,7 @@ class _DistractionBlockerScreenState extends State<DistractionBlockerScreen> wit
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
                           AppLocalizations.of(context).blockerCurrentSession,
@@ -313,9 +317,7 @@ class _DistractionBlockerScreenState extends State<DistractionBlockerScreen> wit
                       ],
                     ),
                   ),
-                  const SizedBox(height: 24),
-                ] else ...[
-                  Container(
+                  second: Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -343,9 +345,9 @@ class _DistractionBlockerScreenState extends State<DistractionBlockerScreen> wit
                       ],
                     ),
                   ),
-                  const SizedBox(height: 24),
-                ],
-                
+                ),
+                const SizedBox(height: 24),
+
                 // Toggle switch
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
