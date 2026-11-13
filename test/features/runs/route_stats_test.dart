@@ -34,7 +34,12 @@ void main() {
 
     test('is zero for an empty route', () {
       expect(RouteStats.distanceMeters([]), 0);
-      expect(RouteStats.distanceMeters([[_point(52, 0)]]), 0);
+      expect(
+        RouteStats.distanceMeters([
+          [_point(52, 0)],
+        ]),
+        0,
+      );
     });
   });
 
@@ -47,7 +52,10 @@ void main() {
     });
 
     test('is null for very short distances', () {
-      expect(RouteStats.paceSecondsPerKm(49, const Duration(minutes: 1)), isNull);
+      expect(
+        RouteStats.paceSecondsPerKm(49, const Duration(minutes: 1)),
+        isNull,
+      );
     });
   });
 

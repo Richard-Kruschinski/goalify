@@ -206,10 +206,16 @@ class _RunRouteMapState extends State<RunRouteMap>
                           maxZoom: _followZoom,
                         ),
                   onMapReady: () => _mapReady = true,
-                  onPositionChanged: (camera, hasGesture) {
-                    if (camera.rotation != _rotation) {
-                      setState(() => _rotation = camera.rotation);
+                  // onPositionChanged skips pure rotations (the compass
+                  // button only turns the map), so the needle listens to
+                  // every map event instead.
+                  onMapEvent: (event) {
+                    final rotation = event.camera.rotation;
+                    if (rotation != _rotation) {
+                      setState(() => _rotation = rotation);
                     }
+                  },
+                  onPositionChanged: (camera, hasGesture) {
                     if (hasGesture) _flight.stop(); // the finger wins
                     if (hasGesture && widget.follow && !_userMoved) {
                       setState(() => _userMoved = true);
