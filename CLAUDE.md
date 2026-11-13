@@ -61,3 +61,4 @@ test/                  Unit- und Widget-Tests
 - [docs/pausen-timer.md](docs/pausen-timer.md) – Pausen-Timer zwischen Sätzen, Satz-Haken, Pausen-Statistik
 - [docs/live-timer.md](docs/live-timer.md) – Timer auf dem Sperrbildschirm (Dart ↔ Android/iOS)
 - [docs/samsung-einrichtung.md](docs/samsung-einrichtung.md) – Handy-Einstellungen für Samsung
+- [docs/liquid-glass-schalter.md](docs/liquid-glass-schalter.md) – Glas-Schalter mit Lichtbrechung (Shader), z. B. Theme-Auswahl

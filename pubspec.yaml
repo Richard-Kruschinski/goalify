@@ -52,6 +52,8 @@ flutter:
     - assets/workout_i18n_de.json
     - assets/workout_i18n_ru.json
     - assets/images/exercises/
+  shaders:
+    - shaders/liquid_glass.frag
   uses-material-design: true
 
 

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../../../core/settings/settings_controller.dart';
 import '../../../../../core/sounds/sound_controller.dart';
 import '../../../../../core/theme/app_colors.dart';
+import '../../../../../core/widgets/liquid_glass_segmented.dart';
 import '../../../../../core/widgets/time_wheel_picker.dart';
 import '../../../../../core/widgets/value_stepper.dart';
 import '../../../../../l10n/generated/app_localizations.dart';
@@ -47,37 +48,38 @@ class SettingsScreen extends StatelessWidget {
         children: [
           _SectionLabel(text: l10n.appearanceSection, color: muted),
           const SizedBox(height: 8),
-          _OptionCard(
-            color: card,
-            children: [
-              _OptionTile(
-                icon: Icons.brightness_auto,
-                title: l10n.themeSystem,
-                subtitle: l10n.themeSystemDescription,
-                selected: settings.themeMode == ThemeMode.system,
-                ink: ink,
-                muted: muted,
-                onTap: () => settings.setThemeMode(ThemeMode.system),
+          LiquidGlassSegmented<ThemeMode>(
+            selected: settings.themeMode,
+            onChanged: settings.setThemeMode,
+            segments: [
+              LiquidGlassSegment(
+                value: ThemeMode.system,
+                icon: Icons.contrast,
+                label: l10n.themeSystem,
               ),
-              _OptionTile(
-                icon: Icons.light_mode,
-                title: l10n.themeLight,
-                subtitle: l10n.themeLightDescription,
-                selected: settings.themeMode == ThemeMode.light,
-                ink: ink,
-                muted: muted,
-                onTap: () => settings.setThemeMode(ThemeMode.light),
+              LiquidGlassSegment(
+                value: ThemeMode.light,
+                icon: Icons.light_mode_outlined,
+                label: l10n.themeLight,
               ),
-              _OptionTile(
-                icon: Icons.dark_mode,
-                title: l10n.themeDark,
-                subtitle: l10n.themeDarkDescription,
-                selected: settings.themeMode == ThemeMode.dark,
-                ink: ink,
-                muted: muted,
-                onTap: () => settings.setThemeMode(ThemeMode.dark),
+              LiquidGlassSegment(
+                value: ThemeMode.dark,
+                icon: Icons.dark_mode_outlined,
+                label: l10n.themeDark,
               ),
             ],
+          ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Text(
+              switch (settings.themeMode) {
+                ThemeMode.system => l10n.themeSystemDescription,
+                ThemeMode.light => l10n.themeLightDescription,
+                ThemeMode.dark => l10n.themeDarkDescription,
+              },
+              style: TextStyle(fontSize: 12.5, color: muted),
+            ),
           ),
           const SizedBox(height: 24),
           _SectionLabel(text: l10n.dayStartSection, color: muted),
@@ -785,84 +787,6 @@ class _VolumeTile extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _OptionTile extends StatelessWidget {
-  const _OptionTile({
-    required this.icon,
-    required this.title,
-    this.subtitle,
-    required this.selected,
-    required this.ink,
-    required this.muted,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String title;
-  final String? subtitle;
-  final bool selected;
-  final Color ink;
-  final Color muted;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final accent = AppColors.accent(context);
-    final accentSoft = AppColors.accentSoft(context);
-    final chipBg = AppColors.chip(context);
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: selected ? accentSoft : chipBg,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              alignment: Alignment.center,
-              child: Icon(icon, size: 22, color: selected ? accent : muted),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: ink,
-                    ),
-                  ),
-                  if (subtitle != null) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle!,
-                      style: TextStyle(fontSize: 12.5, color: muted),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            Icon(
-              selected ? Icons.check_circle : Icons.circle_outlined,
-              size: 22,
-              color: selected ? accent : muted.withValues(alpha: 0.5),
-            ),
-          ],
-        ),
       ),
     );
   }
