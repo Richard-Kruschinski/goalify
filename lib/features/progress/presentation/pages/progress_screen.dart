@@ -3,6 +3,7 @@ import '../../../../l10n/generated/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/day_cycle.dart';
 import '../../../../core/utils/duration_format.dart';
+import '../../../../core/widgets/liquid_glass_segmented.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../data/models/activity_point.dart';
 import '../../data/models/weekly_review_data.dart';
@@ -883,124 +884,57 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
   }
 
   Widget _buildModeToggle() {
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: AppColors.card(context),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: AppColors.cardShadow(context),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _toggleButton(
-              label: AppLocalizations.of(context).points,
-              icon: Icons.star_outline,
-              isSelected: _mode == DisplayMode.points,
-              onTap: () async {
-                setState(() => _mode = DisplayMode.points);
-                await _saveMode();
-              },
-            ),
-          ),
-          Expanded(
-            child: _toggleButton(
-              label: AppLocalizations.of(context).ratio,
-              icon: Icons.percent,
-              isSelected: _mode == DisplayMode.ratio,
-              onTap: () async {
-                setState(() => _mode = DisplayMode.ratio);
-                await _saveMode();
-              },
-            ),
-          ),
-        ],
-      ),
+    final l10n = AppLocalizations.of(context);
+    return LiquidGlassSegmented<DisplayMode>(
+      compact: true,
+      selectedIconColor: AppColors.accent(context),
+      selected: _mode,
+      onChanged: (mode) async {
+        setState(() => _mode = mode);
+        await _saveMode();
+      },
+      segments: [
+        LiquidGlassSegment(
+          value: DisplayMode.points,
+          icon: Icons.star_outline,
+          label: l10n.points,
+        ),
+        LiquidGlassSegment(
+          value: DisplayMode.ratio,
+          icon: Icons.percent,
+          label: l10n.ratio,
+        ),
+      ],
     );
   }
 
   Widget _buildRangeToggle() {
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: AppColors.card(context),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: AppColors.cardShadow(context),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _toggleButton(
-              label: AppLocalizations.of(context).rangeWeek,
-              icon: Icons.view_week,
-              isSelected: range == Range.week,
-              onTap: () async {
-                setState(() => range = Range.week);
-                await _saveRange();
-              },
-            ),
-          ),
-          Expanded(
-            child: _toggleButton(
-              label: AppLocalizations.of(context).rangeMonth,
-              icon: Icons.calendar_view_month,
-              isSelected: range == Range.month,
-              onTap: () async {
-                setState(() => range = Range.month);
-                await _saveRange();
-              },
-            ),
-          ),
-          Expanded(
-            child: _toggleButton(
-              label: AppLocalizations.of(context).rangeYear,
-              icon: Icons.calendar_month,
-              isSelected: range == Range.year,
-              onTap: () async {
-                setState(() => range = Range.year);
-                await _saveRange();
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _toggleButton({
-    required String label,
-    required IconData icon,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.accent(context) : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
+    final l10n = AppLocalizations.of(context);
+    return LiquidGlassSegmented<Range>(
+      compact: true,
+      selectedIconColor: AppColors.accent(context),
+      selected: range,
+      onChanged: (value) async {
+        setState(() => range = value);
+        await _saveRange();
+      },
+      segments: [
+        LiquidGlassSegment(
+          value: Range.week,
+          icon: Icons.view_week,
+          label: l10n.rangeWeek,
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 18,
-              color: isSelected ? Colors.white : AppColors.muted(context),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-                color: isSelected ? Colors.white : AppColors.muted(context),
-              ),
-            ),
-          ],
+        LiquidGlassSegment(
+          value: Range.month,
+          icon: Icons.calendar_view_month,
+          label: l10n.rangeMonth,
         ),
-      ),
+        LiquidGlassSegment(
+          value: Range.year,
+          icon: Icons.calendar_month,
+          label: l10n.rangeYear,
+        ),
+      ],
     );
   }
 }
