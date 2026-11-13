@@ -6,7 +6,7 @@ import '../../../../../core/sounds/sound_controller.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/widgets/liquid_glass_segmented.dart';
 import '../../../../../core/widgets/time_wheel_picker.dart';
-import '../../../../../core/widgets/value_stepper.dart';
+import '../../../../../core/widgets/settings_tiles.dart';
 import '../../../../../l10n/generated/app_localizations.dart';
 
 /// App options: theme mode (dark mode) and language.
@@ -46,7 +46,7 @@ class SettingsScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
         children: [
-          _SectionLabel(text: l10n.appearanceSection, color: muted),
+          SettingsSectionLabel(text: l10n.appearanceSection, color: muted),
           const SizedBox(height: 8),
           LiquidGlassSegmented<ThemeMode>(
             selected: settings.themeMode,
@@ -82,11 +82,11 @@ class SettingsScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 24),
-          _SectionLabel(text: l10n.dayStartSection, color: muted),
+          SettingsSectionLabel(text: l10n.dayStartSection, color: muted),
           const SizedBox(height: 8),
           // The day boundary drives daily tasks, gym/creatine tracking and the
           // progress charts - see DayCycle.
-          _OptionCard(
+          SettingsCard(
             color: card,
             children: [
               Padding(
@@ -108,66 +108,12 @@ class SettingsScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 24),
-          _SectionLabel(text: l10n.restSection, color: muted),
+          SettingsSectionLabel(text: l10n.soundsSection, color: muted),
           const SizedBox(height: 8),
-          _OptionCard(
+          SettingsCard(
             color: card,
             children: [
-              _SwitchTile(
-                icon: Icons.timer_outlined,
-                title: l10n.restTimerEnabledTitle,
-                subtitle: l10n.restTimerEnabledDescription,
-                value: settings.restTimerEnabled,
-                ink: ink,
-                muted: muted,
-                onChanged: settings.setRestTimerEnabled,
-              ),
-              if (settings.restTimerEnabled)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          l10n.restAutoOffTitle,
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: ink,
-                          ),
-                        ),
-                      ),
-                      ValueStepper(
-                        value: settings.restAutoOffMinutes,
-                        min: SettingsController.minRestAutoOffMinutes,
-                        max: SettingsController.maxRestAutoOffMinutes,
-                        label: (minutes) => '$minutes ${l10n.unitMin}',
-                        decreaseTooltip: l10n.decrease,
-                        increaseTooltip: l10n.increase,
-                        onChanged: settings.setRestAutoOffMinutes,
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-          ),
-          if (settings.restTimerEnabled) ...[
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Text(
-                l10n.restAutoOffDescription,
-                style: TextStyle(fontSize: 12.5, color: muted),
-              ),
-            ),
-          ],
-          const SizedBox(height: 24),
-          _SectionLabel(text: l10n.soundsSection, color: muted),
-          const SizedBox(height: 8),
-          _OptionCard(
-            color: card,
-            children: [
-              _SwitchTile(
+              SettingsSwitchTile(
                 icon: Icons.volume_up,
                 title: l10n.soundsEnabledTitle,
                 subtitle: l10n.soundsEnabledDescription,
@@ -228,7 +174,7 @@ class SettingsScreen extends StatelessWidget {
               ),
             ],
           const SizedBox(height: 24),
-          _SectionLabel(text: l10n.languageSection, color: muted),
+          SettingsSectionLabel(text: l10n.languageSection, color: muted),
           const SizedBox(height: 8),
           // New languages added to SettingsController.supportedLanguages
           // show up automatically.
@@ -268,59 +214,6 @@ String _soundEventLabel(AppLocalizations l10n, SoundEvent event) {
   switch (event) {
     case SoundEvent.dailyTaskCompleted:
       return l10n.soundEventDailyTaskCompleted;
-  }
-}
-
-class _SectionLabel extends StatelessWidget {
-  const _SectionLabel({required this.text, required this.color});
-
-  final String text;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 8),
-      child: Text(
-        text.toUpperCase(),
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0.8,
-          color: color,
-        ),
-      ),
-    );
-  }
-}
-
-class _OptionCard extends StatelessWidget {
-  const _OptionCard({required this.color, required this.children});
-
-  final Color color;
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: color,
-      borderRadius: BorderRadius.circular(20),
-      elevation: AppColors.isDark(context) ? 0 : 1,
-      shadowColor: Colors.black.withValues(alpha: 0.08),
-      child: Column(
-        children: [
-          for (int i = 0; i < children.length; i++) ...[
-            if (i > 0)
-              Divider(
-                height: 1,
-                indent: 64,
-                color: Colors.grey.withValues(alpha: 0.15),
-              ),
-            children[i],
-          ],
-        ],
-      ),
-    );
   }
 }
 
@@ -620,83 +513,6 @@ class _SearchableDropdownState extends State<_SearchableDropdown>
           ),
         ),
       ],
-    );
-  }
-}
-
-class _SwitchTile extends StatelessWidget {
-  const _SwitchTile({
-    required this.icon,
-    required this.title,
-    this.subtitle,
-    required this.value,
-    required this.ink,
-    required this.muted,
-    required this.onChanged,
-  });
-
-  final IconData icon;
-  final String title;
-  final String? subtitle;
-  final bool value;
-  final Color ink;
-  final Color muted;
-  final ValueChanged<bool> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final accent = AppColors.accent(context);
-    final accentSoft = AppColors.accentSoft(context);
-    final chipBg = AppColors.chip(context);
-
-    return InkWell(
-      onTap: () => onChanged(!value),
-      borderRadius: BorderRadius.circular(20),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: value ? accentSoft : chipBg,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              alignment: Alignment.center,
-              child: Icon(icon, size: 22, color: value ? accent : muted),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: ink,
-                    ),
-                  ),
-                  if (subtitle != null) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle!,
-                      style: TextStyle(fontSize: 12.5, color: muted),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            Switch(
-              value: value,
-              onChanged: onChanged,
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

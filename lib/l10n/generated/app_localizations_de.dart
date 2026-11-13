@@ -1873,4 +1873,7 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get restTimerEnabledDescription =>
       'Startet nach jedem gespeicherten Satz eine Stoppuhr';
+
+  @override
+  String get gymSettingsTitle => 'Gym-Einstellungen';
 }

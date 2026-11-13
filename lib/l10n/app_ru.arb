@@ -553,5 +553,6 @@
   "decrease": "Уменьшить",
   "increase": "Увеличить",
   "restTimerEnabledTitle": "Таймер отдыха",
-  "restTimerEnabledDescription": "Запускает секундомер после каждого сохранённого подхода"
+  "restTimerEnabledDescription": "Запускает секундомер после каждого сохранённого подхода",
+  "gymSettingsTitle": "Настройки тренировок"
 }

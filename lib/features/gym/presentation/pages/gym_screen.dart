@@ -25,6 +25,7 @@ import '../../../../core/utils/duration_format.dart';
 import 'package:provider/provider.dart';
 import 'day_detail_screen.dart';
 import 'full_screen_chart_page.dart';
+import 'gym_settings_screen.dart';
 import 'workout_calendar_page.dart';
 import 'split_detail_screen.dart';
 import '../widgets/workout_picker_sheet.dart';
@@ -3975,9 +3976,43 @@ class _GymScreenState extends State<GymScreen> {
       borderRadius: BorderRadius.circular(12),
     ),
     onSelected: (v) {
-      // Kann für zusätzliche Optionen verwendet werden
+      if (v == 1) {
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const GymSettingsScreen()),
+        );
+      }
     },
-    itemBuilder: (_) => const [],
+    itemBuilder: (_) => [
+      PopupMenuItem<int>(
+        value: 1,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.chip(context),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                Icons.settings_outlined,
+                size: 18,
+                color: AppColors.inkSoft(context),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              AppLocalizations.of(context).gymSettingsTitle,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColors.ink(context),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ],
   );
 
   Widget _buildModernFAB() {

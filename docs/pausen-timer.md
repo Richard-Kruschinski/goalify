@@ -27,7 +27,7 @@ Neu hinzukommende Haken zeichnen sich an ihrer Stelle selbst (`AnimatedCheck`, 1
 ## Wo man es einstellt
 
 - **Je Übung:** Drei-Punkte-Menü der Übung → „Sätze & Pause“ (`RestSettingsDialog`). Satzanzahl 0–20, Zielpause 0–10 min in 15-s-Schritten. 0 heißt „Aus“ und wird als `null` gespeichert.
-- **Global:** Functions-Tab → Optionen → „Pausen-Timer“ (Schalter, darunter „Automatisch aus“).
+- **Global:** Gym-Tab → Drei-Punkte-Menü `…` → „Gym-Einstellungen“ (`GymSettingsScreen` mit `RestTimerSettingsSection`: Schalter, darunter „Automatisch aus“). Die Werte liegen im `SettingsController`.
 
 ## Ablauf im Code
 

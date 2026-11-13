@@ -1879,4 +1879,7 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get restTimerEnabledDescription =>
       'Запускает секундомер после каждого сохранённого подхода';
+
+  @override
+  String get gymSettingsTitle => 'Настройки тренировок';
 }

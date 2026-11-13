@@ -3279,6 +3279,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Starts a stopwatch after every saved set'**
   String get restTimerEnabledDescription;
+
+  /// No description provided for @gymSettingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Gym settings'**
+  String get gymSettingsTitle;
 }
 
 class _AppLocalizationsDelegate

@@ -553,5 +553,6 @@
   "decrease": "Verringern",
   "increase": "Erhöhen",
   "restTimerEnabledTitle": "Pausen-Timer",
-  "restTimerEnabledDescription": "Startet nach jedem gespeicherten Satz eine Stoppuhr"
+  "restTimerEnabledDescription": "Startet nach jedem gespeicherten Satz eine Stoppuhr",
+  "gymSettingsTitle": "Gym-Einstellungen"
 }

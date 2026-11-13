@@ -1852,4 +1852,7 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get restTimerEnabledDescription =>
       'Starts a stopwatch after every saved set';
+
+  @override
+  String get gymSettingsTitle => 'Gym settings';
 }

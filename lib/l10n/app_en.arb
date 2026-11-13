@@ -709,5 +709,6 @@
   "decrease": "Decrease",
   "increase": "Increase",
   "restTimerEnabledTitle": "Rest timer",
-  "restTimerEnabledDescription": "Starts a stopwatch after every saved set"
+  "restTimerEnabledDescription": "Starts a stopwatch after every saved set",
+  "gymSettingsTitle": "Gym settings"
 }
