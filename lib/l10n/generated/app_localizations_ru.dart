@@ -1882,4 +1882,86 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get gymSettingsTitle => 'Настройки тренировок';
+
+  @override
+  String get runsTitle => 'Кардио';
+
+  @override
+  String get runHistory => 'История';
+
+  @override
+  String get runsEmpty => 'Пока нет тренировок. Начните первую!';
+
+  @override
+  String get runStart => 'Старт';
+
+  @override
+  String get runActive => 'Идёт запись';
+
+  @override
+  String get runPaused => 'Пауза';
+
+  @override
+  String get runActivityRun => 'Бег';
+
+  @override
+  String get runActivityWalk => 'Ходьба';
+
+  @override
+  String get runActivityBike => 'Велосипед';
+
+  @override
+  String get runUnitKm => 'км';
+
+  @override
+  String get runTime => 'Время';
+
+  @override
+  String get runPacePerKm => 'мин/км';
+
+  @override
+  String get runSearchingGps => 'Поиск GPS …';
+
+  @override
+  String get runPause => 'Пауза';
+
+  @override
+  String get runResume => 'Продолжить';
+
+  @override
+  String get runStop => 'Завершить';
+
+  @override
+  String get runFinishTitle => 'Завершить тренировку?';
+
+  @override
+  String get runNoRoute =>
+      'Чтобы сохранить тренировку, Goalify нужен записанный маршрут. Продолжите или удалите её.';
+
+  @override
+  String get runDiscard => 'Не сохранять';
+
+  @override
+  String get runDeleteTitle => 'Удалить тренировку?';
+
+  @override
+  String get runLocationServiceOff => 'Геолокация выключена.';
+
+  @override
+  String get runPermissionDenied => 'Goalify нужен доступ к геолокации.';
+
+  @override
+  String get runOpenSettings => 'Настройки';
+
+  @override
+  String get runNotificationTitle => 'Goalify записывает';
+
+  @override
+  String get runNotificationText => 'Ваш маршрут записывается.';
+
+  @override
+  String get runNoRouteTitle => 'Маршрута пока нет';
+
+  @override
+  String get runFaceNorth => 'Повернуть на север';
 }

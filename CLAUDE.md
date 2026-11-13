@@ -19,7 +19,7 @@ Werkzeugstand: Flutter 3.50, AGP 9.3.1, Gradle 9.5.0, Built-in Kotlin (kein `kot
 
 ```
 lib/
-  main.dart            App-Shell: MultiProvider, MainNav (Tabs: 0 Progress, 1 Daily, 2 Gym, 3 Functions)
+  main.dart            App-Shell: MultiProvider, MainNav (Tabs: 0 Progress, 1 Daily, 2 Gym, 3 Cardio, 4 Functions)
   core/                feature-übergreifend
     i18n/              CurrentL10n (Texte ohne BuildContext, z. B. für Timer-Benachrichtigungen)
     models/            TimerLiveState
@@ -54,6 +54,7 @@ test/                  Unit- und Widget-Tests
 - `lib/features/gym/presentation/pages/gym_screen.dart` hat über 5000 Zeilen. Gezielt per Suche springen, nicht ganz lesen. Neue Logik lieber in eigene Dateien (usecases, widgets, controllers) legen.
 - Einige Dateien beginnen mit einem UTF-8-BOM (`gym_screen.dart`, alle `.arb`). Beim Bearbeiten per Skript erhalten, beim JSON-Parsen `utf-8-sig` nutzen.
 - Der native Sperrbildschirm zeigt **einen** Timer gleichzeitig. Wer einen neuen Timer anbindet, liest vorher `docs/live-timer.md` (Vorrang-Regel, `timerId` bei pause/stop/finish mitgeben).
+- Wer Tabs in `MainNav` verschiebt, passt auch `_gymTabIndex` / `_functionsTabIndex` in `timer_live_presentation_service.dart` an. Ein Tipp auf die Timer-Benachrichtigung springt sonst in den falschen Tab.
 - iOS wurde in dieser Umgebung nie kompiliert (kein Mac). Änderungen an `ios/Runner/*.swift` sind ungetestet, bis jemand auf einem Mac baut.
 
 ## Feature-Dokus
@@ -64,4 +65,5 @@ test/                  Unit- und Widget-Tests
 - [docs/liquid-glass-schalter.md](docs/liquid-glass-schalter.md) – Glas-Schalter mit Lichtbrechung (Shader): Theme-Auswahl, Gym-Ansicht, Aufgabenart im Daily-Dialog, Fortschritt
 - [docs/skeleton-loading.md](docs/skeleton-loading.md) – Skeleton statt Leerzustand, nur bei echter Wartezeit (Daily, Gym, Übungs-SVGs)
 - [docs/frost-animation.md](docs/frost-animation.md) – Frost-Animation, wenn ein Freeze-Token den angezeigten Tag einfriert
+- [docs/lauf-tracking.md](docs/lauf-tracking.md) – Tab „Cardio“: Laufen/Gehen/Rad per GPS mit OpenFreeMap-Vektorkarte, Aufzeichnung bei ausgeschaltetem Bildschirm
 - [docs/sort-icon-animation.md](docs/sort-icon-animation.md) – Sortier-Icon, das zwischen Doppelpfeil, hoch und runter animiert (Daily, Gym)

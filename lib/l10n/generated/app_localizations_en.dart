@@ -1855,4 +1855,86 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gymSettingsTitle => 'Gym settings';
+
+  @override
+  String get runsTitle => 'Cardio';
+
+  @override
+  String get runHistory => 'History';
+
+  @override
+  String get runsEmpty => 'No sessions yet. Start your first one!';
+
+  @override
+  String get runStart => 'Start';
+
+  @override
+  String get runActive => 'Recording';
+
+  @override
+  String get runPaused => 'Paused';
+
+  @override
+  String get runActivityRun => 'Run';
+
+  @override
+  String get runActivityWalk => 'Walk';
+
+  @override
+  String get runActivityBike => 'Bike';
+
+  @override
+  String get runUnitKm => 'km';
+
+  @override
+  String get runTime => 'Time';
+
+  @override
+  String get runPacePerKm => 'min/km';
+
+  @override
+  String get runSearchingGps => 'Searching for GPS …';
+
+  @override
+  String get runPause => 'Pause';
+
+  @override
+  String get runResume => 'Resume';
+
+  @override
+  String get runStop => 'Finish';
+
+  @override
+  String get runFinishTitle => 'Finish session?';
+
+  @override
+  String get runNoRoute =>
+      'Goalify needs a recorded route to save the session. Keep going or discard it.';
+
+  @override
+  String get runDiscard => 'Discard';
+
+  @override
+  String get runDeleteTitle => 'Delete session?';
+
+  @override
+  String get runLocationServiceOff => 'Location is turned off.';
+
+  @override
+  String get runPermissionDenied => 'Goalify needs access to your location.';
+
+  @override
+  String get runOpenSettings => 'Settings';
+
+  @override
+  String get runNotificationTitle => 'Goalify is recording';
+
+  @override
+  String get runNotificationText => 'Your route is being recorded.';
+
+  @override
+  String get runNoRouteTitle => 'No route yet';
+
+  @override
+  String get runFaceNorth => 'Face north';
 }

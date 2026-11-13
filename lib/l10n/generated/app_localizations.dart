@@ -3285,6 +3285,168 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Gym settings'**
   String get gymSettingsTitle;
+
+  /// No description provided for @runsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cardio'**
+  String get runsTitle;
+
+  /// No description provided for @runHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'History'**
+  String get runHistory;
+
+  /// No description provided for @runsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No sessions yet. Start your first one!'**
+  String get runsEmpty;
+
+  /// No description provided for @runStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get runStart;
+
+  /// No description provided for @runActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording'**
+  String get runActive;
+
+  /// No description provided for @runPaused.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused'**
+  String get runPaused;
+
+  /// No description provided for @runActivityRun.
+  ///
+  /// In en, this message translates to:
+  /// **'Run'**
+  String get runActivityRun;
+
+  /// No description provided for @runActivityWalk.
+  ///
+  /// In en, this message translates to:
+  /// **'Walk'**
+  String get runActivityWalk;
+
+  /// No description provided for @runActivityBike.
+  ///
+  /// In en, this message translates to:
+  /// **'Bike'**
+  String get runActivityBike;
+
+  /// No description provided for @runUnitKm.
+  ///
+  /// In en, this message translates to:
+  /// **'km'**
+  String get runUnitKm;
+
+  /// No description provided for @runTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Time'**
+  String get runTime;
+
+  /// No description provided for @runPacePerKm.
+  ///
+  /// In en, this message translates to:
+  /// **'min/km'**
+  String get runPacePerKm;
+
+  /// No description provided for @runSearchingGps.
+  ///
+  /// In en, this message translates to:
+  /// **'Searching for GPS …'**
+  String get runSearchingGps;
+
+  /// No description provided for @runPause.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause'**
+  String get runPause;
+
+  /// No description provided for @runResume.
+  ///
+  /// In en, this message translates to:
+  /// **'Resume'**
+  String get runResume;
+
+  /// No description provided for @runStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish'**
+  String get runStop;
+
+  /// No description provided for @runFinishTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish session?'**
+  String get runFinishTitle;
+
+  /// No description provided for @runNoRoute.
+  ///
+  /// In en, this message translates to:
+  /// **'Goalify needs a recorded route to save the session. Keep going or discard it.'**
+  String get runNoRoute;
+
+  /// No description provided for @runDiscard.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get runDiscard;
+
+  /// No description provided for @runDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete session?'**
+  String get runDeleteTitle;
+
+  /// No description provided for @runLocationServiceOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Location is turned off.'**
+  String get runLocationServiceOff;
+
+  /// No description provided for @runPermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Goalify needs access to your location.'**
+  String get runPermissionDenied;
+
+  /// No description provided for @runOpenSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get runOpenSettings;
+
+  /// No description provided for @runNotificationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Goalify is recording'**
+  String get runNotificationTitle;
+
+  /// No description provided for @runNotificationText.
+  ///
+  /// In en, this message translates to:
+  /// **'Your route is being recorded.'**
+  String get runNotificationText;
+
+  /// No description provided for @runNoRouteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No route yet'**
+  String get runNoRouteTitle;
+
+  /// No description provided for @runFaceNorth.
+  ///
+  /// In en, this message translates to:
+  /// **'Face north'**
+  String get runFaceNorth;
 }
 
 class _AppLocalizationsDelegate

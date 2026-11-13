@@ -12,7 +12,13 @@
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
     <!-- Timer foreground service: RECEIVE_BOOT_COMPLETED allows receiver registration -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    
+    <!-- Run tracking: GPS while the screen is off runs in geolocator's
+         location foreground service, started while the app is visible, so
+         ACCESS_BACKGROUND_LOCATION is not needed. -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+
     <application
         android:label="Goalify"
         android:name="${applicationName}"

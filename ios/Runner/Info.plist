@@ -47,5 +47,11 @@
 	<true/>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Goalify uses your photo library to let you pick custom icons for tasks and workout days.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Goalify records your route on the map while you track a run.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+	</array>
 </dict>
 </plist>

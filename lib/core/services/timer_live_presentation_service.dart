@@ -47,7 +47,7 @@ class TimerLivePresentationService {
 
   // Bottom navigation indices, see MainNav in main.dart.
   static const _gymTabIndex = 2;
-  static const _functionsTabIndex = 3;
+  static const _functionsTabIndex = 4;
 
   final Map<String, _TimerCallbacks> _callbacks = {};
   String? _activeTimerId;

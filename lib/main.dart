@@ -5,6 +5,8 @@ import 'features/progress/presentation/pages/progress_screen.dart';
 import 'features/tasks/presentation/pages/daily_tasks_screen.dart';
 import 'features/gym/presentation/pages/gym_screen.dart';
 import 'features/functions/presentation/pages/functions_screen.dart';
+import 'features/runs/presentation/pages/runs_screen.dart';
+import 'features/runs/presentation/controllers/run_controller.dart';
 import 'features/functions/pomodoro/presentation/controllers/pomodoro_controller.dart';
 import 'features/functions/distraction_blocker/presentation/controllers/distraction_blocker_controller.dart';
 import 'features/functions/music_timer/presentation/controllers/music_timer_controller.dart';
@@ -69,6 +71,10 @@ class GoalifyApp extends StatelessWidget {
             isEnabled: () => settings.restTimerEnabled,
           ),
         ),
+        // Run tracking - keeps recording while the user switches tabs
+        ChangeNotifierProvider(
+          create: (_) => RunController(),
+        ),
       ],
       child: Consumer<SettingsController>(
         builder: (context, settings, _) => MaterialApp(
@@ -107,7 +113,7 @@ class MainNav extends StatefulWidget {
 }
 
 class _MainNavState extends State<MainNav> {
-  // 0:Progress, 1:Daily, 2:Gym, 3:Functions
+  // 0:Progress, 1:Daily, 2:Gym, 3:Cardio, 4:Functions
   int currentIndex = 1;
 
   @override
@@ -143,6 +149,7 @@ class _MainNavState extends State<MainNav> {
         },
       ),
       const GymScreen(),
+      const RunsScreen(),
       const FunctionsScreen(),
     ];
 
@@ -161,6 +168,7 @@ class _MainNavState extends State<MainNav> {
             BottomNavigationBarItem(icon: const Icon(Icons.show_chart),     label: l10n.progressTitle),
             BottomNavigationBarItem(icon: const Icon(Icons.check_circle),   label: l10n.navDaily),
             BottomNavigationBarItem(icon: const Icon(Icons.fitness_center), label: l10n.gymTitle),
+            BottomNavigationBarItem(icon: const Icon(Icons.directions_run), label: l10n.runsTitle),
             BottomNavigationBarItem(icon: const Icon(Icons.settings),       label: l10n.functionsTitle),
           ],
         ),

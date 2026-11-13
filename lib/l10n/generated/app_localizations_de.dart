@@ -1876,4 +1876,87 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get gymSettingsTitle => 'Gym-Einstellungen';
+
+  @override
+  String get runsTitle => 'Cardio';
+
+  @override
+  String get runHistory => 'Verlauf';
+
+  @override
+  String get runsEmpty => 'Noch keine Einheiten. Starte deine erste!';
+
+  @override
+  String get runStart => 'Start';
+
+  @override
+  String get runActive => 'Läuft';
+
+  @override
+  String get runPaused => 'Pausiert';
+
+  @override
+  String get runActivityRun => 'Laufen';
+
+  @override
+  String get runActivityWalk => 'Gehen';
+
+  @override
+  String get runActivityBike => 'Rad';
+
+  @override
+  String get runUnitKm => 'km';
+
+  @override
+  String get runTime => 'Zeit';
+
+  @override
+  String get runPacePerKm => 'min/km';
+
+  @override
+  String get runSearchingGps => 'GPS wird gesucht …';
+
+  @override
+  String get runPause => 'Pause';
+
+  @override
+  String get runResume => 'Weiter';
+
+  @override
+  String get runStop => 'Beenden';
+
+  @override
+  String get runFinishTitle => 'Einheit beenden?';
+
+  @override
+  String get runNoRoute =>
+      'Goalify braucht eine aufgezeichnete Strecke, um die Einheit zu speichern. Mach weiter oder verwirf sie.';
+
+  @override
+  String get runDiscard => 'Verwerfen';
+
+  @override
+  String get runDeleteTitle => 'Einheit löschen?';
+
+  @override
+  String get runLocationServiceOff => 'Der Standort ist ausgeschaltet.';
+
+  @override
+  String get runPermissionDenied =>
+      'Goalify braucht Zugriff auf deinen Standort.';
+
+  @override
+  String get runOpenSettings => 'Einstellungen';
+
+  @override
+  String get runNotificationTitle => 'Goalify zeichnet auf';
+
+  @override
+  String get runNotificationText => 'Deine Strecke wird aufgezeichnet.';
+
+  @override
+  String get runNoRouteTitle => 'Noch keine Strecke';
+
+  @override
+  String get runFaceNorth => 'Nach Norden ausrichten';
 }
