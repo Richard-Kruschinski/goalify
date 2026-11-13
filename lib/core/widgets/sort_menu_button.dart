@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
+import 'animated_sort_icon.dart';
 
 /// One entry of a [SortMenuButton].
 class SortOption<T> {
@@ -30,6 +31,7 @@ class SortMenuButton<T> extends StatelessWidget {
     required this.descending,
     required this.onSelected,
     required this.tooltip,
+    this.animate = true,
   });
 
   final List<SortOption<T>> options;
@@ -40,22 +42,21 @@ class SortMenuButton<T> extends StatelessWidget {
   final ValueChanged<T> onSelected;
   final String tooltip;
 
+  /// Passed to [AnimatedSortIcon]; false while the saved sort is loading.
+  final bool animate;
+
   SortOption<T> get _active =>
       options.firstWhere((o) => o.value == selected, orElse: () => options.first);
 
-  IconData get _directionIcon => !_active.reversible
-      ? Icons.swap_vert
-      : (descending ? Icons.arrow_downward : Icons.arrow_upward);
+  SortIconState get _iconState => !_active.reversible
+      ? SortIconState.none
+      : (descending ? SortIconState.descending : SortIconState.ascending);
 
   @override
   Widget build(BuildContext context) {
-    final sorting = _active.reversible;
     return PopupMenuButton<T>(
       tooltip: tooltip,
-      icon: Icon(
-        _directionIcon,
-        color: sorting ? AppColors.accent(context) : AppColors.muted(context),
-      ),
+      icon: AnimatedSortIcon(state: _iconState, animate: animate),
       color: AppColors.card(context),
       surfaceTintColor: AppColors.card(context),
       elevation: AppColors.isDark(context) ? 0 : 10,
@@ -107,11 +108,9 @@ class SortMenuButton<T> extends StatelessWidget {
           ),
           // The arrow doubles as the hint that tapping again flips it.
           if (isSelected)
-            Icon(
-              o.reversible ? _directionIcon : Icons.check,
-              size: 18,
-              color: AppColors.accent(context),
-            ),
+            o.reversible
+                ? AnimatedSortIcon(state: _iconState, size: 18)
+                : Icon(Icons.check, size: 18, color: AppColors.accent(context)),
         ],
       ),
     );

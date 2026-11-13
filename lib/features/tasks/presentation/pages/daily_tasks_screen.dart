@@ -27,6 +27,7 @@ import '../../../../core/i18n/task_labels.dart';
 import '../../../../l10n/generated/app_localizations.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/widgets/animated_sort_icon.dart';
 import '../../../../core/widgets/card_drag_proxy.dart';
 import '../../../../core/widgets/skeleton.dart';
 /// View modes
@@ -2308,11 +2309,10 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
                   const SizedBox(width: 8),
                   // Sort menu
                   PopupMenuButton<TaskSortMode>(
-                    icon: Icon(
-                      _sortDirectionIcon,
-                      color: _sortMode == TaskSortMode.manual
-                          ? AppColors.muted(context)
-                          : AppColors.accent(context),
+                    // Jumps while the saved sort loads, animates afterwards.
+                    icon: AnimatedSortIcon(
+                      state: _sortIconState,
+                      animate: _loaded,
                     ),
                     tooltip: AppLocalizations.of(context).sortTasks,
                     color: AppColors.card(context),
@@ -2424,9 +2424,11 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   /// Arrow for the active sort direction. Direction rides on the icon shape,
   /// not on colour: colour already distinguishes "sorting active" (accent)
   /// from "custom order" (muted), and the app's blue belongs to freeze tokens.
-  IconData get _sortDirectionIcon => !_sortMode.supportsReverse
-      ? Icons.swap_vert
-      : (_sortIsDescending ? Icons.arrow_downward : Icons.arrow_upward);
+  SortIconState get _sortIconState => !_sortMode.supportsReverse
+      ? SortIconState.none
+      : (_sortIsDescending
+          ? SortIconState.descending
+          : SortIconState.ascending);
 
   /// Picking the mode that is already active flips its direction; picking a
   /// different one starts from that mode's natural direction again, so
@@ -2479,11 +2481,9 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
           ),
           // The arrow doubles as the hint that tapping again flips it.
           if (selected)
-            Icon(
-              mode.supportsReverse ? _sortDirectionIcon : Icons.check,
-              size: 18,
-              color: AppColors.accent(context),
-            ),
+            mode.supportsReverse
+                ? AnimatedSortIcon(state: _sortIconState, size: 18)
+                : Icon(Icons.check, size: 18, color: AppColors.accent(context)),
         ],
       ),
     );

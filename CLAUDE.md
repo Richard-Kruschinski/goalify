@@ -64,3 +64,4 @@ test/                  Unit- und Widget-Tests
 - [docs/liquid-glass-schalter.md](docs/liquid-glass-schalter.md) – Glas-Schalter mit Lichtbrechung (Shader), z. B. Theme-Auswahl
 - [docs/skeleton-loading.md](docs/skeleton-loading.md) – Skeleton statt Leerzustand, nur bei echter Wartezeit (Daily, Gym, Übungs-SVGs)
 - [docs/frost-animation.md](docs/frost-animation.md) – Frost-Animation, wenn ein Freeze-Token den angezeigten Tag einfriert
+- [docs/sort-icon-animation.md](docs/sort-icon-animation.md) – Sortier-Icon, das zwischen Doppelpfeil, hoch und runter animiert (Daily, Gym)

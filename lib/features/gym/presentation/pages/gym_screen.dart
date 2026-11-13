@@ -3800,6 +3800,7 @@ class _GymScreenState extends State<GymScreen> {
       options: _sortOptionsFor(_mode),
       selected: sort.mode,
       descending: sort.descending,
+      animate: _loaded,
       onSelected: (next) async {
         setState(() => _sortByTab[_mode] = sort.select(next));
         await _repo.saveSortPrefs({
