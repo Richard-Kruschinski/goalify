@@ -3,6 +3,7 @@ import '../../../../l10n/generated/app_localizations.dart';
 import '../../../../core/i18n/task_labels.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/day_cycle.dart';
+import '../../../../core/widgets/swipe_month_view.dart';
 import 'package:flutter/services.dart';
 
 /// ===============================================================
@@ -31,8 +32,6 @@ class WorkoutCalendarPage extends StatefulWidget {
 
 class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
   late DateTime _currentMonth;
-  double? _dragStartX;
-  bool _dragHandled = false;
   bool _showChips = true; // toggle between chips and count badge
 
   @override
@@ -260,30 +259,6 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
     setState(() {
       _currentMonth = targetMonth;
     });
-  }
-
-  void _handleHorizontalDragStart(DragStartDetails details) {
-    _dragStartX = details.globalPosition.dx;
-    _dragHandled = false;
-  }
-
-  void _handleHorizontalDragUpdate(DragUpdateDetails details) {
-    if (_dragHandled || _dragStartX == null) return;
-    final delta = details.globalPosition.dx - _dragStartX!;
-    const threshold = 60; // simple swipe threshold
-    if (delta.abs() > threshold) {
-      if (delta > 0) {
-        _prevMonth();
-      } else {
-        _nextMonth();
-      }
-      _dragHandled = true; // avoid multiple triggers in one swipe
-    }
-  }
-
-  void _handleHorizontalDragEnd(DragEndDetails details) {
-    _dragStartX = null;
-    _dragHandled = false;
   }
 
   Widget _buildDayContent(List<String> names) {
@@ -521,25 +496,13 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
 
   @override
   Widget build(BuildContext context) {
-    final firstWeekday =
-        DateTime(_currentMonth.year, _currentMonth.month, 1).weekday; // 1..7
-    final leadingEmpty = (firstWeekday + 6) % 7; // Start bei Montag
-    final days = _daysInMonth(_currentMonth);
-    final cells = leadingEmpty + days;
-    final rows = (cells / 7).ceil();
-
     final localizations = MaterialLocalizations.of(context);
     final titleLabel = localizations.formatMonthYear(_currentMonth);
 
     return Scaffold(
       backgroundColor: AppColors.bg(context),
       body: SafeArea(
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onHorizontalDragStart: _handleHorizontalDragStart,
-          onHorizontalDragUpdate: _handleHorizontalDragUpdate,
-          onHorizontalDragEnd: _handleHorizontalDragEnd,
-          child: Center(
+        child: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 560),
               child: Column(
@@ -616,7 +579,27 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
                 ),
                 const Divider(height: 0),
                 Expanded(
-                  child: GridView.builder(
+                  child: SwipeMonthView(
+                    month: _currentMonth,
+                    onMonthChanged: (m) => setState(() => _currentMonth = m),
+                    builder: _buildMonthGrid,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMonthGrid(BuildContext context, DateTime month) {
+    final firstWeekday = DateTime(month.year, month.month, 1).weekday; // 1..7
+    final leadingEmpty = (firstWeekday + 6) % 7; // Start bei Montag
+    final days = _daysInMonth(month);
+    final rows = ((leadingEmpty + days) / 7).ceil();
+
+    return GridView.builder(
                     padding: const EdgeInsets.all(8),
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 7,
@@ -631,7 +614,7 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
                       }
                       final dayNum = idx - leadingEmpty + 1;
                       final date =
-                      DateTime(_currentMonth.year, _currentMonth.month, dayNum);
+                      DateTime(month.year, month.month, dayNum);
                       final key = _dateKey(date);
                       final names = widget.calendarByDate[key]?.toList() ?? const <String>[];
                       final isToday = _dateKey(date) == DayCycle.todayKey();
@@ -694,15 +677,7 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
                         ),
                       );
                     },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-      ),
-    );
+                  );
   }
 }
 

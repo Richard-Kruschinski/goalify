@@ -3,6 +3,7 @@ import '../theme/app_colors.dart';
 import '../i18n/task_labels.dart';
 import '../utils/day_cycle.dart';
 import '../../l10n/generated/app_localizations.dart';
+import 'swipe_month_view.dart';
 
 class ModernDatePickerDialog extends StatefulWidget {
   const ModernDatePickerDialog({
@@ -20,8 +21,6 @@ class ModernDatePickerDialog extends StatefulWidget {
 
 class _ModernDatePickerDialogState extends State<ModernDatePickerDialog> {
   late DateTime _currentMonth;
-  double? _dragStartX;
-  bool _dragHandled = false;
 
   @override
   void initState() {
@@ -243,38 +242,8 @@ class _ModernDatePickerDialogState extends State<ModernDatePickerDialog> {
     });
   }
 
-  void _handleHorizontalDragStart(DragStartDetails details) {
-    _dragStartX = details.globalPosition.dx;
-    _dragHandled = false;
-  }
-
-  void _handleHorizontalDragUpdate(DragUpdateDetails details) {
-    if (_dragHandled || _dragStartX == null) return;
-    final delta = details.globalPosition.dx - _dragStartX!;
-    const threshold = 60;
-    if (delta.abs() > threshold) {
-      if (delta > 0) {
-        _prevMonth();
-      } else {
-        _nextMonth();
-      }
-      _dragHandled = true;
-    }
-  }
-
-  void _handleHorizontalDragEnd(DragEndDetails details) {
-    _dragStartX = null;
-    _dragHandled = false;
-  }
-
   @override
   Widget build(BuildContext context) {
-    final firstWeekday = DateTime(_currentMonth.year, _currentMonth.month, 1).weekday;
-    final leadingEmpty = (firstWeekday + 6) % 7;
-    final days = _daysInMonth(_currentMonth);
-    final cells = leadingEmpty + days;
-    final rows = (cells / 7).ceil();
-
     final localizations = MaterialLocalizations.of(context);
     final titleLabel = localizations.formatMonthYear(_currentMonth);
     final now = DayCycle.today();
@@ -282,12 +251,7 @@ class _ModernDatePickerDialogState extends State<ModernDatePickerDialog> {
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 16),
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onHorizontalDragStart: _handleHorizontalDragStart,
-        onHorizontalDragUpdate: _handleHorizontalDragUpdate,
-        onHorizontalDragEnd: _handleHorizontalDragEnd,
-        child: Container(
+      child: Container(
           decoration: BoxDecoration(
             color: AppColors.bg(context),
             borderRadius: BorderRadius.circular(20),
@@ -360,7 +324,29 @@ class _ModernDatePickerDialogState extends State<ModernDatePickerDialog> {
                 ),
               ),
               const Divider(height: 0),
-              Padding(
+              AnimatedSize(
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOutCubic,
+                alignment: Alignment.topCenter,
+                child: SwipeMonthView(
+                  month: _currentMonth,
+                  onMonthChanged: (m) => setState(() => _currentMonth = m),
+                  builder: (context, month) => _buildMonthGrid(context, month, now),
+                ),
+              ),
+            ],
+          ),
+      ),
+    );
+  }
+
+  Widget _buildMonthGrid(BuildContext context, DateTime month, DateTime now) {
+    final firstWeekday = DateTime(month.year, month.month, 1).weekday;
+    final leadingEmpty = (firstWeekday + 6) % 7;
+    final days = _daysInMonth(month);
+    final rows = ((leadingEmpty + days) / 7).ceil();
+
+    return Padding(
                 padding: const EdgeInsets.all(8),
                 child: GridView.builder(
                   shrinkWrap: true,
@@ -377,7 +363,7 @@ class _ModernDatePickerDialogState extends State<ModernDatePickerDialog> {
                       return const SizedBox.shrink();
                     }
                     final dayNum = idx - leadingEmpty + 1;
-                    final date = DateTime(_currentMonth.year, _currentMonth.month, dayNum);
+                    final date = DateTime(month.year, month.month, dayNum);
                     final isToday = _dateKey(date) == _dateKey(now);
                     final isSelected = _dateKey(date) == _dateKey(widget.initialDate);
 
@@ -413,12 +399,7 @@ class _ModernDatePickerDialogState extends State<ModernDatePickerDialog> {
                     );
                   },
                 ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+              );
   }
 }
 
