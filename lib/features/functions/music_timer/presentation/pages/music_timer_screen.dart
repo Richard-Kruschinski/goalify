@@ -60,11 +60,11 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
   }
 
   BoxDecoration _cardDecoration({Color? borderColor}) => BoxDecoration(
-        color: AppColors.card(context),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: borderColor ?? AppColors.border(context)),
-        boxShadow: AppColors.cardShadow(context),
-      );
+    color: AppColors.card(context),
+    borderRadius: BorderRadius.circular(24),
+    border: Border.all(color: borderColor ?? AppColors.border(context)),
+    boxShadow: AppColors.cardShadow(context),
+  );
 
   Widget _buildTimerCard(MusicTimerController controller) {
     final isRunning = controller.isRunning;
@@ -107,49 +107,26 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
             style: TextStyle(color: AppColors.muted(context), fontSize: 15),
           ),
           const SizedBox(height: 24),
-          if (isRunning) ...[
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: ToolHue.music.soft(context),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                children: [
-                  Text(
-                    l10n.timeRemaining,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppColors.muted(context),
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    controller.formattedTimeWithHours,
-                    style: TextStyle(
-                      fontSize: 56,
-                      fontWeight: FontWeight.w600,
-                      color: accent,
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                      height: 1.1,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Row(
-                    children: [
-                      _buildQuickAddButton('+5 ${l10n.unitMin}', 5, controller),
-                      const SizedBox(width: 8),
-                      _buildQuickAddButton('+10 ${l10n.unitMin}', 10, controller),
-                      const SizedBox(width: 8),
-                      _buildQuickAddButton('+15 ${l10n.unitMin}', 15, controller),
-                    ],
-                  ),
-                ],
-              ),
+          // Both panels live in one IndexedStack, which is always as tall as
+          // the taller one. That keeps the start/stop button below at the
+          // same height when the timer is started or stopped.
+          Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: ToolHue.music.soft(context),
+              borderRadius: BorderRadius.circular(16),
             ),
-            const SizedBox(height: 20),
+            child: IndexedStack(
+              index: isRunning ? 1 : 0,
+              alignment: Alignment.center,
+              children: [
+                _buildIdlePanel(l10n, accent),
+                _buildRunningPanel(l10n, accent, controller),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          if (isRunning)
             SizedBox(
               width: double.infinity,
               height: 52,
@@ -167,57 +144,14 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
                 ),
                 child: Text(
                   l10n.stopTimerCaps,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
-            ),
-          ] else ...[
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
-              decoration: BoxDecoration(
-                color: ToolHue.music.soft(context),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                children: [
-                  Text(
-                    '$_selectedMinutes',
-                    style: TextStyle(
-                      fontSize: 72,
-                      fontWeight: FontWeight.w600,
-                      color: accent,
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                      height: 1,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    l10n.minutesUnit,
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: AppColors.muted(context),
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Slider(
-                    value: _selectedMinutes.toDouble(),
-                    min: 1,
-                    max: 180,
-                    divisions: 179,
-                    activeColor: accent,
-                    inactiveColor: AppColors.border(context),
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedMinutes = value.toInt();
-                      });
-                    },
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
+            )
+          else
             SizedBox(
               width: double.infinity,
               height: 52,
@@ -235,17 +169,109 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
                 ),
                 child: Text(
                   l10n.startTimerCaps,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ),
-          ],
         ],
       ),
     );
   }
 
-  Widget _buildQuickAddButton(String label, int minutes, MusicTimerController controller) {
+  Widget _buildRunningPanel(
+    AppLocalizations l10n,
+    Color accent,
+    MusicTimerController controller,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        children: [
+          Text(
+            l10n.timeRemaining,
+            style: TextStyle(
+              fontSize: 14,
+              color: AppColors.muted(context),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            controller.formattedTimeWithHours,
+            style: TextStyle(
+              fontSize: 56,
+              fontWeight: FontWeight.w600,
+              color: accent,
+              fontFeatures: const [FontFeature.tabularFigures()],
+              height: 1.1,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              _buildQuickAddButton('+5 ${l10n.unitMin}', 5, controller),
+              const SizedBox(width: 8),
+              _buildQuickAddButton('+10 ${l10n.unitMin}', 10, controller),
+              const SizedBox(width: 8),
+              _buildQuickAddButton('+15 ${l10n.unitMin}', 15, controller),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildIdlePanel(AppLocalizations l10n, Color accent) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
+      child: Column(
+        children: [
+          Text(
+            '$_selectedMinutes',
+            style: TextStyle(
+              fontSize: 72,
+              fontWeight: FontWeight.w600,
+              color: accent,
+              fontFeatures: const [FontFeature.tabularFigures()],
+              height: 1,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            l10n.minutesUnit,
+            style: TextStyle(
+              fontSize: 16,
+              color: AppColors.muted(context),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Slider(
+            value: _selectedMinutes.toDouble(),
+            min: 1,
+            max: 180,
+            divisions: 179,
+            activeColor: accent,
+            inactiveColor: AppColors.border(context),
+            onChanged: (value) {
+              setState(() {
+                _selectedMinutes = value.toInt();
+              });
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickAddButton(
+    String label,
+    int minutes,
+    MusicTimerController controller,
+  ) {
     return Expanded(
       child: OutlinedButton(
         onPressed: () {
@@ -315,12 +341,19 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
                 },
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 150),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
-                    color: isSelected ? ToolHue.music.soft(context) : AppColors.chip(context),
+                    color: isSelected
+                        ? ToolHue.music.soft(context)
+                        : AppColors.chip(context),
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                      color: isSelected ? accent.withValues(alpha: 0.5) : Colors.transparent,
+                      color: isSelected
+                          ? accent.withValues(alpha: 0.5)
+                          : Colors.transparent,
                     ),
                   ),
                   child: Text(
@@ -348,7 +381,10 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _sectionHeader(Icons.info_outline, AppLocalizations.of(context).howItWorks),
+          _sectionHeader(
+            Icons.info_outline,
+            AppLocalizations.of(context).howItWorks,
+          ),
           const SizedBox(height: 16),
           Text(
             AppLocalizations.of(context).musicTimerHowItWorks,
@@ -367,7 +403,11 @@ class _MusicTimerScreenState extends State<MusicTimerScreen> {
             ),
             child: Row(
               children: [
-                Icon(Icons.music_note, color: ToolHue.music.of(context), size: 18),
+                Icon(
+                  Icons.music_note,
+                  color: ToolHue.music.of(context),
+                  size: 18,
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
