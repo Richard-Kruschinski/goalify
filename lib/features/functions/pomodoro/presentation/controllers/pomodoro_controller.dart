@@ -7,6 +7,7 @@ import '../../data/models/pomodoro_profile.dart';
 import '../../data/datasources/platform_channel_service.dart';
 import '../../data/repositories/pomodoro_repository_impl.dart';
 import '../../domain/repositories/pomodoro_repository.dart';
+import '../../domain/usecases/countdown_seconds.dart';
 import '../../../../../core/models/timer_live_state.dart';
 import '../../../../../core/utils/day_cycle.dart';
 import '../../../../../core/services/timer_live_presentation_service.dart';
@@ -414,9 +415,7 @@ class PomodoroController extends ChangeNotifier {
     if (_timerState != PomodoroTimerState.running || _phaseEndsAt == null) {
       return;
     }
-    final secondsLeft =
-        _phaseEndsAt!.difference(DateTime.now()).inSeconds;
-    _remainingSeconds = secondsLeft > 0 ? secondsLeft : 0;
+    _remainingSeconds = countdownSecondsLeft(_phaseEndsAt!, DateTime.now());
   }
 
   void syncWithSystemTime() {
