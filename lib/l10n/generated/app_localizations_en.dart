@@ -1937,4 +1937,8 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get runFaceNorth => 'Face north';
+
+  @override
+  String get runGpsError =>
+      'Couldn\'t get your location. Check the location permission and try again.';
 }

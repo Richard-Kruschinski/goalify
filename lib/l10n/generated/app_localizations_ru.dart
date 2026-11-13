@@ -1964,4 +1964,8 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get runFaceNorth => 'Повернуть на север';
+
+  @override
+  String get runGpsError =>
+      'Не удалось определить местоположение. Проверьте доступ к геолокации и попробуйте снова.';
 }

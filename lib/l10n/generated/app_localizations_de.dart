@@ -1959,4 +1959,8 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get runFaceNorth => 'Nach Norden ausrichten';
+
+  @override
+  String get runGpsError =>
+      'Der Standort konnte nicht abgerufen werden. Prüfe die Standort-Rechte und versuche es erneut.';
 }

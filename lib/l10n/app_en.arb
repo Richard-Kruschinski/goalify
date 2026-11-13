@@ -738,5 +738,6 @@
   "runNotificationTitle": "Goalify is recording",
   "runNotificationText": "Your route is being recorded.",
   "runNoRouteTitle": "No route yet",
-  "runFaceNorth": "Face north"
+  "runFaceNorth": "Face north",
+  "runGpsError": "Couldn't get your location. Check the location permission and try again."
 }

@@ -41,6 +41,7 @@ class RunController extends ChangeNotifier {
   Duration _movingBeforePause = Duration.zero;
   DateTime? _runningSince;
   LatLng? _currentPosition;
+  bool _locationFailed = false;
   StreamSubscription<Position>? _positions;
   Timer? _ticker;
 
@@ -52,6 +53,10 @@ class RunController extends ChangeNotifier {
   List<List<RoutePoint>> get segments => UnmodifiableListView(_segments);
   double get distanceMeters => _distanceMeters;
   LatLng? get currentPosition => _currentPosition;
+
+  /// The location stream reported an error, so no fix is coming. The live
+  /// page shows a message instead of waiting forever.
+  bool get locationFailed => _locationFailed;
   bool get hasRoute => RouteStats.isWorthSaving(_segments);
 
   Duration get movingTime {
@@ -88,15 +93,11 @@ class RunController extends ChangeNotifier {
     _movingBeforePause = Duration.zero;
     _runningSince = _startedAt;
     _currentPosition = null;
+    _locationFailed = false;
     _state = RunTrackingState.running;
-    _positions =
-        Geolocator.getPositionStream(
-          locationSettings: _locationSettings(),
-        ).listen(
-          _onPosition,
-          onError: (Object error) =>
-              debugPrint('RunController: location stream failed: $error'),
-        );
+    _positions = Geolocator.getPositionStream(
+      locationSettings: _locationSettings(),
+    ).listen(_onPosition, onError: _onPositionError);
     _startTicker();
     notifyListeners();
     return null;
@@ -153,7 +154,14 @@ class RunController extends ChangeNotifier {
 
   void _onPosition(Position position) {
     _currentPosition = LatLng(position.latitude, position.longitude);
+    _locationFailed = false;
     if (_state == RunTrackingState.running) _addPoint(position.accuracy);
+    notifyListeners();
+  }
+
+  void _onPositionError(Object error) {
+    debugPrint('RunController: location stream failed: $error');
+    _locationFailed = true;
     notifyListeners();
   }
 
@@ -242,6 +250,7 @@ class RunController extends ChangeNotifier {
     _startedAt = null;
     _segments.clear();
     _currentPosition = null;
+    _locationFailed = false;
   }
 
   @override

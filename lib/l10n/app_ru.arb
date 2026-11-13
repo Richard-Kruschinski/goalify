@@ -582,5 +582,6 @@
   "runNotificationTitle": "Goalify записывает",
   "runNotificationText": "Ваш маршрут записывается.",
   "runNoRouteTitle": "Маршрута пока нет",
-  "runFaceNorth": "Повернуть на север"
+  "runFaceNorth": "Повернуть на север",
+  "runGpsError": "Не удалось определить местоположение. Проверьте доступ к геолокации и попробуйте снова."
 }

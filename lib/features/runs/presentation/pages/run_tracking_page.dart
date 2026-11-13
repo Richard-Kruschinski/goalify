@@ -101,13 +101,27 @@ class RunTrackingPage extends StatelessWidget {
                   Positioned.fill(
                     child: position == null
                         ? Center(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const CircularProgressIndicator(),
-                                const SizedBox(height: 16),
-                                Text(l10n.runSearchingGps),
-                              ],
+                            child: Padding(
+                              padding: const EdgeInsets.all(32),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  controller.locationFailed
+                                      ? Icon(
+                                          Icons.location_off,
+                                          size: 40,
+                                          color: AppColors.muted(context),
+                                        )
+                                      : const CircularProgressIndicator(),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    controller.locationFailed
+                                        ? l10n.runGpsError
+                                        : l10n.runSearchingGps,
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ),
                             ),
                           )
                         : RunRouteMap(

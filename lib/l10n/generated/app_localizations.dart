@@ -3447,6 +3447,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Face north'**
   String get runFaceNorth;
+
+  /// No description provided for @runGpsError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t get your location. Check the location permission and try again.'**
+  String get runGpsError;
 }
 
 class _AppLocalizationsDelegate

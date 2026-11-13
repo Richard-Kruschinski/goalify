@@ -582,5 +582,6 @@
   "runNotificationTitle": "Goalify zeichnet auf",
   "runNotificationText": "Deine Strecke wird aufgezeichnet.",
   "runNoRouteTitle": "Noch keine Strecke",
-  "runFaceNorth": "Nach Norden ausrichten"
+  "runFaceNorth": "Nach Norden ausrichten",
+  "runGpsError": "Der Standort konnte nicht abgerufen werden. Prüfe die Standort-Rechte und versuche es erneut."
 }
