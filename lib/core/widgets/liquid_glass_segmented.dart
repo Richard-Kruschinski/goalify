@@ -36,11 +36,19 @@ class LiquidGlassSegmented<T> extends StatefulWidget {
     required this.segments,
     required this.selected,
     required this.onChanged,
+    this.compact = false,
+    this.selectedIconColor,
   });
 
   final List<LiquidGlassSegment<T>> segments;
   final T selected;
   final ValueChanged<T> onChanged;
+
+  /// Icon beside the label and 48 px high instead of icon above and 64 px.
+  final bool compact;
+
+  /// Icon colour of the selected segment; defaults to the text colour.
+  final Color? selectedIconColor;
 
   @override
   State<LiquidGlassSegmented<T>> createState() =>
@@ -51,7 +59,7 @@ class _LiquidGlassSegmentedState<T> extends State<LiquidGlassSegmented<T>>
     with TickerProviderStateMixin {
   static const _curve = Curves.easeOutCubic;
 
-  static const double _height = 64;
+  double get _height => widget.compact ? 48 : 64;
   static const double _inset = 4;
 
   /// How much bigger the capsule gets while it moves; it then sticks out of
@@ -162,17 +170,17 @@ class _LiquidGlassSegmentedState<T> extends State<LiquidGlassSegmented<T>>
   }
 
   Widget _contentRow(double position, Color ink, Color muted) {
+    final selectedIcon = widget.selectedIconColor ?? ink;
+    double away(int i) => ((position - i).abs()).clamp(0.0, 1.0);
     return Row(
       children: [
         for (int i = 0; i < widget.segments.length; i++)
           Expanded(
             child: _SegmentContent(
               segment: widget.segments[i],
-              color: Color.lerp(
-                ink,
-                muted,
-                ((position - i).abs()).clamp(0.0, 1.0),
-              )!,
+              compact: widget.compact,
+              color: Color.lerp(ink, muted, away(i))!,
+              iconColor: Color.lerp(selectedIcon, muted, away(i))!,
             ),
           ),
       ],
@@ -216,6 +224,7 @@ class _LiquidGlassSegmentedState<T> extends State<LiquidGlassSegmented<T>>
                   height: (_height - 2 * _inset) * scale,
                 );
                 final content = _contentRow(position, ink, muted);
+                final sizeFactor = (_height - 2 * _inset) / 56;
 
                 return Stack(
                   clipBehavior: Clip.none,
@@ -263,8 +272,10 @@ class _LiquidGlassSegmentedState<T> extends State<LiquidGlassSegmented<T>>
                                     _height,
                                   ),
                                   trackColor: track,
-                                  bezel: ui.lerpDouble(12, 14, lift)!,
-                                  depth: ui.lerpDouble(4.5, 6, lift)!,
+                                  // Tuned for the 56 px capsule, scaled
+                                  // for smaller ones (compact).
+                                  bezel: ui.lerpDouble(12, 14, lift)! * sizeFactor,
+                                  depth: ui.lerpDouble(4.5, 6, lift)! * sizeFactor,
                                 ),
                         ),
                       ),
@@ -304,28 +315,46 @@ class _LiquidGlassSegmentedState<T> extends State<LiquidGlassSegmented<T>>
 }
 
 class _SegmentContent extends StatelessWidget {
-  const _SegmentContent({required this.segment, required this.color});
+  const _SegmentContent({
+    required this.segment,
+    required this.compact,
+    required this.color,
+    required this.iconColor,
+  });
 
   final LiquidGlassSegment segment;
+  final bool compact;
   final Color color;
+  final Color iconColor;
 
   @override
   Widget build(BuildContext context) {
+    final label = Text(
+      segment.label,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: TextStyle(
+        fontSize: compact ? 14 : 12.5,
+        fontWeight: FontWeight.w600,
+        color: color,
+      ),
+    );
+    if (compact) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(segment.icon, size: 18, color: iconColor),
+          const SizedBox(width: 8),
+          Flexible(child: label),
+        ],
+      );
+    }
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(segment.icon, size: 22, color: color),
+        Icon(segment.icon, size: 22, color: iconColor),
         const SizedBox(height: 3),
-        Text(
-          segment.label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            fontSize: 12.5,
-            fontWeight: FontWeight.w600,
-            color: color,
-          ),
-        ),
+        label,
       ],
     );
   }

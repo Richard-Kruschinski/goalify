@@ -37,6 +37,7 @@ import '../widgets/rest_settings_dialog.dart';
 import '../widgets/rest_timer_bar.dart';
 import '../widgets/set_progress_widgets.dart';
 import '../gym_sort.dart';
+import '../../../../core/widgets/liquid_glass_segmented.dart';
 import '../../../../core/widgets/sort_menu_button.dart';
 import '../widgets/exercise_icon.dart';
 
@@ -3938,145 +3939,32 @@ class _GymScreenState extends State<GymScreen> {
   }
 
   Widget _buildViewToggle() {
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: AppColors.chip(context),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: GestureDetector(
-              onTap: () {
-                setState(() => _mode = ViewMode.byExercise);
-                _saveViewMode();
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                decoration: BoxDecoration(
-                  color: _mode == ViewMode.byExercise
-                      ? AppColors.card(context)
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(10),
-                  boxShadow: _mode == ViewMode.byExercise
-                      ? AppColors.cardShadow(context)
-                      : null,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.list,
-                      size: 18,
-                      color: _mode == ViewMode.byExercise
-                          ? AppColors.accent(context)
-                          : AppColors.muted(context),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      AppLocalizations.of(context).exercisesTab,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: _mode == ViewMode.byExercise
-                            ? AppColors.ink(context)
-                            : AppColors.muted(context),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-            child: GestureDetector(
-              onTap: () {
-                setState(() => _mode = ViewMode.byDay);
-                _saveViewMode();
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                decoration: BoxDecoration(
-                  color: _mode == ViewMode.byDay
-                      ? AppColors.card(context)
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(10),
-                  boxShadow: _mode == ViewMode.byDay
-                      ? AppColors.cardShadow(context)
-                      : null,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.view_day,
-                      size: 18,
-                      color: _mode == ViewMode.byDay
-                          ? AppColors.accent(context)
-                          : AppColors.muted(context),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      AppLocalizations.of(context).workoutsLabel,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: _mode == ViewMode.byDay
-                            ? AppColors.ink(context)
-                            : AppColors.muted(context),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-            child: GestureDetector(
-              onTap: () {
-                setState(() => _mode = ViewMode.bySplit);
-                _saveViewMode();
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                decoration: BoxDecoration(
-                  color: _mode == ViewMode.bySplit
-                      ? AppColors.card(context)
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(10),
-                  boxShadow: _mode == ViewMode.bySplit
-                      ? AppColors.cardShadow(context)
-                      : null,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.account_tree,
-                      size: 18,
-                      color: _mode == ViewMode.bySplit
-                          ? AppColors.accent(context)
-                          : AppColors.muted(context),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      AppLocalizations.of(context).splitsTab,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: _mode == ViewMode.bySplit
-                            ? AppColors.ink(context)
-                            : AppColors.muted(context),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+    final l10n = AppLocalizations.of(context);
+    return LiquidGlassSegmented<ViewMode>(
+      compact: true,
+      selectedIconColor: AppColors.accent(context),
+      selected: _mode,
+      onChanged: (mode) {
+        setState(() => _mode = mode);
+        _saveViewMode();
+      },
+      segments: [
+        LiquidGlassSegment(
+          value: ViewMode.byExercise,
+          icon: Icons.list,
+          label: l10n.exercisesTab,
+        ),
+        LiquidGlassSegment(
+          value: ViewMode.byDay,
+          icon: Icons.view_day,
+          label: l10n.workoutsLabel,
+        ),
+        LiquidGlassSegment(
+          value: ViewMode.bySplit,
+          icon: Icons.account_tree,
+          label: l10n.splitsTab,
+        ),
+      ],
     );
   }
 

@@ -1,6 +1,6 @@
 # Liquid-Glass-Schalter
 
-Segmentierter Schalter mit einer gläsernen Kapsel als Auswahl. Im Einsatz für das Theme (System / Hell / Dunkel) unter Funktionen → Optionen → Erscheinungsbild. Die Kapsel gleitet beim Tippen oder Ziehen zum neuen Segment, wird dabei etwas größer und biegt am Rand die Icons und Texte darunter wie echtes Glas. In der Mitte zeigt sie alles unverzerrt.
+Segmentierter Schalter mit einer gläsernen Kapsel als Auswahl. Im Einsatz für das Theme (System / Hell / Dunkel) unter Funktionen → Optionen → Erscheinungsbild und für die Ansicht im Gym-Tab (Übungen / Workouts / Splits). Die Kapsel gleitet beim Tippen oder Ziehen zum neuen Segment, wird dabei etwas größer und biegt am Rand die Icons und Texte darunter wie echtes Glas. In der Mitte zeigt sie alles unverzerrt.
 
 Sehr geholfen hat der Artikel [Liquid Glass in the Browser: Refraction with CSS and SVG](https://kube.io/blog/liquid-glass-css-svg/) von kube.io. Von dort stammen die Idee mit flacher Mitte und gewölbtem Rand, die Verschiebung nur entlang der Randnormalen und die Lichtkante. Der Artikel setzt das mit SVG-Displacement-Maps als `backdrop-filter` um (nur Chrome). Hier ist es ein Fragment-Shader in Flutter.
 
@@ -13,6 +13,7 @@ Sehr geholfen hat der Artikel [Liquid Glass in the Browser: Refraction with CSS 
 | `pubspec.yaml` | Eintrag `flutter: shaders: - shaders/liquid_glass.frag` |
 | `test/liquid_glass_segmented_test.dart` | Widget-Test: Tippen und Ziehen mit aktivem Shader, ohne Exception |
 | `lib/features/functions/settings/presentation/pages/settings_screen.dart` | Einbau für den Theme-Modus |
+| `lib/features/gym/presentation/pages/gym_screen.dart` | Einbau in `_buildViewToggle()` für `ViewMode` (kompakt, rotes Icon) |
 
 ## Verwendung
 
@@ -28,14 +29,36 @@ LiquidGlassSegmented<ThemeMode>(
 )
 ```
 
-Das Widget hält keinen eigenen Auswahlzustand. Es ruft `onChanged` auf und animiert, sobald `selected` sich ändert. Die Breite kommt vom Elternteil, die Höhe ist fest 64 px. Funktioniert mit beliebig vielen Segmenten.
+Das Widget hält keinen eigenen Auswahlzustand. Es ruft `onChanged` auf und animiert, sobald `selected` sich ändert. Die Breite kommt vom Elternteil. Funktioniert mit beliebig vielen Segmenten.
+
+Optionale Parameter:
+
+| Parameter | Standard | Wirkung |
+|---|---|---|
+| `compact` | `false` | `false`: Icon (22 px) über dem Text (12,5 px), Höhe 64 px. `true`: Icon (18 px) neben dem Text (14 px), Höhe 48 px |
+| `selectedIconColor` | Textfarbe | Farbe des Icons im ausgewählten Segment, z. B. `AppColors.accent(context)` im Gym |
+
+Beispiel Gym:
+
+```dart
+LiquidGlassSegmented<ViewMode>(
+  compact: true,
+  selectedIconColor: AppColors.accent(context),
+  selected: _mode,
+  onChanged: (mode) {
+    setState(() => _mode = mode);
+    _saveViewMode();
+  },
+  segments: [ /* byExercise, byDay, bySplit */ ],
+)
+```
 
 ## Aufbau von unten nach oben
 
 Alles liegt in einem `Stack` mit `Clip.none`, damit die Kapsel beim Anheben über die Spur hinausragen darf.
 
 1. **Spur:** `ShapeDecoration` mit `StadiumBorder`, Farbe `AppColors.chip` (hell) bzw. `AppColors.card` (dunkel), Rand 1 px in Schwarz 5 % (hell) bzw. Weiß 6 % (dunkel).
-2. **Icon-Zeile:** `Row` mit einem `Expanded` je Segment (Icon 22 px, 3 px Abstand, Text 12,5 px w600), 4 px Einzug links und rechts. Sie steckt in einem `RepaintBoundary` mit `GlobalKey`, damit man sie als Bild abgreifen kann. Die Farbe jedes Segments ist `Color.lerp(ink, muted, |position - i|)`, das Segment unter der Kapsel ist also dunkel (bzw. hell im Dark Mode) und die anderen grau.
+2. **Icon-Zeile:** `Row` mit einem `Expanded` je Segment (Icon und Text je nach `compact`, siehe oben, Text w600), 4 px Einzug links und rechts. Sie steckt in einem `RepaintBoundary` mit `GlobalKey`, damit man sie als Bild abgreifen kann. Die Textfarbe jedes Segments ist `Color.lerp(ink, muted, |position - i|)`, die Iconfarbe `Color.lerp(selectedIconColor ?? ink, muted, |position - i|)`. Das Segment unter der Kapsel ist also dunkel (bzw. hell im Dark Mode) und die anderen grau.
 3. **Kapsel** (`_GlassCapsule`, in `IgnorePointer`), selbst wieder in Schichten:
    - `_OuterShadowPainter`: Schatten nur außerhalb der Kapsel (Clip mit `PathFillType.evenOdd`), sonst würde er das Glas von hinten abdunkeln. Zwei Lagen: 4 px versetzt mit Blur 8, 1 px versetzt mit Blur 1,5.
    - `ClipPath` auf `StadiumBorder`, darin der `_RefractionPainter` mit dem Shader. Er malt das ganze Innere der Kapsel neu.
@@ -66,8 +89,10 @@ Der Shader bekommt kein Bild vom Hintergrund des Fensters, sondern ein Bild der 
 |---|---|---|
 | 0-1 | `uSize` | Größe der Kapsel (logische px) |
 | 2-5 | `uImageRect` | Lage des Bildes relativ zur Kapsel: `(4 - capsule.left, -capsule.top, rowWidth, 64)` |
-| 6 | `uBezel` | Breite des gewölbten Rands: 12 px in Ruhe, 14 px angehoben |
-| 7 | `uDepth` | maximale Verschiebung ganz außen: 4,5 px in Ruhe, 6 px angehoben |
+| 6 | `uBezel` | Breite des gewölbten Rands: 12 px in Ruhe, 14 px angehoben, mal Größenfaktor |
+| 7 | `uDepth` | maximale Verschiebung ganz außen: 4,5 px in Ruhe, 6 px angehoben, mal Größenfaktor |
+
+Der Größenfaktor ist Ruhehöhe der Kapsel / 56. Bei der normalen Variante ist er 1, bei `compact` (Kapsel 40 px hoch) etwa 0,71. So sieht der Rand bei beiden Größen gleich aus, und die Bedingung gegen das Umklappen (siehe unten) bleibt erfüllt.
 | 8-11 | `uTrack` | Spurfarbe, vormultipliziert (r·a, g·a, b·a, a) |
 | Sampler 0 | `uContent` | Bild der Icon-Zeile |
 
@@ -101,7 +126,7 @@ Mit `(1 - x)²` ist die stärkste Steigung `2 / uBezel`, also reicht `2 · 4,5 <
 | Gleiten (`_slide`) | 320 ms |
 | Anheben und Absenken (`_lift`) | 200 ms |
 | Größe angehoben | 111 % von Breite und Höhe der Ruhegröße |
-| Ruhegröße | ein Segment breit, Höhe 64 - 2·4 = 56 px |
+| Ruhegröße | ein Segment breit, Höhe minus 2·4 px Einzug: 56 px, kompakt 40 px |
 
 Ablauf beim Tippen: `onChanged` → Eltern setzen `selected` → `didUpdateWidget` startet `_glideTo`: Kapsel hebt an und gleitet gleichzeitig. Ist `_slide` fertig, senkt sie sich wieder ab (`_onSlideStatus`).
 
