@@ -53,7 +53,7 @@ Verlässt man die Live-Seite, läuft die Aufzeichnung weiter. Im Tab erscheint d
 
 - **Quelle:** [OpenFreeMap](https://openfreemap.org), Stil „Fiord“ (dunkelblau). Der Dienst ist kostenlos, auch kommerziell, und braucht keinen Key. Die URL steht in `run_map_style.dart`.
 - **Vektorkarte:** Das Handy zeichnet die Karte selbst, mit dem Paket `flutter_map_vector_tiles`. Der Stil wird einmal pro App-Start geladen und von allen Karten geteilt.
-- **Beschriftung:** `LabelMode.tile`. Die Namen werden einmal in die Kacheln gezeichnet. Das spart Arbeit, solange die Live-Karte mitläuft. Im Modus `screen` erschienen im Web gar keine Namen.
+- **Beschriftung:** Auf Android und iOS `LabelMode.screen`. Die Namen werden über die Karte gezeichnet und bleiben beim Drehen aufrecht lesbar (Orte, Straßen, alles). Das kostet etwas Rechenzeit pro Bild. Im Web gilt `LabelMode.tile`, weil `screen` dort gar keine Namen zeichnete. Dort sind die Namen in die Kacheln eingebacken und drehen sich mit.
 - **Route:** in der Akzentfarbe der App, mit breiter, blasser Kopie darunter als Leuchten. Weißer Punkt mit Rand = Start, gefüllter Punkt mit Leuchten = aktuelle Position.
 - **Zoom-Grenze:** Die Welt wiederholt sich links und rechts, die Karte läuft also rundum. Herauszoomen geht nur so weit, bis eine Welt die längere Seite der Karte füllt, sonst stünden mehrere Kopien nebeneinander. Über die Pole hinaus lässt sie sich nicht schieben.
 - **Quellenangabe:** Pflicht. Sie steckt hinter dem (i)-Knopf unten links und sitzt auf der Live-Seite über der schwebenden Karte.

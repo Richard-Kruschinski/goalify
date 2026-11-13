@@ -230,10 +230,12 @@ class _RunRouteMapState extends State<RunRouteMap>
                       rasterSources: style.rasterSources,
                       sprites: style.sprites,
                       glyphs: style.glyphs,
-                      // Labels baked into the tiles: no per-frame label work
-                      // while the live map follows the runner, and the
-                      // screen-space mode drew no labels at all on web.
-                      labelMode: vt.LabelMode.tile,
+                      // Screen mode keeps names upright when the map turns;
+                      // baked into the tiles they would turn with it. Web
+                      // keeps tile mode: screen mode drew no labels there.
+                      labelMode: kIsWeb
+                          ? vt.LabelMode.tile
+                          : vt.LabelMode.screen,
                     ),
                   PolylineLayer(
                     polylines: [
