@@ -115,11 +115,11 @@
       "description": "Am Kabelzug das Seil zum Gesicht ziehen, die Ellbogen nach außen führen und die Schulterblätter zusammenziehen. Oberkörper stabil halten und kontrolliert arbeiten."
     },
     "hammer_curls": {
-      "name": "Hammer-Curls",
+      "name": "Hammer Curls (Kurzhantel)",
       "description": "Bizeps-Übung im neutralen Griff. Zielt auf den Brachialis."
     },
     "hex_squat": {
-      "name": "Hex Squat",
+      "name": "Kniebeuge (Hackenschmidt)",
       "description": "Maschinengeführte Kniebeugen-Variante. Fokus auf Quadrizeps-Aktivierung."
     },
     "incline_bench_press": {
@@ -175,7 +175,7 @@
       "description": "Unterkörper-Übung, bei der du eine gewichtete Plattform mit den Beinen wegdrückst. Vorteil: bietet Stabilität und erlaubt kontrolliertes Beintraining. Wichtig: die Knie nicht nach innen fallen lassen und oben nicht komplett durchstrecken, um Spannung auf der Muskulatur zu halten und die Gelenke zu schonen."
     },
     "low_to_high_cable_fly": {
-      "name": "Low-to-High Cable Fly",
+      "name": "Low-to-High Fly (Kabelzug)",
       "description": "Fly am Kabelturm mit beiden Rollen ganz unten. Greife die D-Griffe und ziehe sie in einem weiten Bogen von der Hüfte schräg nach oben vor die Brust. Trainiert primär die obere Brustmuskulatur."
     },
     "neck_curls": {
@@ -211,7 +211,7 @@
       "description": "Unterstützte Klimmzüge für Rücken und Bizeps."
     },
     "reverse_fly": {
-      "name": "Reverse Flys",
+      "name": "Reverse Fly (Maschine)",
       "description": "Umgekehrte Fly-Bewegung. Fokus auf hintere Schulter und oberen Rücken."
     },
     "reverse_wrist_curls_dumbbell": {

@@ -212,7 +212,7 @@
     },
     {
         "id":  "hammer_curls",
-        "name":  "Hammer Curls",
+        "name":  "Hammer Curls (Dumbbell)",
         "description":  "Biceps exercise with neutral grip. Targets the brachialis.",
         "icon":  "assets/images/exercises/hammer_curls.svg",
         "muscles":  [
@@ -222,7 +222,7 @@
     },
     {
         "id":  "hex_squat",
-        "name":  "Hex Squat",
+        "name":  "Hack Squat",
         "description":  "Machine-guided squat variation. Focuses on quadriceps activation.",
         "icon":  "assets/images/exercises/hex_squat.svg",
         "muscles":  [
@@ -365,7 +365,7 @@
         "id":  "low_to_high_cable_fly",
         "name":  "Low-to-High Cable Fly",
         "description":  "Cable fly with both pulleys set to the lowest position. Grab the D-handles and pull them in a wide arc from the hips diagonally upward in front of the chest. Primarily targets the upper chest.",
-        "icon":  "assets/images/exercises/cabel_cross.svg",
+        "icon":  "assets/images/exercises/low_to_high_cable_fly.svg",
         "muscles":  [
                         "Upper Chest"
                     ]
