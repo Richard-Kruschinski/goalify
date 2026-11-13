@@ -27,6 +27,7 @@ import '../../../../l10n/generated/app_localizations.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/widgets/card_drag_proxy.dart';
+import '../../../../core/widgets/skeleton.dart';
 /// View modes
 enum DailyViewMode { today, byDate }
 
@@ -76,6 +77,10 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   // backend (local today, database/server later) can be swapped without
   // touching this screen.
   final TasksRepository _repo = TasksRepositoryImpl();
+
+  // False until the first _load() has finished (skeleton instead of the
+  // empty state while waiting).
+  bool _loaded = false;
 
   // State
   final List<DailyTask> _keepTasks = []; // keep=true
@@ -164,7 +169,10 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     DayCycle.revision.addListener(_onDayCycleChanged);
-    _load(); // loads + applies rollover
+    // loads + applies rollover; the skeleton shows until it is done
+    _load().whenComplete(() {
+      if (mounted) setState(() => _loaded = true);
+    });
     _scheduleRolloverTimer();
   }
 
@@ -2128,7 +2136,9 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
 
             // Task List
             Expanded(
-              child: ordered.isEmpty
+              child: !_loaded
+                  ? const SkeletonCardList()
+                  : ordered.isEmpty
                   ? _buildEmptyState()
                   : ReorderableListView.builder(
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),

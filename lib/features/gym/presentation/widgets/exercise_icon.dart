@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/skeleton.dart';
 
 /// Draws an exercise icon from the asset bundle.
 ///
@@ -24,6 +25,9 @@ class ExerciseIcon extends StatelessWidget {
         assetPath,
         fit: fit,
         colorFilter: tint == null ? null : ColorFilter.mode(tint, BlendMode.srcIn),
+        // Large SVGs take a moment to parse the first time; afterwards they
+        // come from the cache and this never shows.
+        placeholderBuilder: (_) => const Skeleton(child: SkeletonBox()),
       );
     }
     return Image.asset(

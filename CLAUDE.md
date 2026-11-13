@@ -62,3 +62,4 @@ test/                  Unit- und Widget-Tests
 - [docs/live-timer.md](docs/live-timer.md) – Timer auf dem Sperrbildschirm (Dart ↔ Android/iOS)
 - [docs/samsung-einrichtung.md](docs/samsung-einrichtung.md) – Handy-Einstellungen für Samsung
 - [docs/liquid-glass-schalter.md](docs/liquid-glass-schalter.md) – Glas-Schalter mit Lichtbrechung (Shader), z. B. Theme-Auswahl
+- [docs/skeleton-loading.md](docs/skeleton-loading.md) – Skeleton statt Leerzustand, nur bei echter Wartezeit (Daily, Gym, Übungs-SVGs)

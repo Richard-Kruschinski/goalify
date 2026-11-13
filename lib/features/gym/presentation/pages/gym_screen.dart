@@ -41,6 +41,7 @@ import '../../../../core/widgets/sort_menu_button.dart';
 import '../widgets/exercise_icon.dart';
 
 import '../../../../core/widgets/card_drag_proxy.dart';
+import '../../../../core/widgets/skeleton.dart';
 enum ViewMode { byExercise, byDay, bySplit }
 
 /// What an icon belongs to. Workout days and splits keep their icons in
@@ -286,6 +287,10 @@ class _GymScreenState extends State<GymScreen> {
   // touching this screen.
   final GymRepository _repo = GymRepositoryImpl();
 
+  // False until _bootstrap() has finished (skeleton instead of the empty
+  // state while waiting).
+  bool _loaded = false;
+
   // Available icons (loaded dynamically from IconMapper)
   late List<IconData> _availableIcons = [];
 
@@ -352,7 +357,10 @@ class _GymScreenState extends State<GymScreen> {
     // A changed day start hour moves "today", so the done/creatine markers
     // for the current day have to be re-evaluated.
     DayCycle.revision.addListener(_onDayCycleChanged);
-    _bootstrap();
+    // The skeleton shows until everything is loaded
+    _bootstrap().whenComplete(() {
+      if (mounted) setState(() => _loaded = true);
+    });
   }
 
   @override
@@ -3714,7 +3722,9 @@ class _GymScreenState extends State<GymScreen> {
           children: [
             _buildModernHeader(context),
             Expanded(
-              child: _mode == ViewMode.byExercise
+              child: !_loaded
+                  ? const SkeletonCardList()
+                  : _mode == ViewMode.byExercise
                   ? _buildWorkoutListBody()
                   : _mode == ViewMode.byDay
                       ? _buildDayListBody()
