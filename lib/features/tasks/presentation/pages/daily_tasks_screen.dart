@@ -18,6 +18,7 @@ import '../../data/models/daily_task.dart';
 import '../description_preview.dart';
 import '../widgets/create_daily_task_sheet.dart';
 import '../widgets/edit_daily_task_sheet.dart';
+import '../widgets/freeze_frost_overlay.dart';
 import '../widgets/freeze_widgets.dart';
 import '../widgets/checklist_editor.dart';
 import '../../../../core/widgets/modern_date_picker_dialog.dart';
@@ -121,6 +122,9 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
   int _freezeTokens = 0;
   int _freezeDaysCounter = 0;
   final Map<String, List<String>> _freezeUsageByDate = {};
+
+  /// Bumped when a token freezes the day on screen; plays the frost overlay.
+  int _freezeFxTick = 0;
 
   // View selection
   DailyViewMode _mode = DailyViewMode.today;
@@ -729,7 +733,11 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
 
   Future<void> _freezeDay(String dateKey) async {
     if (_freezeTokens <= 0 || _isDayFrozen(dateKey)) return;
+    final viewedKey =
+        _mode == DailyViewMode.today ? _todayKey() : _selectedKey();
     setState(() {
+      // Play the frost only when the frozen day is the one on screen.
+      if (dateKey == viewedKey) _freezeFxTick++;
       _freezeTokens -= 1;
       _freezeUsageByDate
           .putIfAbsent(dateKey, () => <String>[])
@@ -2124,33 +2132,42 @@ class _DailyTasksScreenState extends State<DailyTasksScreen>
             // Modern Header with Calendar
             _buildModernHeader(context, isToday),
 
-            if (_isDayFrozen(dateKey))
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                child: FrostBanner(
-                  subtitle: _isPastDate(dateKey, _todayKey())
-                      ? AppLocalizations.of(context).dayFrozenPastSubtitle
-                      : AppLocalizations.of(context).dayFrozenTodaySubtitle,
+            Expanded(
+              child: FreezeFrostOverlay(
+                trigger: _freezeFxTick,
+                child: Column(
+                  children: [
+                    if (_isDayFrozen(dateKey))
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                        child: FrostBanner(
+                          subtitle: _isPastDate(dateKey, _todayKey())
+                              ? AppLocalizations.of(context).dayFrozenPastSubtitle
+                              : AppLocalizations.of(context).dayFrozenTodaySubtitle,
+                        ),
+                      ),
+
+                    // Task List
+                    Expanded(
+                      child: !_loaded
+                          ? const SkeletonCardList()
+                          : ordered.isEmpty
+                          ? _buildEmptyState()
+                          : ReorderableListView.builder(
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                              itemCount: ordered.length,
+                              onReorder: (old, newI) => _onReorder(old, newI, dateKey: dateKey),
+                              buildDefaultDragHandles: false,
+                              proxyDecorator: cardDragProxy(),
+                              itemBuilder: (ctx, i) {
+                                final task = ordered[i];
+                                return _buildModernTaskCard(task, i, dateKey);
+                              },
+                            ),
+                    ),
+                  ],
                 ),
               ),
-
-            // Task List
-            Expanded(
-              child: !_loaded
-                  ? const SkeletonCardList()
-                  : ordered.isEmpty
-                  ? _buildEmptyState()
-                  : ReorderableListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                      itemCount: ordered.length,
-                      onReorder: (old, newI) => _onReorder(old, newI, dateKey: dateKey),
-                      buildDefaultDragHandles: false,
-                      proxyDecorator: cardDragProxy(),
-                      itemBuilder: (ctx, i) {
-                        final task = ordered[i];
-                        return _buildModernTaskCard(task, i, dateKey);
-                      },
-                    ),
             ),
           ],
         ),

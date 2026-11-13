@@ -63,3 +63,4 @@ test/                  Unit- und Widget-Tests
 - [docs/samsung-einrichtung.md](docs/samsung-einrichtung.md) – Handy-Einstellungen für Samsung
 - [docs/liquid-glass-schalter.md](docs/liquid-glass-schalter.md) – Glas-Schalter mit Lichtbrechung (Shader), z. B. Theme-Auswahl
 - [docs/skeleton-loading.md](docs/skeleton-loading.md) – Skeleton statt Leerzustand, nur bei echter Wartezeit (Daily, Gym, Übungs-SVGs)
+- [docs/frost-animation.md](docs/frost-animation.md) – Frost-Animation, wenn ein Freeze-Token den angezeigten Tag einfriert
