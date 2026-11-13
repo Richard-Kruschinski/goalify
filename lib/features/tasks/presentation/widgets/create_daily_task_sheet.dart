@@ -8,6 +8,7 @@ import '../../data/models/daily_task.dart';
 import 'checklist_editor.dart';
 import '../../../../core/widgets/weekday_picker.dart';
 import '../../../../core/widgets/modern_date_picker_dialog.dart';
+import '../../../../core/widgets/liquid_glass_segmented.dart';
 
 class CreateResult {
   final DailyTask task;
@@ -525,109 +526,34 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
               ),
               const SizedBox(height: 16),
               // Task Type Toggle
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: AppColors.card(context),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => setState(() { _keep = false; _isLimited = false; }),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          decoration: BoxDecoration(
-                            color: !_keep && !_isLimited ? AppColors.accent(context) : Colors.transparent,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.event,
-                                size: 18,
-                                color: !_keep && !_isLimited ? Colors.white : AppColors.muted(context),
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                AppLocalizations.of(context).dailyLabel,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: !_keep && !_isLimited ? Colors.white : AppColors.muted(context),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => setState(() { _keep = true; _isLimited = false; }),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          decoration: BoxDecoration(
-                            color: _keep && !_isLimited ? AppColors.accent(context) : Colors.transparent,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.repeat,
-                                size: 18,
-                                color: _keep && !_isLimited ? Colors.white : AppColors.muted(context),
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                AppLocalizations.of(context).recurringLabel,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: _keep && !_isLimited ? Colors.white : AppColors.muted(context),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => setState(() { _keep = false; _isLimited = true; _weeklyDays = {}; }),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          decoration: BoxDecoration(
-                            color: _isLimited ? AppColors.accent(context) : Colors.transparent,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.flag,
-                                size: 18,
-                                color: _isLimited ? Colors.white : AppColors.muted(context),
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                AppLocalizations.of(context).xTimes,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: _isLimited ? Colors.white : AppColors.muted(context),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+              LiquidGlassSegmented<_TaskKind>(
+                compact: true,
+                selectedIconColor: AppColors.accent(context),
+                selected: _isLimited
+                    ? _TaskKind.limited
+                    : (_keep ? _TaskKind.recurring : _TaskKind.daily),
+                onChanged: (kind) => setState(() {
+                  _keep = kind == _TaskKind.recurring;
+                  _isLimited = kind == _TaskKind.limited;
+                  if (_isLimited) _weeklyDays = {};
+                }),
+                segments: [
+                  LiquidGlassSegment(
+                    value: _TaskKind.daily,
+                    icon: Icons.event,
+                    label: AppLocalizations.of(context).dailyLabel,
+                  ),
+                  LiquidGlassSegment(
+                    value: _TaskKind.recurring,
+                    icon: Icons.repeat,
+                    label: AppLocalizations.of(context).recurringLabel,
+                  ),
+                  LiquidGlassSegment(
+                    value: _TaskKind.limited,
+                    icon: Icons.flag,
+                    label: AppLocalizations.of(context).xTimes,
+                  ),
+                ],
               ),
               if (_isLimited) ...[
                 const SizedBox(height: 16),
@@ -981,3 +907,4 @@ class _CreateDailyTaskSheetState extends State<CreateDailyTaskSheet> {
 /// ===============================================================
 /// Edit bottom sheet (keep flag not moved between models here)
 /// ===============================================================
+enum _TaskKind { daily, recurring, limited }

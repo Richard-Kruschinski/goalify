@@ -61,7 +61,7 @@ test/                  Unit- und Widget-Tests
 - [docs/pausen-timer.md](docs/pausen-timer.md) – Pausen-Timer zwischen Sätzen, Satz-Haken, Pausen-Statistik
 - [docs/live-timer.md](docs/live-timer.md) – Timer auf dem Sperrbildschirm (Dart ↔ Android/iOS)
 - [docs/samsung-einrichtung.md](docs/samsung-einrichtung.md) – Handy-Einstellungen für Samsung
-- [docs/liquid-glass-schalter.md](docs/liquid-glass-schalter.md) – Glas-Schalter mit Lichtbrechung (Shader): Theme-Auswahl, Gym-Ansicht
+- [docs/liquid-glass-schalter.md](docs/liquid-glass-schalter.md) – Glas-Schalter mit Lichtbrechung (Shader): Theme-Auswahl, Gym-Ansicht, Aufgabenart im Daily-Dialog
 - [docs/skeleton-loading.md](docs/skeleton-loading.md) – Skeleton statt Leerzustand, nur bei echter Wartezeit (Daily, Gym, Übungs-SVGs)
 - [docs/frost-animation.md](docs/frost-animation.md) – Frost-Animation, wenn ein Freeze-Token den angezeigten Tag einfriert
 - [docs/sort-icon-animation.md](docs/sort-icon-animation.md) – Sortier-Icon, das zwischen Doppelpfeil, hoch und runter animiert (Daily, Gym)

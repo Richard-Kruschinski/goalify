@@ -1,6 +1,6 @@
 # Liquid-Glass-Schalter
 
-Segmentierter Schalter mit einer gläsernen Kapsel als Auswahl. Im Einsatz für das Theme (System / Hell / Dunkel) unter Funktionen → Optionen → Erscheinungsbild und für die Ansicht im Gym-Tab (Übungen / Workouts / Splits). Die Kapsel gleitet beim Tippen oder Ziehen zum neuen Segment, wird dabei etwas größer und biegt am Rand die Icons und Texte darunter wie echtes Glas. In der Mitte zeigt sie alles unverzerrt.
+Segmentierter Schalter mit einer gläsernen Kapsel als Auswahl. Im Einsatz für das Theme (System / Hell / Dunkel) unter Funktionen → Optionen → Erscheinungsbild, für die Ansicht im Gym-Tab (Übungen / Workouts / Splits) und für die Art einer neuen Aufgabe im Daily-Tab (Täglich / Wiederholend / X-Mal). Die Kapsel gleitet beim Tippen oder Ziehen zum neuen Segment, wird dabei etwas größer und biegt am Rand die Icons und Texte darunter wie echtes Glas. In der Mitte zeigt sie alles unverzerrt.
 
 Sehr geholfen hat der Artikel [Liquid Glass in the Browser: Refraction with CSS and SVG](https://kube.io/blog/liquid-glass-css-svg/) von kube.io. Von dort stammen die Idee mit flacher Mitte und gewölbtem Rand, die Verschiebung nur entlang der Randnormalen und die Lichtkante. Der Artikel setzt das mit SVG-Displacement-Maps als `backdrop-filter` um (nur Chrome). Hier ist es ein Fragment-Shader in Flutter.
 
@@ -14,6 +14,7 @@ Sehr geholfen hat der Artikel [Liquid Glass in the Browser: Refraction with CSS 
 | `test/liquid_glass_segmented_test.dart` | Widget-Test: Tippen und Ziehen mit aktivem Shader, ohne Exception |
 | `lib/features/functions/settings/presentation/pages/settings_screen.dart` | Einbau für den Theme-Modus |
 | `lib/features/gym/presentation/pages/gym_screen.dart` | Einbau in `_buildViewToggle()` für `ViewMode` (kompakt, rotes Icon) |
+| `lib/features/tasks/presentation/widgets/create_daily_task_sheet.dart` | Einbau im Dialog „Neue Aufgabe“ für die Aufgabenart (kompakt, rotes Icon). Das private Enum `_TaskKind` übersetzt zwischen Schalter und den Feldern `_keep` / `_isLimited` |
 
 ## Verwendung
 
